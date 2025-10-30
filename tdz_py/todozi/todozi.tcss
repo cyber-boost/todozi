@@ -1,0 +1,52 @@
+/* todozi.tcss */
+Screen {
+    background: $background;
+    color: $text;
+}
+
+#header {
+    height: 3;
+    background: $primary;
+    color: $white;
+}
+
+#tabs {
+    height: 3;
+    layout: horizontal;
+    background: $primary;
+    color: $white;
+}
+
+#tabs Static {
+    padding: 0 2;
+    height: 100%;
+    content-align: center middle;
+}
+
+#tabs Static:hover {
+    background: $primary-dark;
+}
+
+#main-content {
+    height: 1fr;
+    padding: 1;
+}
+
+#projects-content, #tasks-content, #done-content, #find-content, 
+#more-content, #api-content, #feed-content, #bye-content {
+    padding: 1;
+    border: tall $border;
+}
+
+#editor-content {
+    padding: 1;
+    border: tall $warning;
+    background: $primary-dark;
+    color: $white;
+}
+
+Footer {
+    height: 1;
+    background: $light-gray;
+    color: $dark;
+}

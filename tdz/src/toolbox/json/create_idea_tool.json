@@ -1,0 +1,86 @@
+{
+  "type": "function",
+  "function": {
+    "name": "create_idea",
+    "description": "Create a new creative idea or concept. Use this to capture innovative thoughts, potential features, or creative solutions that might be valuable in the future.",
+    "parameters": {
+      "type": "object",
+      "properties": {
+        "idea": {
+          "type": "string",
+          "description": "The idea content or concept description. Be creative and descriptive.",
+          "examples": [
+            "Implement voice-controlled task management",
+            "Create a gamified learning platform for developers",
+            "Build an AI-powered code review assistant",
+            "Design a collaborative workspace with real-time mind mapping"
+          ]
+        },
+        "share": {
+          "type": "string",
+          "enum": ["private", "team", "public"],
+          "description": "Who should be able to see this idea. Private for personal ideas, team for collaboration, public for broader sharing.",
+          "examples": ["private", "team", "public"]
+        },
+        "importance": {
+          "type": "string",
+          "enum": ["low", "medium", "high", "breakthrough"],
+          "description": "How significant is this idea. Breakthrough for potentially transformative concepts.",
+          "examples": ["low", "medium", "high", "breakthrough"]
+        },
+        "tags": {
+          "type": "string",
+          "description": "Comma-separated tags for categorization and discovery.",
+          "examples": [
+            "innovation,product,ai",
+            "ux,design,mobile",
+            "development,tools,productivity",
+            "business,monetization,strategy"
+          ]
+        },
+        "context": {
+          "type": "string",
+          "description": "Additional context, inspiration, or background for the idea.",
+          "examples": [
+            "Inspired by seeing similar features in competitor products",
+            "Came up during brainstorming about user engagement",
+            "Based on customer feedback about current limitations",
+            "Technical feasibility confirmed through recent research"
+          ]
+        }
+      },
+      "required": ["idea"],
+      "examples": [
+        {
+          "description": "Create a breakthrough idea for public sharing",
+          "example": {
+            "idea": "AI-powered code review assistant that learns from team patterns and suggests improvements",
+            "share": "public",
+            "importance": "breakthrough",
+            "tags": "ai,development,productivity,collaboration",
+            "context": "Could revolutionize how development teams work together"
+          }
+        },
+        {
+          "description": "Create a team-shared idea for collaboration",
+          "example": {
+            "idea": "Implement real-time collaborative mind mapping for project planning",
+            "share": "team",
+            "importance": "high",
+            "tags": "collaboration,planning,ux",
+            "context": "Team expressed frustration with current planning tools"
+          }
+        },
+        {
+          "description": "Simple private idea capture",
+          "example": {
+            "idea": "Add dark mode toggle to all applications",
+            "share": "private",
+            "importance": "medium",
+            "tags": "ux,accessibility,design"
+          }
+        }
+      ]
+    }
+  }
+}

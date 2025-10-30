@@ -1,0 +1,22 @@
+<svg width="600" height="200" viewBox="0 0 600 200" xmlns="http://www.w3.org/2000/svg">
+  <!-- Timeline -->
+  <line x1="50" y1="100" x2="550" y2="100" stroke="#333" stroke-width="2"/>
+  
+  <!-- Q1 2025 -->
+  <circle cx="150" cy="100" r="8" fill="#10b981"/>
+  <text x="150" y="80" text-anchor="middle" font-weight="bold" fill="#10b981">Q1 2025</text>
+  <text x="150" y="130" text-anchor="middle" font-size="11">Web Interface</text>
+  <text x="150" y="145" text-anchor="middle" font-size="11">Plugin System</text>
+  
+  <!-- Q2 2025 -->
+  <circle cx="300" cy="100" r="8" fill="#3b82f6"/>
+  <text x="300" y="80" text-anchor="middle" font-weight="bold" fill="#3b82f6">Q2 2025</text>
+  <text x="300" y="130" text-anchor="middle" font-size="11">Streaming Embeddings</text>
+  <text x="300" y="145" text-anchor="middle" font-size="11">Mobile Apps</text>
+  
+  <!-- Q3 2025 -->
+  <circle cx="450" cy="100" r="8" fill="#8b5cf6"/>
+  <text x="450" y="80" text-anchor="middle" font-weight="bold" fill="#8b5cf6">Q3 2025</text>
+  <text x="450" y="130" text-anchor="middle" font-size="11">Multi-tenant SaaS</text>
+  <text x="450" y="145" text-anchor="middle" font-size="11">Enterprise Features</text>
+</svg>

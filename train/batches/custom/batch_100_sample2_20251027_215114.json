@@ -1,0 +1,502 @@
+[
+  {
+    "prompt": "Enroll in the “Creative Writing” workshop at a local arts centre",
+    "rejected": "Enroll in Creative Writing workshop.",
+    "chosen": "<todozi>Research Creative Writing workshop options; today 5pm; medium; Personal Development; pending; me; education,research; none; Find dates, location, cost, and enrollment deadline; 0%</todozi>\n<todozi>Enroll in Creative Writing workshop; Friday 5pm; high; Personal Development; planned; me; education,skills; research_complete; Register online, pay fee, and add workshop to calendar; 0%</todozi>\n<todozi>Prepare workshop materials (notebook, pens, laptop); day before workshop; low; Personal Development; planned; me; supplies,preparation; enrollment_done; Gather writing tools and set up a dedicated workspace; 0%</todozi>"
+  },
+  {
+    "prompt": "About Us page should include a human element like team photos or quotes to build trust",
+    "rejected": "<idea>Add team elements to About Us; share; medium</idea>",
+    "chosen": "<idea>Incorporate team storytelling (photos, quotes) into 'About Us' page to enhance authenticity and emotional connection; share; high</idea>"
+  },
+  {
+    "prompt": "Confirm that all laptops have the latest security patches installed",
+    "rejected": "Confirm all laptops have latest security patches installed.",
+    "chosen": "<todozi>Compile inventory of all company laptops; today 5pm; high; Laptop Patch Management; pending; IT Asset Manager; inventory,hardware; none; Use asset management system to export current laptop list; 0%</todozi>"
+  },
+  {
+    "prompt": "Just realized I could sell painted miniatures online as a side income",
+    "rejected": "<idea>Sell painted miniatures; share; medium</idea>",
+    "chosen": "<idea>Launch Etsy shop selling custom-painted tabletop miniatures with tiered pricing based on complexity; share; high</idea>"
+  },
+  {
+    "prompt": "Develop a customer-journey map highlighting pain points for new users",
+    "rejected": "Share journey map with team for feedback",
+    "chosen": "<todozi>Present journey map to product team; next Wednesday 3pm; medium; Customer Journey Mapping; scheduled; me; presentation,feedback; visualization_complete; Prepare recommendations for pain point resolution; 0%</todozi>\n<todozi>Share findings with customer support; next Wednesday; medium; Customer Journey Mapping; planned; Support Lead; communication,feedback; presentation_complete; Align on common pain points and solutions; 0%</todozi>\n<memory>Previous journey mapping exercise; Identified 3 major drop-off points in onboarding; Led to 25% improvement in activation; high; long term</memory>"
+  },
+  {
+    "prompt": "Check technology setup (screen share, mic) before start",
+    "rejected": "Check your equipment regularly.",
+    "chosen": "<feel>frustrated; 5; Tech issues disrupting meeting flow; Equipment reliability concerns; technology,productivity</feel>"
+  },
+  {
+    "prompt": "After researching SRI funds, need to make a final selection and initiate investment",
+    "rejected": "Choose an SRI fund and invest money.",
+    "chosen": "<error>SRI fund selection delay; Overanalyzing options may lead to decision paralysis; medium; decision_making; personal finance</error>"
+  },
+  {
+    "prompt": "Join a Slack community for professionals in your niche and contribute weekly",
+    "rejected": "Join a Slack community and post weekly.",
+    "chosen": "<todozi>Join selected Slack community and complete onboarding; tomorrow 3pm; high; Professional Development; planned; me; onboarding,community; select_and_request_access; Introduce yourself in #introductions channel with a brief professional summary; 0%</todozi>"
+  },
+  {
+    "prompt": "Establishing consistent workflow for sourcing references",
+    "rejected": "Set up reference workflow.",
+    "chosen": "<chunk>ref_001; process; Reference collection workflow; none; // Initialize research phase with keyword mapping</chunk>"
+  },
+  {
+    "prompt": "Need to research trending topics before finalizing the calendar, but analytics access is pending IT approval",
+    "rejected": "Research trends after IT gives access",
+    "chosen": "<todozi>Review competitor content strategies; Wednesday 3pm; medium; Content Strategy 2024; in_progress; me; competitive_analysis; none; Identify content gaps and opportunities; 40%</todozi>"
+  },
+  {
+    "prompt": "Create meeting agenda and circulate to participants",
+    "rejected": "Create agenda and send to participants.",
+    "chosen": "<todozi>Review agenda with meeting host; tomorrow 9am; high; Team Sync; pending; meeting_host; collaboration,review; Draft meeting agenda; Incorporate host feedback; 0%</todozi>"
+  },
+  {
+    "prompt": "The profile wireframe depends on finalizing user roles and permissions, which is stuck in legal review",
+    "rejected": "<todozi>Profile wireframe; TBD; high; Design System; blocked; me; design; permissions_finalized; Waiting on legal; 0%</todozi>",
+    "chosen": "<todozi>Update profile wireframe with role-based sections; in 4 days; high; Design System Update; blocked; me; design,ux,security; role_definitions_finalized; Show/hide fields based on user access level; 40%</todozi>"
+  },
+  {
+    "prompt": "Review the performance of a 5‑year target‑date retirement fund",
+    "rejected": "Review retirement fund performance. Check returns and compare to benchmarks.",
+    "chosen": "<todozi>Compare against relevant benchmarks; Friday 12pm; high; Investment Review; pending; me; analysis,benchmarking; research_complete; S&P 500, bond indices, and peer group comparison; 0%</todozi>"
+  },
+  {
+    "prompt": "Draft the budget request document, including narrative justification, line‑item spreadsheet, and alignment with organizational goals.",
+    "rejected": "Create budget document with justification and spreadsheet.",
+    "chosen": "<todozi>Write narrative justification (purpose, expected outcomes, ROI); tomorrow 2pm; high; Small Initiative Budget; planned; mentee; documentation,writing; Identify cost categories; Provide clear business case; 0%</todozi>"
+  },
+  {
+    "prompt": "Co-author a short article or blog post with the mentee on a topic of expertise",
+    "rejected": "Write article with mentee; Choose topic; Publish article",
+    "chosen": "<todozi>Complete first draft; 1 week after outline; medium; Mentorship Article; planned; mentee; writing,draft; outline_approved; Mentee takes primary writing role with guidance; 0%</todozi>"
+  },
+  {
+    "prompt": "Pick up grandparents from airport arrival",
+    "rejected": "You should pick up your grandparents from the airport.",
+    "chosen": "<todozi>Pick up grandparents from airport; today 3:45pm; high; Family Coordination; scheduled; me; family,transportation; flight_confirmation_received; Arrive 30 mins early, have sign ready; 0%</todozi>"
+  },
+  {
+    "prompt": "If any workstation fails to scan or reports a critical threat, the incident must be escalated immediately.",
+    "rejected": "<error>Scan failure; critical; security</error>",
+    "chosen": "<error>Antivirus scan failure on endpoint; One or more workstations did not complete the scheduled scan or returned error code 0x80070005 (Access Denied); critical; security; IT Operations</error>\n<todozi>Investigate scan failure incidents; immediate; critical; Incident Response; in_progress; IT Security Team; troubleshooting,incident; none; Check endpoint connectivity, permissions, and AV agent health; 0%</todozi>\n<memory>Previous scan failure on 2024‑11‑12 caused a delayed patch rollout; Root cause was expired service account; Lesson: rotate service accounts monthly; high; short term</memory>"
+  },
+  {
+    "prompt": "Feeling frustrated with the intricate glass work but also excited to see the final colorful results",
+    "rejected": "You feel frustrated but excited about the project",
+    "chosen": "<feel>excited; 7; Anticipating beautiful finished coasters; Colorful glass patterns will look great in home; accomplishment,creativity</feel>"
+  },
+  {
+    "prompt": "Read a favorite novel for pleasure before bedtime",
+    "rejected": "You should read a novel before bed.",
+    "chosen": "<todozi>Select 3 favorite novels for rotation; today 7pm; low; Personal Wellness; in_progress; me; reading,planning; none; Keep by bedside table for easy access; 50%</todozi>"
+  },
+  {
+    "prompt": "Guide your mentee through creating a simple personal website or portfolio",
+    "rejected": "Create a website with HTML and CSS.",
+    "chosen": "<chunk>website_001; project; Personal website/portfolio project structure; none; // Project containing index.html, styles.css, images folder, and contact form</chunk>\n<chunk>website_002; file; Basic HTML structure for portfolio page; website_001; <!DOCTYPE html><html><head><title>My Portfolio</title><link rel=\"stylesheet\" href=\"styles.css\"></head><body></body></html></chunk>\n<chunk>website_003; file; CSS styling for responsive layout; website_001; body { font-family: Arial; margin: 0; } .container { max-width: 1200px; margin: auto; }</chunk>\n<todozi>Develop sample personal website codebase; this weekend; low; Knowledge Base; in_progress; me; development,training,portfolio; define_project_scope; Clean, commented code for mentee reference; 30%</todozi>"
+  },
+  {
+    "prompt": "Pay the monthly subscription for a cloud‑based backup service",
+    "rejected": "You should pay the monthly subscription for the cloud-based backup service today.",
+    "chosen": "<memory>Cloud backup subscription renewal; Recurring cost impacting operational budget; Automate future payments or set calendar alerts; medium; long term</memory>"
+  },
+  {
+    "prompt": "Schedule car oil change",
+    "rejected": "Schedule car oil change.",
+    "chosen": "<idea>Consider bundling oil change with tire rotation for cost efficiency; share; low</idea>"
+  },
+  {
+    "prompt": "The presentation requires data from multiple departments that have different deadlines",
+    "rejected": "<todozi>Get data from departments; various times; high; QBR; pending; others; data; none; Different departments have different timelines; 0%</todozi>",
+    "chosen": "<todozi>Operations efficiency metrics; Wednesday 2pm; high; Q4 Business Review; pending; Operations Manager; data,operations; marketing_data; Capacity utilization, cost efficiency, process improvements; 0%</todozi>"
+  },
+  {
+    "prompt": "Schedule a video call with distant friend",
+    "rejected": "Call friend sometime this week.",
+    "chosen": "<todozi>Send calendar invitation; tomorrow; medium; Personal Relationships; pending; me; communication,scheduling; timezone_research; Include meeting link and agenda topics; 0%</todozi>"
+  },
+  {
+    "prompt": "Schedule compliance training session",
+    "rejected": "Schedule compliance training session",
+    "chosen": "<todozi>Schedule GDPR compliance training session; tomorrow; medium; Compliance Initiative; planned; HR Coordinator; training,scheduling,compliance; room_availability; Confirm attendance with department heads; 0%</todozi>"
+  },
+  {
+    "prompt": "Launching the new e-commerce platform involves design, development, content, and marketing coordination",
+    "rejected": "Launch e-commerce platform with design, development, content, and marketing.",
+    "chosen": "<todozi>Content strategy and copywriting; next week; medium; Platform Launch; assigned; Content Team; content,writing; brand_guidelines; Product descriptions, error messages, help content; 20%</todozi>"
+  },
+  {
+    "prompt": "Enjoy a cup of coffee or tea on the balcony while watching sunrise",
+    "rejected": "Relax and then start work",
+    "chosen": "<todozi>Transition to work mode post-sunrise; 7:00am; medium; Daily Planning; planned; me; productivity,planning; sunrise_ritual_complete; Review daily priorities with clear mind; 0%</todozi>"
+  },
+  {
+    "prompt": "Create a quick survey (5 questions) to gauge market interest in the concept",
+    "rejected": "Create a short 5‑question market interest survey.",
+    "chosen": "<todozi>Design market interest survey; tomorrow 5pm; medium; Market Research; planned; me; survey,research; none; Define objectives, draft 5 questions, choose rating scale; 0%</todozi>"
+  },
+  {
+    "prompt": "Schedule a quarterly performance-review meeting with direct reports",
+    "rejected": "You should schedule a quarterly performance review meeting with your direct reports.",
+    "chosen": "<todozi>Prepare performance review templates and guidelines; by Friday; medium; Performance Management; in_progress; HR; documentation,planning; none; Include rating criteria and goal alignment; 30%</todozi>"
+  },
+  {
+    "prompt": "Create a set of brand-themed stickers for internal use",
+    "rejected": "Create brand-themed stickers with design, approval, and printing steps.",
+    "chosen": "<todozi>Finalize brand guidelines for stickers; this Friday; high; Brand Assets; in_progress; Brand Manager; branding,guidelines; none; Define visual parameters and messaging tone; 60%</todozi>"
+  },
+  {
+    "prompt": "Create a system for regular bill reviews to catch issues early",
+    "rejected": "Make bill review system",
+    "chosen": "<todozi>Create bill review checklist; Friday; medium; Personal Finance System; planned; me; process,finance,documentation; complete_current_review; Standardized process for monthly bill verification; 0%</todozi>"
+  },
+  {
+    "prompt": "Schedule a follow-up appointment after surgery",
+    "rejected": "Call doctor to schedule post-surgery appointment.",
+    "chosen": "<memory>Surgery completed on Jan 15; Follow-up critical for recovery monitoring and stitch removal; Essential for proper healing process; critical; short term</memory>"
+  },
+  {
+    "prompt": "The expense calendar requires gathering data from multiple sources and verifying accuracy before finalization",
+    "rejected": "<todozi>Finalize expense calendar; Friday; high; Financial Planning; blocked; me; budgeting; data_gathering; Waiting on information; 0%</todozi>",
+    "chosen": "<todozi>Finalize and distribute expense calendar; Friday EOD; high; Financial Planning; blocked; me; documentation,finance; verify_travel,confirm_tuition,validate_insurance; Share with family/spouse for awareness and planning; 0%</todozi>"
+  },
+  {
+    "prompt": "Track and limit impulse purchases by adding a 24‑hour waiting rule",
+    "rejected": "Make a rule to wait before buying",
+    "chosen": "<todozi>Design impulse purchase decision flowchart; this weekend; low; Financial Discipline; planned; me; process,design; none; Visual guide for evaluating wants vs needs; 0%</todozi>"
+  },
+  {
+    "prompt": "Feeling frustrated every time I come home because the entryway is always messy",
+    "rejected": "You feel frustrated by the messy entryway. Try to clean it more often.",
+    "chosen": "<memory>Entryway stress point identified; Physical environment directly affects emotional state; Solution requires both structural and behavioral changes; high; short term</memory>"
+  },
+  {
+    "prompt": "Visit the post office to buy stamps for outgoing mail",
+    "rejected": "Buy stamps when you need them",
+    "chosen": "<idea>Purchase stamps in bulk online to avoid post office trips; dont share; medium</idea>\n<todozi>Research bulk stamp purchasing options; this weekend; low; Mail Efficiency; planned; me; research,automation,efficiency; none; Compare USPS online vs retail pricing and delivery times; 0%</todozi>\n<memory>Recurring post office visits; Weekly stamp purchases becoming inefficient; Bulk buying could save 1-2 hours monthly; medium; long term</memory>"
+  },
+  {
+    "prompt": "Document the design process for creating printable materials",
+    "rejected": "<train>design; Create printable materials; Use proper settings; design process</train>",
+    "chosen": "<train>printable_design; When creating printable posters, always set document to 300 DPI with 0.125 inch bleed margins and use CMYK color mode; 'Set up document: 300 DPI resolution, 0.125\\\" bleed, CMYK color mode, and embed all fonts before exporting to PDF.'; Printable design best practices</train>"
+  },
+  {
+    "prompt": "Deep-clean the refrigerator shelves and discard old food",
+    "rejected": "<memory>Cleaned fridge; It was messy; Should do it more often; low; short term</memory>",
+    "chosen": "<memory>Refrigerator deep clean completed; Noticed pattern of food waste in produce drawer; Need better meal planning and food rotation system; medium; long term</memory>\n<idea>Implement weekly fridge check routine to prevent food waste; dont share; medium</idea>\n<todozi>Create food rotation system; next week; low; Home Efficiency; planned; me; organization,process; none; Label containers with dates, use FIFO method; 0%</todozi>"
+  },
+  {
+    "prompt": "UI kit accessibility audit revealed contrast issues that need immediate fixing",
+    "rejected": "<error>Contrast issues; Fix colors; high; accessibility; audit</error>",
+    "chosen": "<error>Accessibility contrast violations; Button and alert components fail WCAG 2.1 AA color contrast requirements (4.5:1 ratio); high; compliance; design system</error>"
+  },
+  {
+    "prompt": "Schedule the performance-review meeting slots for managers",
+    "rejected": "Schedule manager performance review meetings for next week",
+    "chosen": "<todozi>Create meeting calendar blocks; Thursday 10am; high; Q1 Performance Reviews; planned; me; scheduling,calendar; manager_availability_complete; Schedule 45-minute slots with buffer time between meetings; 0%</todozi>"
+  },
+  {
+    "prompt": "Remembering last year's tax filing showed we missed several deductible medical expenses due to poor organization",
+    "rejected": "<memory>Missed deductions last year; Poor receipt organization; Should organize better; medium; long term</memory>",
+    "chosen": "<idea>Create digital receipt tracking system for medical expenses; dont share; high</idea>"
+  },
+  {
+    "prompt": "Plan a weekend brunch with friends at a new café",
+    "rejected": "<idea>Brunch at new café; share; medium</idea>",
+    "chosen": "<idea>Explore themed brunch experiences (e.g., bottomless mimosas, live music); share; medium</idea>"
+  },
+  {
+    "prompt": "Create a brand mascot illustration and propose three variations",
+    "rejected": "You should create a mascot with 3 variations.",
+    "chosen": "<todozi>Develop Mascot Variation B - Professional & Confident; Wednesday 12pm; medium; Brand Identity Refresh; planned; me; design,illustration; sketch_approval; Sketch initial concept and present for feedback; 0%</todozi>"
+  },
+  {
+    "prompt": "I need to prepare ice‑breaker or opening remarks for the upcoming quarterly all‑hands meeting tomorrow, it's crucial to set the right tone.",
+    "rejected": "Prepare ice‑breaker remarks for tomorrow's all‑hands meeting.",
+    "chosen": "<todozi>Review draft with senior leader; today 7pm; high; Quarterly All‑Hands; pending; Senior Leader; collaboration,review; Draft ice‑breaker opening remarks; Incorporate feedback on tone and key messages; 0%</todozi>"
+  },
+  {
+    "prompt": "Realized we should automate dividend reinvestment for better tax efficiency long-term",
+    "rejected": "<idea>Automate dividend reinvestment; share; medium</idea>",
+    "chosen": "<idea>Set up automated dividend reinvestment for selected index funds to maximize compounding and tax efficiency; share; high</idea>"
+  },
+  {
+    "prompt": "Document findings from competitive analysis for stakeholder review",
+    "rejected": "Write up competitor analysis findings.",
+    "chosen": "<chunk>comp_analysis_2; section; Competitor feature comparison matrix; comp_analysis_1; ## Feature Comparison</chunk>"
+  },
+  {
+    "prompt": "Want to control subscription spending and create visibility",
+    "rejected": "<idea>Control subscriptions; share; medium</idea>",
+    "chosen": "<todozi>Create subscription tracking system; next week; high; Personal Finance; planned; me; tracking,budgeting,automation; none; Build dashboard with renewal alerts; 0%</todozi>"
+  },
+  {
+    "prompt": "Renew the business insurance policy for liability coverage",
+    "rejected": "<todozi>Renew insurance; next month; high; Business; not_started; me; insurance; none; Need to do it; 0%</todozi>",
+    "chosen": "<todozi>Obtain updated insurance quote; next Monday; high; Business Compliance; planned; me; insurance,finance; coverage_assessment_complete; Ensure limits align with current business operations; 0%</todozi>"
+  },
+  {
+    "prompt": "Register children for summer camp and complete registration forms",
+    "rejected": "Register kids for camp and fill out forms.",
+    "chosen": "<memory>Last year's camp registration; Missed early bird discount by 2 days; Register early this year to save 15%; high; long term</memory>"
+  },
+  {
+    "prompt": "Final UI design requires approval from product manager before assets can be exported for development",
+    "rejected": "Get UI approval from PM",
+    "chosen": "<memory>UI approval dependency identified; PM availability critical for Friday timeline; Schedule meeting early to avoid delays; high; short term</memory>"
+  },
+  {
+    "prompt": "Need to establish a better code review process to avoid missing critical changes like the timestamp column addition",
+    "rejected": "Establish a better code review process.",
+    "chosen": "<todozi>Implement enhanced code review checklist; next week; medium; Process Improvement; planned; me; process,quality,team; team_meeting_scheduled; Include schema change verification steps; 0%</todozi>\n<idea>Introduce automated schema diff tool in CI pipeline to flag unreviewed database changes; share; high</idea>\n<memory>Code review process needs strengthening; Recent timestamp schema change was almost missed; Risk of production instability; high; short term</memory>"
+  },
+  {
+    "prompt": "Could also use this opportunity to optimize slow endpoints identified in past reviews",
+    "rejected": "<idea>Optimize slow endpoints; share; medium</idea>",
+    "chosen": "<memory>Historical endpoint performance issues; Multiple user complaints about /search and /reports endpoints; Optimization could improve overall benchmark results; high; short term</memory>"
+  },
+  {
+    "prompt": "Need to handle the financial aspects of the certificate program",
+    "rejected": "Pay for certificate program",
+    "chosen": "<todozi>Set up payment method for Coursera; tomorrow; medium; Career Development; pending; me; admin,finance; budget_approved; Credit card or PayPal setup; 0%</todozi>"
+  },
+  {
+    "prompt": "Sync meeting actions with the team’s task‑management board",
+    "rejected": "<idea>Sync meeting actions automatically; share; medium</idea>",
+    "chosen": "<idea>Automated sync between meeting notes and task board using AI parsing - could reduce manual admin by 30 mins/week; share; high</idea>\n<todozi>Evaluate automation tools for meeting-to-task sync; next Monday; medium; Process Improvement; planned; me; automation,productivity,tools; none; Research Notion, ClickUp, and Todozi integrations; 0%</todozi>\n<memory>Manual task syncing is time-consuming; Opportunity to automate repetitive coordination work; ROI analysis needed; medium; short term</memory>"
+  },
+  {
+    "prompt": "Pay the annual subscription for a professional association",
+    "rejected": "You should pay the annual subscription for the professional association.",
+    "chosen": "<idea>Set up automatic yearly payment via credit card to avoid manual processing; share; medium</idea>"
+  },
+  {
+    "prompt": "I sometimes feel uninspired to sketch after a long workday",
+    "rejected": "Feeling uninspired, need motivation.",
+    "chosen": "<feel>uninspired; 5; After a demanding workday, mental fatigue reduces creative drive for sketching; personal productivity</feel>\n<todozi>Pre‑sketch warm‑up routine; today 6:30 pm; low; Sketching Habit; planned; me; warmup,mental_reset; none; 3‑minute line‑exercise to loosen hand before the 10‑minute sketch; 0%</todozi>\n<memory>Warm‑up exercises have been shown to lower activation energy for creative tasks; medium; short term</memory>"
+  },
+  {
+    "prompt": "Offer to introduce your mentee to a senior leader who can provide additional mentorship",
+    "rejected": "Introduce mentee to senior leader for mentorship.",
+    "chosen": "<todozi>Draft introduction email to senior leader; today 5pm; high; Mentee Mentorship; planned; me; communication,mentoring; none; Include mentee's background and goals; 0%</todozi>\n<todozi>Schedule intro meeting between mentee and senior leader; tomorrow 10am; high; Mentee Mentorship; planned; me; networking,mentoring,meeting; draft_email_sent; 30 min virtual meeting; 0%</todozi>\n<todozi>Send follow‑up recap and next steps; day after meeting; medium; Mentee Mentorship; planned; me; communication,mentoring; meeting_completed; Summarize discussion and agreed actions; 0%</todozi>\n<memory>First mentorship intro; Connecting mentee with senior leader can accelerate development; high; short term</memory>"
+  },
+  {
+    "prompt": "Implement server‑side rendering for SEO‑critical pages",
+    "rejected": "Research SSR options",
+    "chosen": "<todozi>Research SSR frameworks and approaches; tomorrow EOD; high; SEO Optimization Project; completed; Lead Developer; research,technical; none; Compared Next.js, Nuxt.js, and custom solutions; 100%</todozi>\n<memory>SSR framework research completed; Next.js selected for React compatibility and SEO features; Decision based on team expertise and performance benchmarks; high; short term</memory>\n<idea>Progressive SSR implementation - start with critical pages then expand; share; medium</idea>\n<error>SSR hydration mismatch; Client-server DOM inconsistency during testing; medium; development; QA environment</error>"
+  },
+  {
+    "prompt": "Help the mentee map out a 5‑year career roadmap",
+    "rejected": "Create a 5-year career plan for the mentee with goals and steps.",
+    "chosen": "<todozi>Define 1-year SMART goals; in 2 days; high; Career Roadmap; pending; mentee; goals,planning; initial_assessment; Specific, measurable objectives for first year; 0%</todozi>"
+  },
+  {
+    "prompt": "This woodworking practice should contribute to my overall craftsmanship skills",
+    "rejected": "Practice makes perfect",
+    "chosen": "<idea>Create woodworking skill progression plan; dont share; medium</idea>\n<todozi>Research advanced finishing techniques; next week; low; Skill Development; planned; me; research,learning; box_project_complete; Explore French polishing, oil finishes, and specialty techniques; 0%</todozi>\n<memory>Woodworking skill building; Each small project builds foundational techniques; Consistent practice leads to mastery; high; long term</memory>"
+  },
+  {
+    "prompt": "Attend the local community college class on “Project Management Basics”",
+    "rejected": "Attend community college class on Project Management Basics.",
+    "chosen": "<idea>Create a shared Project Management cheat sheet for the team based on class learnings; share; medium</idea>"
+  },
+  {
+    "prompt": "Need to understand EITC eligibility rules and documentation requirements",
+    "rejected": "Research EITC rules and requirements.",
+    "chosen": "<idea>Create checklist of EITC qualifying documents and common mistakes; share; medium</idea>"
+  },
+  {
+    "prompt": "Draft onboarding materials for new hires joining next month",
+    "rejected": "Create onboarding docs for next month's hires.",
+    "chosen": "<todozi>Design onboarding handbook template; 2025-09-28; high; New Hire Onboarding; pending; me; design,documentation; Draft onboarding materials; Use company branding, include policies, benefits, and FAQ; 0%</todozi>"
+  },
+  {
+    "prompt": "Noticed escrow payment increased significantly this year due to property tax reassessment",
+    "rejected": "<memory>Escrow increased; Taxes went up; medium; short term</memory>",
+    "chosen": "<memory>Property tax reassessment 2024; Escrow payment increased by $300/month due to county reassessment; Need to adjust monthly budget accordingly; high; long term</memory>"
+  },
+  {
+    "prompt": "Identify timeline dependencies for risk assessment",
+    "rejected": "find timeline dependencies",
+    "chosen": "<todozi>Identify critical timeline dependencies; today 4pm; high; Client Implementation Project; in_progress; me; dependency_mapping,timeline; none; Map interdependencies between implementation phases; 30%</todozi>"
+  },
+  {
+    "prompt": "Reserve a spot for the flu vaccination clinic",
+    "rejected": "<todozi>Reserve flu shot; anytime; low; Personal; not_started; me; health; none; Need to do it eventually; 0%</todozi>",
+    "chosen": "<todozi>Check flu clinic availability; today 5pm; high; Health & Wellness; in_progress; me; health,research; none; Call clinic or check online booking system; 20%</todozi>"
+  },
+  {
+    "prompt": "Update the automatic payment for the home security system",
+    "rejected": "<todozi>Update payment; ASAP; high; Home; pending; me; home; none; Requires card details; 0%</todozi>",
+    "chosen": "<todozi>Verify new payment method details; today 4pm; high; Home Management; pending; me; home,bills,payment; locate_payment_info; Confirm card number, expiry, and billing address; 0%</todozi>"
+  },
+  {
+    "prompt": "Need to manage diabetes with proper equipment and education",
+    "rejected": "<todozi>Manage diabetes; ongoing; high; Health; in_progress; me; health; none; Get monitor and learn; 0%</todozi>",
+    "chosen": "<todozi>Research glucose monitoring systems; today; high; Diabetes Management; in_progress; me; health,research; none; Compare features, costs, and insurance coverage; 30%</todozi>"
+  },
+  {
+    "prompt": "The post-mortem revealed recurring communication breakdowns between development and QA teams",
+    "rejected": "<error>Communication issues; Between dev and QA; medium; team; post-mortem</error>",
+    "chosen": "<memory>Post-mortem communication findings; Pattern of misunderstandings leading to rework; Addressing this could save 15% development time; critical; long term</memory>"
+  },
+  {
+    "prompt": "Thought of suggesting green energy options while reviewing the environmental impact report",
+    "rejected": "<idea>Suggest green energy options; share; medium</idea>",
+    "chosen": "<idea>Propose renewable energy integration (solar/wind) for new data center to reduce carbon footprint and long-term operational costs; share; high</idea>"
+  },
+  {
+    "prompt": "Draw a set of 5 character designs for a comic strip",
+    "rejected": "Create 5 character designs for comic strip",
+    "chosen": "<todozi>Sketch character concept thumbnails; tomorrow 10am; high; Comic Strip Project; planned; me; sketching,concept; research_complete; 20+ rough sketches exploring different designs; 0%</todozi>"
+  },
+  {
+    "prompt": "Repair a broken garden tool (shovel handle) and repaint it",
+    "rejected": "Repair shovel and repaint.",
+    "chosen": "<todozi>Attach new handle with epoxy; tomorrow 2pm; high; Garden Tool Repair; planned; me; repair,adhesive; Cut replacement wood piece; Align and secure handle with epoxy, clamp for 30 min; 0%</todozi>"
+  },
+  {
+    "prompt": "Need to coordinate with data science, design, and frontend teams to deliver the heatmap feature",
+    "rejected": "Coordinate heatmap feature delivery with data science, design, and frontend teams.",
+    "chosen": "<todozi>Heatmap feature coordination; ongoing; high; User Analytics Dashboard; in_progress; me; coordination,cross_functional; data_science_input,design_specs,frontend_capacity; Weekly sync to track dependencies and unblock teams; 40%</todozi>\n<todozi>Align with data science on click data schema; today 11am; high; User Analytics Dashboard; scheduled; Data Science Lead; data_requirements; Confirm timestamp format and coordinate system; 0%</todozi>\n<todozi>Review design specs for heatmap UI; tomorrow 2pm; medium; User Analytics Dashboard; scheduled; Design Lead; design_specs; Validate color palette and interaction states; 0%</todozi>\n<memory>Cross-team heatmap delivery; Requires alignment on data, design, and implementation; Weekly sync essential for success; high; short term</memory>"
+  },
+  {
+    "prompt": "Need to find the right bike for my son's age and size",
+    "rejected": "Research bikes for your son.",
+    "chosen": "<idea>Create comparison chart of top 3 bike options with price, features, and reviews; share; medium</idea>"
+  },
+  {
+    "prompt": "Attend a local pottery class on Thursday evening",
+    "rejected": "Attend pottery class Thursday evening.",
+    "chosen": "<todozi>Buy pottery supplies (clay, tools); Wednesday 6pm; low; Personal Development; planned; me; shopping,art; none; Purchase necessary items before class; 0%</todozi>"
+  },
+  {
+    "prompt": "Client requested complex change that might affect project timeline",
+    "rejected": "<error>Complex change request; Might delay project; medium; scope; client</error>",
+    "chosen": "<error>Complex change request - timeline impact; Major scope addition requested mid-project requiring significant rework; high; scope; client request</error>\n<feel>concerned; 6; Client change could derail project timeline; Need to communicate impact clearly without damaging relationship; client,scope</feel>\n<todozi>Analyze timeline impact of change; today 3pm; critical; Project X; in_progress; me; impact_analysis,planning; change_request_documented; Create revised timeline with clear delay implications; 30%</todozi>"
+  },
+  {
+    "prompt": "Research new data visualization libraries for the analytics dashboard",
+    "rejected": "You should research data visualization libraries.",
+    "chosen": "<memory>Data viz library research Q2; Need modern, maintainable solution with strong community support; Replace legacy charting components; high; short term</memory>"
+  },
+  {
+    "prompt": "Volunteer to be the MC at a community fundraiser event",
+    "rejected": "<idea>MC at fundraiser; share; medium</idea>",
+    "chosen": "<todozi>Research similar past events for MC best practices; today; low; Community Engagement; planned; me; research,public_speaking; none; Review video clips or recaps for tone and structure; 0%</todozi>"
+  },
+  {
+    "prompt": "Conduct a code quality audit using linting and static analysis metrics",
+    "rejected": "You should conduct a code quality audit using linting and static analysis metrics.",
+    "chosen": "<todozi>Setup linting tools (ESLint/TSLint); today 5pm; high; Code Quality Initiative; in_progress; me; development,linting,tooling; none; Configure rules based on team standards; 60%</todozi>"
+  },
+  {
+    "prompt": "Ensure the press release aligns with business objectives and gets executive sign‑off",
+    "rejected": "Make sure the press release fits business goals and get exec approval.",
+    "chosen": "<idea>Create a one‑pager summarizing partnership benefits for sales enablement; share; low</idea>"
+  },
+  {
+    "prompt": "Hold a “Show‑and‑Tell” where each participant presents a rough model",
+    "rejected": "You should hold a Show-and-Tell session with participants presenting rough models.",
+    "chosen": "<todozi>Schedule Show-and-Tell session; in 3 days; high; Team Engagement; planned; me; meeting,presentation,team; none; Confirm agenda and participant list; 0%</todozi>"
+  },
+  {
+    "prompt": "Create a Dockerfile for the microservice and push to the registry",
+    "rejected": "Make deployment process better",
+    "chosen": "<idea>Automate Docker image versioning and registry pushes in CI/CD pipeline; share; high</idea>"
+  },
+  {
+    "prompt": "Set up a Zoom call for a virtual game night with distant relatives",
+    "rejected": "Schedule a Zoom call for family game night.",
+    "chosen": "<todozi>Send calendar invites with Zoom link; Saturday; high; Family Connections; pending; me; communication,scheduling; game_selection_finalized; Include game instructions and preparation needed; 0%</todozi>"
+  },
+  {
+    "prompt": "Realized we waste food when kids don't eat what I pack - should track what actually gets eaten",
+    "rejected": "<idea>Track lunch consumption; dont share; low</idea>",
+    "chosen": "<memory>Lunch waste observation; Kids not eating certain items consistently; Need to adjust packing based on actual consumption; medium; short term</memory>\n<idea>Track lunch consumption for 1 week to identify patterns and reduce food waste; dont share; medium</idea>\n<todozi>Monitor lunch consumption; this week; low; Family Nutrition; in_progress; me; tracking,food_waste,family; none; Note what gets eaten/returned daily; 20%</todozi>"
+  },
+  {
+    "prompt": "During the strategy meeting, we identified an opportunity to expand into the European market",
+    "rejected": "<idea>Expand into European market; share; high</idea>",
+    "chosen": "<memory>Strategy meeting - European expansion opportunity; Market analysis shows strong demand and low competition; Requires regulatory research and local partnerships; high; long term</memory>"
+  },
+  {
+    "prompt": "Update the company's disaster-recovery plan with recent infrastructure changes",
+    "rejected": "Update disaster recovery plan with infrastructure changes",
+    "chosen": "<todozi>Update disaster-recovery plan with infrastructure changes; next Friday EOD; critical; Business Continuity; in_progress; me; documentation,compliance,security; infrastructure_documentation_review; Include cloud migration changes and new network topology; 25%</todozi>"
+  },
+  {
+    "prompt": "Soccer practice is across town during rush hour traffic",
+    "rejected": "Check traffic for soccer practice drive",
+    "chosen": "<todozi>Check traffic conditions; Tuesday 4:30 PM; medium; Weekly Activities; planned; me; logistics,transportation; none; Use navigation app to find optimal route; 0%</todozi>\n<idea>Alternative route via parkway; Avoids school traffic; share; medium</idea>\n<memory>Tuesday traffic patterns; School dismissal creates congestion until 5:15 PM; Leaving early avoids worst traffic; high; long term</memory>"
+  },
+  {
+    "prompt": "The playroom is constantly messy and it's frustrating trying to find specific toys",
+    "rejected": "Playroom is messy and frustrating",
+    "chosen": "<feel>frustrated; 7; Constant toy clutter creates daily stress and wasted time searching; Playroom organization system needed; home,family,stress</feel>"
+  },
+  {
+    "prompt": "Track the costs of the glucose monitor and test strips and reflect them in the personal finance budget",
+    "rejected": "Track the costs of the glucose monitor and test strips.",
+    "chosen": "<todozi>Log expense for glucose monitor; after purchase; medium; Personal Finance; pending; me; budgeting,health; none; Record price, vendor, warranty details, and attach receipt; 0%</todozi>\n<todozi>Log expense for test strips; after purchase; medium; Personal Finance; pending; me; budgeting,health; none; Record cost per strip, total pack price, and attach receipt; 0%</todozi>\n<todozi>Update monthly health budget; end of month; low; Personal Finance; planned; me; budgeting,health; log_expense_monitor,log_expense_strips; Re‑evaluate next month’s allocation if total exceeds $200; 0%</todozi>"
+  },
+  {
+    "prompt": "Run a silent brainstorming round where each participant writes ideas on sticky notes",
+    "rejected": "Run a silent brainstorming session with sticky notes.",
+    "chosen": "<todozi>Facilitate silent brainstorming round; tomorrow 10am; high; Innovation Workshop; scheduled; me; brainstorming,team,innovation; prepare_materials; Ensure structured 10-minute silent writing phase; 0%</todozi>"
+  },
+  {
+    "prompt": "Refresh the visitor badge list and print new badges",
+    "rejected": "You should refresh the visitor badge list and print new badges.",
+    "chosen": "<todozi>Refresh visitor badge list; today 3pm; medium; Office Admin; in_progress; me; admin,security,compliance; none; Cross-reference with current employee list and remove expired badges; 30%</todozi>"
+  },
+  {
+    "prompt": "Host a live Q&A session with a product manager for community members",
+    "rejected": "Get product manager ready for session",
+    "chosen": "<todozi>Brief Product Manager on community expectations; Thursday 2pm; high; Community Engagement; pending; me; briefing,stakeholder; agenda_prepared; Share common questions and community sentiment; 0%</todozi>"
+  },
+  {
+    "prompt": "Schedule a hearing test after noticing muffled sounds",
+    "rejected": "Call doctor for hearing test appointment",
+    "chosen": "<memory>Noticed muffled sounds; First sign of potential hearing changes; Early detection important for better outcomes; high; long term</memory>"
+  },
+  {
+    "prompt": "Deep‑clean the carpet using a rental machine",
+    "rejected": "You should deep-clean the carpet with a rental machine.",
+    "chosen": "<todozi>Purchase cleaning solution and supplies; Saturday 10am; low; Home Maintenance; planned; me; home,cleaning,supplies; rent_machine_complete; Buy recommended detergent and stain remover; 0%</todozi>"
+  },
+  {
+    "prompt": "Register for the Salesforce Administrator certification course",
+    "rejected": "You should register for the Salesforce Administrator certification course.",
+    "chosen": "<todozi>Register for Salesforce Administrator certification course; next Monday; high; Professional Development; planned; me; education,certification,skills; research_course_options; Compare platforms (Trailhead, Udemy, official Salesforce); 0%</todozi>\n<todozi>Research Salesforce certification course options; today EOD; medium; Professional Development; in_progress; me; research,education,certification; none; Evaluate cost, duration, and user reviews; 60%</todozi>\n<todozi>Schedule study time for Salesforce certification; ongoing; medium; Professional Development; planned; me; learning,planning,schedule; registration_complete; Block 5 hours/week for coursework; 0%</todozi>"
+  },
+  {
+    "prompt": "Renew the subscription for a professional journal",
+    "rejected": "<idea>Digital journal access; share; medium</idea>",
+    "chosen": "<todozi>Compare print vs digital journal subscription options; before renewal; medium; Professional Development; planned; me; research,cost_analysis; current_subscription_details; Analyze pricing, accessibility, and usage benefits; 0%</todozi>"
+  },
+  {
+    "prompt": "Replace air filter in HVAC system",
+    "rejected": "Replace HVAC air filter soon",
+    "chosen": "<todozi>Replace HVAC air filter; this Saturday 2pm; medium; Home Maintenance; planned; me; maintenance,hvac,home; purchase_filter; Check filter size MERV 8, turn off system first; 0%</todozi>\n<todozi>Purchase replacement air filter; today 6pm; medium; Home Maintenance; pending; me; shopping,errands; none; Size 16x25x1, MERV 8 rating; 0%</todozi>\n<memory>Last filter replacement; November 15th - overdue by 2 months; Seasonal allergies worsening due to poor air quality; high; long term</memory>"
+  },
+  {
+    "prompt": "Write a thank-you note to a friend who helped with a project",
+    "rejected": "<todozi>Thank friend; soon; medium; Personal; pending; me; gratitude; none; For project help; 0%</todozi>",
+    "chosen": "<todozi>Schedule follow-up gesture of appreciation; next week; low; Relationship Maintenance; planned; me; personal,planning; thank_you_sent; Consider lunch invitation or small reciprocal favor; 0%</todozi>"
+  },
+  {
+    "prompt": "Create a system for tracking printer supply levels to avoid last-minute orders",
+    "rejected": "Make a system for printer supplies",
+    "chosen": "<memory>Recurring last-minute cartridge orders; Disrupts workflow when printers go down; Need proactive inventory management; medium; long term</memory>"
+  },
+  {
+    "prompt": "Gather documentation for home-office deduction (square footage, utilities)",
+    "rejected": "Organize the home office deduction paperwork.",
+    "chosen": "<todozi>Create home-office deduction documentation package; next Monday; high; 2023 Tax Preparation; planned; me; organization,documentation,taxes; gather_measurements,gather_utility_bills; Compile all evidence with calculations and supporting documents; 0%</todozi>"
+  }
+]

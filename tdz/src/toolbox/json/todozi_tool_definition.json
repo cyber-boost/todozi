@@ -1,0 +1,39 @@
+{
+  "type": "function",
+  "function": {
+    "name": "simple_todozi",
+    "description": "Ultra-simple Todozi interface with automatic AI/human coordination and smart search",
+    "parameters": {
+      "type": "object",
+      "properties": {
+        "action": {
+          "type": "string",
+          "description": "What to do: 'task', 'urgent', 'find', 'remember', 'idea', 'stats', 'ai_search', 'complete', 'start'",
+          "enum": [
+            "task",
+            "urgent",
+            "find",
+            "remember",
+            "idea",
+            "stats",
+            "ai_search",
+            "complete",
+            "start"
+          ]
+        },
+        "content": {
+          "type": "string",
+          "description": "The content/description for the action"
+        },
+        "extra": {
+          "type": "string",
+          "description": "Extra context, meaning, or details"
+        }
+      },
+      "required": [
+        "action",
+        "content"
+      ]
+    }
+  }
+}

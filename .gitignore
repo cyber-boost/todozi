@@ -1,0 +1,11 @@
+.vscode 
+.zed
+.claude
+api/
+summaries/
+web/
+z_archive/
+api/*
+summaries/*
+web/*
+z_archive/*

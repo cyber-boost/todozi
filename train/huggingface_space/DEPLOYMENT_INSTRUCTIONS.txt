@@ -1,0 +1,30 @@
+
+# Hugging Face Spaces Deployment Instructions
+
+## Files Ready for Upload:
+- app.py (main application)
+- requirements.txt (dependencies)
+- todozi_bco_fixed.json (training data)
+- README.md (documentation)
+
+## Deployment Steps:
+1. Go to https://huggingface.co/spaces
+2. Click "Create new Space"
+3. Choose "Gradio" as SDK
+4. Upload all files from this directory
+5. Set main script to "app.py"
+6. Configure hardware (CPU for free, GPU for paid)
+7. Deploy!
+
+## Alternative: Use minimal_app.py
+If you want the simplest version:
+1. Rename minimal_app.py to app.py
+2. Upload to your Space
+3. Set as main script
+
+## Testing Locally:
+python3 app.py
+# or
+python3 minimal_app.py
+
+Your interface will be available at http://localhost:7860

@@ -1,0 +1,73 @@
+{
+  "name": "todozi",
+  "version": "0.1.0",
+  "description": "AI/Human task management system - Node.js bindings",
+  "main": "todozi.js",
+  "types": "index.d.ts",
+  "keywords": [
+    "todo",
+    "task-management",
+    "ai",
+    "productivity",
+    "rust",
+    "napi"
+  ],
+  "author": "CyberBoost",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/cyber-boost/todozi.git"
+  },
+  "napi": {
+    "name": "todozi",
+    "triples": {
+      "defaults": true,
+      "additional": [
+        "aarch64-apple-darwin",
+        "x86_64-apple-darwin",
+        "x86_64-unknown-linux-gnu",
+        "aarch64-unknown-linux-gnu",
+        "x86_64-pc-windows-msvc"
+      ]
+    }
+  },
+  "engines": {
+    "node": ">= 10"
+  },
+  "devDependencies": {
+    "@napi-rs/cli": "^2.16.0"
+  },
+  "dependencies": {
+    "express": "^4.18.0",
+    "cors": "^2.8.5",
+    "uuid": "^9.0.0",
+    "commander": "^11.0.0",
+    "ollama": "^0.3.0"
+  },
+  "optionalDependencies": {
+    "@todozi/darwin-x64": "^0.1.0",
+    "@todozi/darwin-arm64": "^0.1.0",
+    "@todozi/linux-x64-gnu": "^0.1.0",
+    "@todozi/linux-arm64-gnu": "^0.1.0",
+    "@todozi/win32-x64-msvc": "^0.1.0"
+  },
+  "scripts": {
+    "artifacts": "napi artifacts",
+    "build": "napi build --platform --release --features nodejs",
+    "build:debug": "napi build --platform --features nodejs",
+    "prepublishOnly": "napi prepublish -t npm",
+    "test": "node -e \"console.log('Todozi JavaScript tests coming soon...')\"",
+    "universal": "napi universal",
+    "version": "napi version",
+    "start": "node server.js",
+    "server": "node server.js",
+    "chat": "node chat.js",
+    "cli": "node tdz.js",
+    "dev": "node server.js",
+    "install-cli": "npm link"
+  },
+  "bin": {
+    "tdz": "./tdz.js",
+    "todozi-server": "./server.js"
+  }
+}

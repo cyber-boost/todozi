@@ -1,0 +1,56 @@
+<svg width="700" height="400" viewBox="0 0 700 400" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="archGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" style="stop-color:#3b82f6;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#1e40af;stop-opacity:1" />
+    </linearGradient>
+  </defs>
+  
+  <!-- Core Library -->
+  <rect x="250" y="150" width="200" height="60" fill="url(#archGrad)" rx="5"/>
+  <text x="350" y="185" text-anchor="middle" fill="white" font-weight="bold" font-size="14">Core Library (Rust)</text>
+  
+  <!-- Storage Layer -->
+  <rect x="250" y="250" width="200" height="40" fill="#10b981" rx="5"/>
+  <text x="350" y="275" text-anchor="middle" fill="white" font-weight="bold">JSON Storage</text>
+  
+  <!-- CLI -->
+  <rect x="50" y="50" width="120" height="40" fill="#f59e0b" rx="5"/>
+  <text x="110" y="75" text-anchor="middle" fill="white" font-weight="bold">CLI</text>
+  
+  <!-- TUI -->
+  <rect x="200" y="50" width="120" height="40" fill="#ef4444" rx="5"/>
+  <text x="260" y="75" text-anchor="middle" fill="white" font-weight="bold">TUI</text>
+  
+  <!-- REST API -->
+  <rect x="380" y="50" width="120" height="40" fill="#8b5cf6" rx="5"/>
+  <text x="440" y="75" text-anchor="middle" fill="white" font-weight="bold">REST API</text>
+  
+  <!-- Web UI (Future) -->
+  <rect x="530" y="50" width="120" height="40" fill="#ec4899" opacity="0.5" rx="5" stroke-dasharray="5,5" stroke="#ec4899"/>
+  <text x="590" y="75" text-anchor="middle" fill="#ec4899" font-weight="bold">Web UI</text>
+  <text x="590" y="88" text-anchor="middle" fill="#ec4899" font-size="10">(Future)</text>
+  
+  <!-- Embedding Service -->
+  <rect x="50" y="330" width="150" height="40" fill="#667eea" rx="5"/>
+  <text x="125" y="355" text-anchor="middle" fill="white" font-weight="bold">Embedding Service</text>
+  
+  <!-- AI Agents -->
+  <rect x="275" y="330" width="150" height="40" fill="#764ba2" rx="5"/>
+  <text x="350" y="355" text-anchor="middle" fill="white" font-weight="bold">AI Agents</text>
+  
+  <!-- External Services -->
+  <rect x="500" y="330" width="150" height="40" fill="#f093fb" rx="5"/>
+  <text x="575" y="355" text-anchor="middle" fill="white" font-weight="bold">External APIs</text>
+  
+  <!-- Connection lines -->
+  <line x1="110" y1="90" x2="300" y2="150" stroke="#333" stroke-width="2" opacity="0.3"/>
+  <line x1="260" y1="90" x2="330" y2="150" stroke="#333" stroke-width="2" opacity="0.3"/>
+  <line x1="440" y1="90" x2="380" y2="150" stroke="#333" stroke-width="2" opacity="0.3"/>
+  <line x1="590" y1="90" x2="420" y2="150" stroke="#ec4899" stroke-width="2" opacity="0.2" stroke-dasharray="5,5"/>
+  
+  <line x1="350" y1="210" x2="350" y2="250" stroke="#333" stroke-width="2" opacity="0.3"/>
+  <line x1="350" y1="290" x2="125" y2="330" stroke="#333" stroke-width="2" opacity="0.3"/>
+  <line x1="350" y1="290" x2="350" y2="330" stroke="#333" stroke-width="2" opacity="0.3"/>
+  <line x1="350" y1="290" x2="575" y2="330" stroke="#333" stroke-width="2" opacity="0.3"/>
+</svg>

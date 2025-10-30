@@ -1,0 +1,4 @@
+<svg width="400" height="60" viewBox="0 0 400 60" xmlns="http://www.w3.org/2000/svg">
+  <rect x="100" y="10" width="200" height="40" fill="url(#logoGrad)" rx="20"/>
+  <text x="200" y="35" text-anchor="middle" fill="white" font-weight="bold" font-size="16">Get Started →</text>
+</svg>

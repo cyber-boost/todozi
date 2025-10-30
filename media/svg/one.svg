@@ -1,0 +1,39 @@
+<!-- Custom SVG Logo -->
+<svg width="120" height="120" viewBox="0 0 120 120" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="logoGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#667eea;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#764ba2;stop-opacity:1" />
+    </linearGradient>
+    <filter id="glow">
+      <feGaussianBlur stdDeviation="3" result="coloredBlur"/>
+      <feMerge>
+        <feMergeNode in="coloredBlur"/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+  </defs>
+  
+  <!-- Outer ring -->
+  <circle cx="60" cy="60" r="55" fill="none" stroke="url(#logoGrad)" stroke-width="2" opacity="0.5"/>
+  
+  <!-- Core AI brain symbol -->
+  <g transform="translate(60,60)">
+    <!-- Neural network nodes -->
+    <circle cx="-20" cy="-20" r="5" fill="url(#logoGrad)" filter="url(#glow)"/>
+    <circle cx="20" cy="-20" r="5" fill="url(#logoGrad)" filter="url(#glow)"/>
+    <circle cx="-20" cy="20" r="5" fill="url(#logoGrad)" filter="url(#glow)"/>
+    <circle cx="20" cy="20" r="5" fill="url(#logoGrad)" filter="url(#glow)"/>
+    <circle cx="0" cy="0" r="8" fill="url(#logoGrad)" filter="url(#glow)"/>
+    
+    <!-- Connection lines -->
+    <line x1="-20" y1="-20" x2="0" y2="0" stroke="url(#logoGrad)" stroke-width="1.5" opacity="0.6"/>
+    <line x1="20" y1="-20" x2="0" y2="0" stroke="url(#logoGrad)" stroke-width="1.5" opacity="0.6"/>
+    <line x1="-20" y1="20" x2="0" y2="0" stroke="url(#logoGrad)" stroke-width="1.5" opacity="0.6"/>
+    <line x1="20" y1="20" x2="0" y2="0" stroke="url(#logoGrad)" stroke-width="1.5" opacity="0.6"/>
+    
+    <!-- Task checkmarks -->
+    <path d="M -35,-5 L -30,0 L -25,-10" stroke="#10b981" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+    <path d="M 25,-5 L 30,0 L 35,-10" stroke="#10b981" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+  </g>
+</svg>

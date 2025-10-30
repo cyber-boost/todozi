@@ -1,0 +1,95 @@
+{
+  "type": "function",
+  "function": {
+    "name": "create_memory",
+    "description": "Create a new memory for learning and context. Use this to capture important lessons, experiences, or knowledge that should be remembered for future reference.",
+    "parameters": {
+      "type": "object",
+      "properties": {
+        "moment": {
+          "type": "string",
+          "description": "What happened or what was learned (the key moment or insight).",
+          "examples": [
+            "Discovered that async operations need proper error handling",
+            "Learned that database indexes improve query performance significantly",
+            "Found that mobile users prefer swipe gestures over buttons"
+          ]
+        },
+        "meaning": {
+          "type": "string",
+          "description": "What it means or why it's important. The deeper significance or implications.",
+          "examples": [
+            "This pattern prevents data corruption in concurrent systems",
+            "This optimization could save hours of processing time",
+            "This insight will improve user experience across our platform"
+          ]
+        },
+        "reason": {
+          "type": "string",
+          "description": "Why this should be remembered. The reason for capturing this memory.",
+          "examples": [
+            "Will apply this to all future API designs",
+            "Important for performance reviews and architecture decisions",
+            "Should influence our mobile design guidelines"
+          ]
+        },
+        "importance": {
+          "type": "string",
+          "enum": ["low", "medium", "high", "critical"],
+          "description": "How important is this memory for future reference.",
+          "examples": ["low", "medium", "high", "critical"]
+        },
+        "term": {
+          "type": "string",
+          "enum": ["short", "long"],
+          "description": "How long to remember this. Short-term for immediate projects, long-term for lasting knowledge.",
+          "examples": ["short", "long"]
+        },
+        "tags": {
+          "type": "string",
+          "description": "Comma-separated tags for categorization and search.",
+          "examples": [
+            "architecture,performance,scalability",
+            "ux,design,mobile,user-research",
+            "development,debugging,problem-solving"
+          ]
+        }
+      },
+      "required": ["moment", "meaning", "reason"],
+      "examples": [
+        {
+          "description": "Create an important long-term memory about a technical lesson",
+          "example": {
+            "moment": "Found that database connection pooling prevents timeout errors",
+            "meaning": "Proper resource management is crucial for system stability",
+            "reason": "Will apply this to all future database implementations",
+            "importance": "high",
+            "term": "long",
+            "tags": "database,performance,architecture"
+          }
+        },
+        {
+          "description": "Create a critical short-term memory for immediate project needs",
+          "example": {
+            "moment": "Client specifically requested dark mode support",
+            "meaning": "User preferences should drive feature prioritization",
+            "reason": "Important for current project requirements",
+            "importance": "critical",
+            "term": "short",
+            "tags": "ux,requirements,client-feedback"
+          }
+        },
+        {
+          "description": "Simple memory creation",
+          "example": {
+            "moment": "React hooks must be called at the top level",
+            "meaning": "Following the rules of hooks prevents bugs",
+            "reason": "Common mistake that causes runtime errors",
+            "importance": "medium",
+            "tags": "react,frontend,best-practices"
+          }
+        }
+      ]
+    }
+  }
+}

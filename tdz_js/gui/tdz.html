@@ -1,0 +1,2159 @@
+<!doctype html>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <title>Todozi - Enhanced Task Management</title>
+        <link rel="stylesheet" href="./tdz_style.css" />
+        <script src="./tdz_client.js"></script>
+    </head>
+    <body>
+        <div class="app-container">
+            <!-- Sidebar -->
+            <aside class="sidebar">
+                <div class="sidebar-header">
+                    <div class="logo">
+                        <div class="logo-icon">T</div>
+                        <div class="logo-text">Todozi</div>
+                    </div>
+                </div>
+
+                <nav class="sidebar-nav">
+                    <div class="nav-section">
+                        <div class="nav-section-title">Main</div>
+                        <div
+                            class="nav-item active"
+                            onclick="switchView('tasks')"
+                        >
+                            <svg
+                                class="nav-item-icon"
+                                viewBox="0 0 24 24"
+                                fill="none"
+                                stroke="currentColor"
+                                stroke-width="2"
+                            >
+                                <path
+                                    d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"
+                                />
+                            </svg>
+                            <span>Tasks</span>
+                            <span class="nav-item-count" id="tasksCount"
+                                >0</span
+                            >
+                        </div>
+                        <div class="nav-item" onclick="switchView('memories')">
+                            <svg
+                                class="nav-item-icon"
+                                viewBox="0 0 24 24"
+                                fill="none"
+                                stroke="currentColor"
+                                stroke-width="2"
+                            >
+                                <path
+                                    d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"
+                                />
+                                <circle cx="12" cy="7" r="4" />
+                            </svg>
+                            <span>Memories</span>
+                            <span class="nav-item-count" id="memoriesCount"
+                                >0</span
+                            >
+                        </div>
+                        <div class="nav-item" onclick="switchView('ideas')">
+                            <svg
+                                class="nav-item-icon"
+                                viewBox="0 0 24 24"
+                                fill="none"
+                                stroke="currentColor"
+                                stroke-width="2"
+                            >
+                                <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14" />
+                                <polyline points="22,4 12,14.01 9,11.01" />
+                            </svg>
+                            <span>Ideas</span>
+                            <span class="nav-item-count" id="ideasCount"
+                                >0</span
+                            >
+                        </div>
+                        <div class="nav-item" onclick="switchView('analytics')">
+                            <svg
+                                class="nav-item-icon"
+                                viewBox="0 0 24 24"
+                                fill="none"
+                                stroke="currentColor"
+                                stroke-width="2"
+                            >
+                                <path d="M22 12h-4l-3 9L9 3l-3 9H2" />
+                            </svg>
+                            <span>Analytics</span>
+                        </div>
+                        <div class="nav-item" onclick="switchView('agents')">
+                            <svg
+                                class="nav-item-icon"
+                                viewBox="0 0 24 24"
+                                fill="none"
+                                stroke="currentColor"
+                                stroke-width="2"
+                            >
+                                <path
+                                    d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"
+                                />
+                                <circle cx="12" cy="7" r="4" />
+                            </svg>
+                            <span>Agents</span>
+                            <span class="nav-item-count" id="agentsCount"
+                                >0</span
+                            >
+                        </div>
+                    </div>
+
+                    <div class="nav-section">
+                        <div class="nav-section-title">Data</div>
+                        <div class="nav-item" onclick="switchView('training')">
+                            <svg
+                                class="nav-item-icon"
+                                viewBox="0 0 24 24"
+                                fill="none"
+                                stroke="currentColor"
+                                stroke-width="2"
+                            >
+                                <path
+                                    d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"
+                                />
+                            </svg>
+                            <span>Training Data</span>
+                            <span class="nav-item-count" id="trainingCount"
+                                >0</span
+                            >
+                        </div>
+                        <div class="nav-item" onclick="switchView('queue')">
+                            <svg
+                                class="nav-item-icon"
+                                viewBox="0 0 24 24"
+                                fill="none"
+                                stroke="currentColor"
+                                stroke-width="2"
+                            >
+                                <circle cx="12" cy="12" r="10" />
+                                <polyline points="12,6 12,12 16,14" />
+                            </svg>
+                            <span>Queue</span>
+                            <span class="nav-item-count" id="queueCount"
+                                >0</span
+                            >
+                        </div>
+                        <div class="nav-item" onclick="switchView('feelings')">
+                            <svg
+                                class="nav-item-icon"
+                                viewBox="0 0 24 24"
+                                fill="none"
+                                stroke="currentColor"
+                                stroke-width="2"
+                            >
+                                <path
+                                    d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"
+                                />
+                            </svg>
+                            <span>Feelings</span>
+                            <span class="nav-item-count" id="feelingsCount"
+                                >0</span
+                            >
+                        </div>
+                    </div>
+
+                    <div class="nav-section">
+                        <div class="nav-section-title">Tools</div>
+                        <div class="nav-item" onclick="switchView('chat')">
+                            <svg
+                                class="nav-item-icon"
+                                viewBox="0 0 24 24"
+                                fill="none"
+                                stroke="currentColor"
+                                stroke-width="2"
+                            >
+                                <path
+                                    d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"
+                                />
+                            </svg>
+                            <span>Chat</span>
+                        </div>
+                        <div class="nav-item" onclick="switchView('api-keys')">
+                            <svg
+                                class="nav-item-icon"
+                                viewBox="0 0 24 24"
+                                fill="none"
+                                stroke="currentColor"
+                                stroke-width="2"
+                            >
+                                <rect
+                                    x="4"
+                                    y="2"
+                                    width="16"
+                                    height="20"
+                                    rx="2"
+                                    ry="2"
+                                />
+                                <line x1="8" y1="6" x2="16" y2="6" />
+                                <line x1="8" y1="12" x2="16" y2="12" />
+                                <line x1="8" y1="18" x2="12" y2="18" />
+                            </svg>
+                            <span>API Keys</span>
+                        </div>
+                    </div>
+                </nav>
+
+                <button class="new-button" onclick="showCreateModal()">
+                    <svg
+                        width="20"
+                        height="20"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        stroke-width="2"
+                    >
+                        <line x1="12" y1="5" x2="12" y2="19" />
+                        <line x1="5" y1="12" x2="19" y2="12" />
+                    </svg>
+                    New Task
+                </button>
+            </aside>
+
+            <!-- Main Content -->
+            <main class="main-content">
+                <header class="header">
+                    <div class="header-left">
+                        <h1 id="currentViewTitle">Dashboard</h1>
+                    </div>
+
+                    <div class="header-center">
+                        <div class="project-selector">
+                            <select
+                                id="projectSelect"
+                                class="project-dropdown"
+                                onchange="changeProject()"
+                            >
+                                <option value="all">All Projects</option>
+                                <option value="add-new">
+                                    + Add New Project
+                                </option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="header-actions">
+                        <div class="search-box">
+                            <svg
+                                class="search-icon"
+                                width="18"
+                                height="18"
+                                viewBox="0 0 24 24"
+                                fill="none"
+                                stroke="currentColor"
+                                stroke-width="2"
+                            >
+                                <circle cx="11" cy="11" r="8" />
+                                <line x1="21" y1="21" x2="16.65" y2="16.65" />
+                            </svg>
+                            <input
+                                type="text"
+                                class="search-input"
+                                placeholder="Search..."
+                                id="searchInput"
+                            />
+                        </div>
+
+                        <div
+                            class="user-avatar"
+                            onclick="showProfileMenu(event)"
+                        >
+                            JD
+                        </div>
+                    </div>
+                </header>
+
+                <div class="content-area">
+                    <!-- Stats Section -->
+                    <div class="stats-grid" id="statsSection">
+                        <div class="stat-card">
+                            <div class="stat-label">Total Tasks</div>
+                            <div class="stat-value" id="totalTasks">0</div>
+                            <div class="stat-change positive">
+                                <svg
+                                    width="16"
+                                    height="16"
+                                    viewBox="0 0 24 24"
+                                    fill="none"
+                                    stroke="currentColor"
+                                    stroke-width="2"
+                                >
+                                    <polyline points="22,12 18,8 14,12" />
+                                    <line x1="10" y1="8" x2="2" y2="8" />
+                                    <line x1="22" y1="16" x2="14" y2="16" />
+                                    <line x1="10" y1="16" x2="2" y2="16" />
+                                </svg>
+                                <span>+12% from last week</span>
+                            </div>
+                        </div>
+
+                        <div class="stat-card">
+                            <div class="stat-label">Completed</div>
+                            <div class="stat-value" id="completedTasks">0</div>
+                            <div class="stat-change positive">
+                                <svg
+                                    width="16"
+                                    height="16"
+                                    viewBox="0 0 24 24"
+                                    fill="none"
+                                    stroke="currentColor"
+                                    stroke-width="2"
+                                >
+                                    <polyline points="22,12 18,8 14,12" />
+                                    <line x1="10" y1="8" x2="2" y2="8" />
+                                    <line x1="22" y1="16" x2="14" y2="16" />
+                                    <line x1="10" y1="16" x2="2" y2="16" />
+                                </svg>
+                                <span>+8% from last week</span>
+                            </div>
+                        </div>
+
+                        <div class="stat-card">
+                            <div class="stat-label">In Progress</div>
+                            <div class="stat-value" id="inProgressTasks">0</div>
+                            <div class="stat-change negative">
+                                <svg
+                                    width="16"
+                                    height="16"
+                                    viewBox="0 0 24 24"
+                                    fill="none"
+                                    stroke="currentColor"
+                                    stroke-width="2"
+                                >
+                                    <polyline points="2,12 6,16 10,12" />
+                                    <line x1="14" y1="8" x2="22" y2="8" />
+                                    <line x1="2" y1="16" x2="10" y2="16" />
+                                    <line x1="14" y1="16" x2="22" y2="16" />
+                                </svg>
+                                <span>-3% from last week</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Tasks View -->
+                    <div id="tasksView">
+                        <div class="section-header">
+                            <h2 class="section-title">Tasks</h2>
+                            <button
+                                class="btn btn-primary"
+                                onclick="showCreateModal()"
+                            >
+                                New Task
+                            </button>
+                        </div>
+
+                        <div class="task-list" id="taskList">
+                            <div class="empty-state">
+                                <div class="empty-state-icon">📋</div>
+                                <div class="empty-state-title">
+                                    No tasks yet
+                                </div>
+                                <div class="empty-state-desc">
+                                    Create your first task to get started with
+                                    Todozi
+                                </div>
+                                <button
+                                    class="btn btn-primary"
+                                    style="margin-top: 20px"
+                                    onclick="showCreateModal()"
+                                >
+                                    Create Your First Task
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Memories View -->
+                    <div id="memoriesView" style="display: none">
+                        <div class="section-header">
+                            <h2 class="section-title">Memories</h2>
+                            <button
+                                class="btn btn-primary"
+                                onclick="showCreateMemoryModal()"
+                            >
+                                New Memory
+                            </button>
+                        </div>
+
+                        <div class="task-list" id="memoryList">
+                            <div class="empty-state">
+                                <div class="empty-state-icon">🧠</div>
+                                <div class="empty-state-title">
+                                    No memories yet
+                                </div>
+                                <div class="empty-state-desc">
+                                    Create your first memory to capture
+                                    important moments
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Ideas View -->
+                    <div id="ideasView" style="display: none">
+                        <div class="section-header">
+                            <h2 class="section-title">Ideas</h2>
+                            <button
+                                class="btn btn-primary"
+                                onclick="showCreateIdeaModal()"
+                            >
+                                New Idea
+                            </button>
+                        </div>
+
+                        <div class="task-list" id="ideaList">
+                            <div class="empty-state">
+                                <div class="empty-state-icon">💡</div>
+                                <div class="empty-state-title">
+                                    No ideas yet
+                                </div>
+                                <div class="empty-state-desc">
+                                    Capture your thoughts and ideas here
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Analytics View -->
+                    <div id="analyticsView" style="display: none">
+                        <div class="section-header">
+                            <h2 class="section-title">Analytics Dashboard</h2>
+                        </div>
+
+                        <div class="empty-state">
+                            <div class="empty-state-icon">📊</div>
+                            <div class="empty-state-title">
+                                Analytics Coming Soon
+                            </div>
+                            <div class="empty-state-desc">
+                                Detailed analytics and insights will be
+                                available in a future update
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Agents View -->
+                    <div id="agentsView" style="display: none">
+                        <div class="section-header">
+                            <h2 class="section-title">AI Agents</h2>
+                            <button
+                                class="btn btn-primary"
+                                onclick="showCreateAgentModal()"
+                            >
+                                New Agent
+                            </button>
+                        </div>
+
+                        <div class="task-list" id="agentList">
+                            <div class="empty-state">
+                                <div class="empty-state-icon">🤖</div>
+                                <div class="empty-state-title">
+                                    No agents yet
+                                </div>
+                                <div class="empty-state-desc">
+                                    Create your first AI agent to assist with
+                                    tasks
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Training Data View -->
+                    <div id="trainingView" style="display: none">
+                        <div class="section-header">
+                            <h2 class="section-title">Training Data</h2>
+                            <button
+                                class="btn btn-primary"
+                                onclick="showCreateTrainingModal()"
+                            >
+                                New Training Data
+                            </button>
+                        </div>
+
+                        <div class="task-list" id="trainingList">
+                            <div class="empty-state">
+                                <div class="empty-state-icon">🎓</div>
+                                <div class="empty-state-title">
+                                    No training data yet
+                                </div>
+                                <div class="empty-state-desc">
+                                    Create training data to improve AI models
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Queue View -->
+                    <div id="queueView" style="display: none">
+                        <div class="section-header">
+                            <h2 class="section-title">Queue</h2>
+                            <button
+                                class="btn btn-primary"
+                                onclick="showCreateQueueModal()"
+                            >
+                                New Queue Item
+                            </button>
+                        </div>
+
+                        <div class="tabs">
+                            <div
+                                class="tab active"
+                                onclick="switchQueueTab('all')"
+                            >
+                                All
+                            </div>
+                            <div
+                                class="tab"
+                                onclick="switchQueueTab('backlog')"
+                            >
+                                Backlog
+                            </div>
+                            <div class="tab" onclick="switchQueueTab('active')">
+                                Active
+                            </div>
+                            <div
+                                class="tab"
+                                onclick="switchQueueTab('complete')"
+                            >
+                                Complete
+                            </div>
+                        </div>
+
+                        <div class="task-list" id="queueList">
+                            <div class="empty-state">
+                                <div class="empty-state-icon">📋</div>
+                                <div class="empty-state-title">
+                                    No queue items yet
+                                </div>
+                                <div class="empty-state-desc">
+                                    Create your first queue item to organize
+                                    tasks
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Feelings View -->
+                    <div id="feelingsView" style="display: none">
+                        <div class="section-header">
+                            <h2 class="section-title">Feelings</h2>
+                            <button
+                                class="btn btn-primary"
+                                onclick="showCreateFeelingModal()"
+                            >
+                                New Feeling
+                            </button>
+                        </div>
+
+                        <div class="task-list" id="feelingList">
+                            <div class="empty-state">
+                                <div class="empty-state-icon">❤️</div>
+                                <div class="empty-state-title">
+                                    No feelings yet
+                                </div>
+                                <div class="empty-state-desc">
+                                    Capture your emotions and feelings
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Chat View -->
+                    <div id="chatView" style="display: none">
+                        <div class="section-header">
+                            <h2 class="section-title">Chat</h2>
+                            <select
+                                class="form-select"
+                                id="agentSelect"
+                                style="width: 200px"
+                            >
+                                <option value="">Select an agent</option>
+                            </select>
+                        </div>
+
+                        <div class="chat-container">
+                            <div class="chat-messages" id="chatMessages">
+                                <div class="chat-message chat-agent">
+                                    <div>
+                                        Hello! I'm your Todozi assistant. How
+                                        can I help you today?
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="chat-input-container">
+                                <input
+                                    type="text"
+                                    class="chat-input"
+                                    id="chatInput"
+                                    placeholder="Type your message..."
+                                />
+                                <button
+                                    class="chat-send-btn"
+                                    onclick="sendMessage()"
+                                >
+                                    Send
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- API Keys View -->
+                    <div id="apiKeysView" style="display: none">
+                        <div class="section-header">
+                            <h2 class="section-title">API Keys</h2>
+                            <button
+                                class="btn btn-primary"
+                                onclick="createApiKey()"
+                            >
+                                Generate New Key
+                            </button>
+                        </div>
+
+                        <div class="task-list" id="apiKeyList">
+                            <div class="empty-state">
+                                <div class="empty-state-icon">🔑</div>
+                                <div class="empty-state-title">
+                                    No API keys yet
+                                </div>
+                                <div class="empty-state-desc">
+                                    Generate API keys to access Todozi
+                                    programmatically
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </main>
+        </div>
+
+        <!-- Create Task Modal -->
+        <div class="modal-overlay" id="createTaskModal">
+            <div class="modal">
+                <div class="modal-header">
+                    <h3 class="modal-title">Create New Task</h3>
+                    <button
+                        class="modal-close"
+                        onclick="closeModal('createTaskModal')"
+                    >
+                        &times;
+                    </button>
+                </div>
+                <div class="modal-body">
+                    <div class="form-group">
+                        <label class="form-label">Task Name</label>
+                        <input
+                            type="text"
+                            class="form-input"
+                            id="createTaskName"
+                            placeholder="What needs to be done?"
+                        />
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label">Time Estimate</label>
+                        <input
+                            type="text"
+                            class="form-input"
+                            id="createTaskTime"
+                            placeholder="e.g., 2 hours, 1 day"
+                        />
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label">Project</label>
+                        <input
+                            type="text"
+                            class="form-input"
+                            id="createTaskProject"
+                            placeholder="Project name"
+                        />
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label">Description</label>
+                        <textarea
+                            class="form-textarea"
+                            id="createTaskDescription"
+                            placeholder="Add details..."
+                        ></textarea>
+                    </div>
+
+                    <div class="form-grid">
+                        <div class="form-group">
+                            <label class="form-label">Priority</label>
+                            <select class="form-select" id="createTaskPriority">
+                                <option value="low">Low</option>
+                                <option value="medium" selected>Medium</option>
+                                <option value="high">High</option>
+                                <option value="urgent">Urgent</option>
+                            </select>
+                        </div>
+
+                        <div class="form-group">
+                            <label class="form-label">Status</label>
+                            <select class="form-select" id="createTaskStatus">
+                                <option value="todo">To Do</option>
+                                <option value="in-progress">In Progress</option>
+                                <option value="completed">Completed</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label">Tags</label>
+                        <input
+                            type="text"
+                            class="form-input"
+                            id="createTaskTags"
+                            placeholder="work, personal, urgent"
+                        />
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label">Dependencies</label>
+                        <input
+                            type="text"
+                            class="form-input"
+                            id="createTaskDependencies"
+                            placeholder="task1, task2"
+                        />
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label">Assignee</label>
+                        <select class="form-select" id="createTaskAssignee">
+                            <option value="ai">AI</option>
+                            <option value="human">Human</option>
+                            <option value="collaborative">Collaborative</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label">Progress (%)</label>
+                        <input
+                            type="number"
+                            class="form-input"
+                            id="createTaskProgress"
+                            min="0"
+                            max="100"
+                            placeholder="0"
+                        />
+                    </div>
+
+                    <div class="form-footer">
+                        <button
+                            class="btn btn-secondary"
+                            onclick="closeModal('createTaskModal')"
+                        >
+                            Cancel
+                        </button>
+                        <button class="btn btn-primary" onclick="createTask()">
+                            Create Task
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Create Memory Modal -->
+        <div class="modal-overlay" id="createMemoryModal">
+            <div class="modal">
+                <div class="modal-header">
+                    <h3 class="modal-title">Create New Memory</h3>
+                    <button
+                        class="modal-close"
+                        onclick="closeModal('createMemoryModal')"
+                    >
+                        &times;
+                    </button>
+                </div>
+                <div class="modal-body">
+                    <div class="form-group">
+                        <label class="form-label">Moment</label>
+                        <input
+                            type="text"
+                            class="form-input"
+                            id="createMemoryMoment"
+                            placeholder="What happened?"
+                        />
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label">Meaning</label>
+                        <textarea
+                            class="form-textarea"
+                            id="createMemoryMeaning"
+                            placeholder="What does it mean?"
+                        ></textarea>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label">Reason</label>
+                        <textarea
+                            class="form-textarea"
+                            id="createMemoryReason"
+                            placeholder="Why is it important?"
+                        ></textarea>
+                    </div>
+
+                    <div class="form-grid">
+                        <div class="form-group">
+                            <label class="form-label">Importance</label>
+                            <select
+                                class="form-select"
+                                id="createMemoryImportance"
+                            >
+                                <option value="low">Low</option>
+                                <option value="medium" selected>Medium</option>
+                                <option value="high">High</option>
+                                <option value="critical">Critical</option>
+                            </select>
+                        </div>
+
+                        <div class="form-group">
+                            <label class="form-label">Term</label>
+                            <select class="form-select" id="createMemoryTerm">
+                                <option value="short">Short</option>
+                                <option value="long" selected>Long</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label">Memory Type</label>
+                        <select class="form-select" id="createMemoryType">
+                            <option value="standard">Standard</option>
+                            <option value="secret">Secret</option>
+                            <option value="human">Human</option>
+                            <option value="short">Short</option>
+                            <option value="long">Long</option>
+                            <option value="emotional">Emotional</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label">Tags</label>
+                        <input
+                            type="text"
+                            class="form-input"
+                            id="createMemoryTags"
+                            placeholder="tag1, tag2"
+                        />
+                    </div>
+
+                    <div class="form-footer">
+                        <button
+                            class="btn btn-secondary"
+                            onclick="closeModal('createMemoryModal')"
+                        >
+                            Cancel
+                        </button>
+                        <button
+                            class="btn btn-primary"
+                            onclick="createMemory()"
+                        >
+                            Create Memory
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Create Idea Modal -->
+        <div class="modal-overlay" id="createIdeaModal">
+            <div class="modal">
+                <div class="modal-header">
+                    <h3 class="modal-title">Create New Idea</h3>
+                    <button
+                        class="modal-close"
+                        onclick="closeModal('createIdeaModal')"
+                    >
+                        &times;
+                    </button>
+                </div>
+                <div class="modal-body">
+                    <div class="form-group">
+                        <label class="form-label">Idea</label>
+                        <textarea
+                            class="form-textarea"
+                            id="createIdeaContent"
+                            placeholder="Your brilliant idea..."
+                        ></textarea>
+                    </div>
+
+                    <div class="form-grid">
+                        <div class="form-group">
+                            <label class="form-label">Share Level</label>
+                            <select class="form-select" id="createIdeaShare">
+                                <option value="private">Private</option>
+                                <option value="team">Team</option>
+                                <option value="public">Public</option>
+                            </select>
+                        </div>
+
+                        <div class="form-group">
+                            <label class="form-label">Importance</label>
+                            <select
+                                class="form-select"
+                                id="createIdeaImportance"
+                            >
+                                <option value="low">Low</option>
+                                <option value="medium" selected>Medium</option>
+                                <option value="high">High</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label">Tags</label>
+                        <input
+                            type="text"
+                            class="form-input"
+                            id="createIdeaTags"
+                            placeholder="tag1, tag2"
+                        />
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label">Context</label>
+                        <textarea
+                            class="form-textarea"
+                            id="createIdeaContext"
+                            placeholder="Additional context..."
+                        ></textarea>
+                    </div>
+
+                    <div class="form-footer">
+                        <button
+                            class="btn btn-secondary"
+                            onclick="closeModal('createIdeaModal')"
+                        >
+                            Cancel
+                        </button>
+                        <button class="btn btn-primary" onclick="createIdea()">
+                            Create Idea
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Create Agent Modal -->
+        <div class="modal-overlay" id="createAgentModal">
+            <div class="modal">
+                <div class="modal-header">
+                    <h3 class="modal-title">Create New Agent</h3>
+                    <button
+                        class="modal-close"
+                        onclick="closeModal('createAgentModal')"
+                    >
+                        &times;
+                    </button>
+                </div>
+                <div class="modal-body">
+                    <div class="form-group">
+                        <label class="form-label">Agent ID</label>
+                        <input
+                            type="text"
+                            class="form-input"
+                            id="createAgentId"
+                            placeholder="Unique identifier"
+                        />
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label">Name</label>
+                        <input
+                            type="text"
+                            class="form-input"
+                            id="createAgentName"
+                            placeholder="Agent name"
+                        />
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label">Description</label>
+                        <textarea
+                            class="form-textarea"
+                            id="createAgentDescription"
+                            placeholder="Agent description"
+                        ></textarea>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label">Category</label>
+                        <select class="form-select" id="createAgentCategory">
+                            <option value="general">General</option>
+                            <option value="technical">Technical</option>
+                            <option value="creative">Creative</option>
+                            <option value="management">Management</option>
+                        </select>
+                    </div>
+
+                    <div class="form-grid">
+                        <div class="form-group">
+                            <label class="form-label">Model Provider</label>
+                            <select
+                                class="form-select"
+                                id="createAgentModelProvider"
+                            >
+                                <option value="todozi">Todozi</option>
+                                <option value="maestro">Maestro</option>
+                            </select>
+                        </div>
+
+                        <div class="form-group">
+                            <label class="form-label">Model Name</label>
+                            <input
+                                type="text"
+                                class="form-input"
+                                id="createAgentModelName"
+                                value="baton"
+                            />
+                        </div>
+                    </div>
+
+                    <div class="form-grid">
+                        <div class="form-group">
+                            <label class="form-label">Temperature</label>
+                            <input
+                                type="number"
+                                class="form-input"
+                                id="createAgentTemperature"
+                                min="0"
+                                max="2"
+                                step="0.1"
+                                value="0.2"
+                            />
+                        </div>
+
+                        <div class="form-group">
+                            <label class="form-label">Max Tokens</label>
+                            <input
+                                type="number"
+                                class="form-input"
+                                id="createAgentMaxTokens"
+                                value="4096"
+                            />
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label">Capabilities</label>
+                        <input
+                            type="text"
+                            class="form-input"
+                            id="createAgentCapabilities"
+                            placeholder="capability1, capability2"
+                        />
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label">Specializations</label>
+                        <input
+                            type="text"
+                            class="form-input"
+                            id="createAgentSpecializations"
+                            placeholder="specialization1, specialization2"
+                        />
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label">Tags</label>
+                        <input
+                            type="text"
+                            class="form-input"
+                            id="createAgentTags"
+                            placeholder="tag1, tag2"
+                        />
+                    </div>
+
+                    <div class="form-footer">
+                        <button
+                            class="btn btn-secondary"
+                            onclick="closeModal('createAgentModal')"
+                        >
+                            Cancel
+                        </button>
+                        <button class="btn btn-primary" onclick="createAgent()">
+                            Create Agent
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Create Training Data Modal -->
+        <div class="modal-overlay" id="createTrainingModal">
+            <div class="modal">
+                <div class="modal-header">
+                    <h3 class="modal-title">Create Training Data</h3>
+                    <button
+                        class="modal-close"
+                        onclick="closeModal('createTrainingModal')"
+                    >
+                        &times;
+                    </button>
+                </div>
+                <div class="modal-body">
+                    <div class="form-group">
+                        <label class="form-label">Data Type</label>
+                        <select class="form-select" id="createTrainingDataType">
+                            <option value="instruction">Instruction</option>
+                            <option value="completion">Completion</option>
+                            <option value="conversation">Conversation</option>
+                            <option value="code">Code</option>
+                            <option value="analysis">Analysis</option>
+                            <option value="planning">Planning</option>
+                            <option value="review">Review</option>
+                            <option value="documentation">Documentation</option>
+                            <option value="example">Example</option>
+                            <option value="test">Test</option>
+                            <option value="validation">Validation</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label">Prompt</label>
+                        <textarea
+                            class="form-textarea"
+                            id="createTrainingPrompt"
+                            placeholder="Input prompt or question"
+                        ></textarea>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label">Completion</label>
+                        <textarea
+                            class="form-textarea"
+                            id="createTrainingCompletion"
+                            placeholder="Expected completion or answer"
+                        ></textarea>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label">Context</label>
+                        <textarea
+                            class="form-textarea"
+                            id="createTrainingContext"
+                            placeholder="Additional context"
+                        ></textarea>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label">Tags</label>
+                        <input
+                            type="text"
+                            class="form-input"
+                            id="createTrainingTags"
+                            placeholder="tag1, tag2"
+                        />
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label">Quality Score</label>
+                        <input
+                            type="number"
+                            class="form-input"
+                            id="createTrainingQuality"
+                            min="0"
+                            max="1"
+                            step="0.1"
+                            placeholder="0.0 - 1.0"
+                        />
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label">Source</label>
+                        <select class="form-select" id="createTrainingSource">
+                            <option value="manual">Manual</option>
+                            <option value="chat">Chat</option>
+                            <option value="api">API</option>
+                        </select>
+                    </div>
+
+                    <div class="form-footer">
+                        <button
+                            class="btn btn-secondary"
+                            onclick="closeModal('createTrainingModal')"
+                        >
+                            Cancel
+                        </button>
+                        <button
+                            class="btn btn-primary"
+                            onclick="createTrainingData()"
+                        >
+                            Create Training Data
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Create Queue Item Modal -->
+        <div class="modal-overlay" id="createQueueModal">
+            <div class="modal">
+                <div class="modal-header">
+                    <h3 class="modal-title">Create Queue Item</h3>
+                    <button
+                        class="modal-close"
+                        onclick="closeModal('createQueueModal')"
+                    >
+                        &times;
+                    </button>
+                </div>
+                <div class="modal-body">
+                    <div class="form-group">
+                        <label class="form-label">Task Name</label>
+                        <input
+                            type="text"
+                            class="form-input"
+                            id="createQueueTaskName"
+                            placeholder="Task name"
+                        />
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label">Task Description</label>
+                        <textarea
+                            class="form-textarea"
+                            id="createQueueTaskDescription"
+                            placeholder="Task description"
+                        ></textarea>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label">Priority</label>
+                        <select class="form-select" id="createQueuePriority">
+                            <option value="low">Low</option>
+                            <option value="medium" selected>Medium</option>
+                            <option value="high">High</option>
+                            <option value="urgent">Urgent</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label">Project ID</label>
+                        <input
+                            type="text"
+                            class="form-input"
+                            id="createQueueProjectId"
+                            placeholder="Optional project ID"
+                        />
+                    </div>
+
+                    <div class="form-footer">
+                        <button
+                            class="btn btn-secondary"
+                            onclick="closeModal('createQueueModal')"
+                        >
+                            Cancel
+                        </button>
+                        <button
+                            class="btn btn-primary"
+                            onclick="createQueueItem()"
+                        >
+                            Create Queue Item
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Create Feeling Modal -->
+        <div class="modal-overlay" id="createFeelingModal">
+            <div class="modal">
+                <div class="modal-header">
+                    <h3 class="modal-title">Create New Feeling</h3>
+                    <button
+                        class="modal-close"
+                        onclick="closeModal('createFeelingModal')"
+                    >
+                        &times;
+                    </button>
+                </div>
+                <div class="modal-body">
+                    <div class="form-group">
+                        <label class="form-label">Emotion</label>
+                        <select class="form-select" id="createFeelingEmotion">
+                            <option value="happy">Happy</option>
+                            <option value="sad">Sad</option>
+                            <option value="angry">Angry</option>
+                            <option value="fearful">Fearful</option>
+                            <option value="surprised">Surprised</option>
+                            <option value="disgusted">Disgusted</option>
+                            <option value="excited">Excited</option>
+                            <option value="anxious">Anxious</option>
+                            <option value="confident">Confident</option>
+                            <option value="frustrated">Frustrated</option>
+                            <option value="motivated">Motivated</option>
+                            <option value="overwhelmed">Overwhelmed</option>
+                            <option value="curious">Curious</option>
+                            <option value="satisfied">Satisfied</option>
+                            <option value="disappointed">Disappointed</option>
+                            <option value="grateful">Grateful</option>
+                            <option value="proud">Proud</option>
+                            <option value="ashamed">Ashamed</option>
+                            <option value="hopeful">Hopeful</option>
+                            <option value="resigned">Resigned</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label">Intensity</label>
+                        <input
+                            type="range"
+                            class="form-input"
+                            id="createFeelingIntensity"
+                            min="1"
+                            max="10"
+                            value="5"
+                        />
+                        <div id="intensityValue">5</div>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label">Description</label>
+                        <textarea
+                            class="form-textarea"
+                            id="createFeelingDescription"
+                            placeholder="Describe your feeling..."
+                        ></textarea>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label">Context</label>
+                        <input
+                            type="text"
+                            class="form-input"
+                            id="createFeelingContext"
+                            placeholder="Context of the feeling"
+                        />
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label">Tags</label>
+                        <input
+                            type="text"
+                            class="form-input"
+                            id="createFeelingTags"
+                            placeholder="tag1, tag2"
+                        />
+                    </div>
+
+                    <div class="form-footer">
+                        <button
+                            class="btn btn-secondary"
+                            onclick="closeModal('createFeelingModal')"
+                        >
+                            Cancel
+                        </button>
+                        <button
+                            class="btn btn-primary"
+                            onclick="createFeeling()"
+                        >
+                            Create Feeling
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Task Detail Modal -->
+        <div class="modal-overlay" id="taskDetailModal">
+            <div class="modal">
+                <div class="modal-header">
+                    <h3 class="modal-title">Task Details</h3>
+                    <button
+                        class="modal-close"
+                        onclick="closeModal('taskDetailModal')"
+                    >
+                        &times;
+                    </button>
+                </div>
+                <div class="modal-body">
+                    <div class="form-group">
+                        <label class="form-label">Task Name</label>
+                        <input
+                            type="text"
+                            class="form-input"
+                            id="taskDetailName"
+                        />
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label">Time Estimate</label>
+                        <input
+                            type="text"
+                            class="form-input"
+                            id="taskDetailTime"
+                        />
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label">Project</label>
+                        <input
+                            type="text"
+                            class="form-input"
+                            id="taskDetailProject"
+                        />
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label">Description</label>
+                        <textarea
+                            class="form-textarea"
+                            id="taskDetailDescription"
+                        ></textarea>
+                    </div>
+
+                    <div class="form-grid">
+                        <div class="form-group">
+                            <label class="form-label">Priority</label>
+                            <select class="form-select" id="taskDetailPriority">
+                                <option value="low">Low</option>
+                                <option value="medium">Medium</option>
+                                <option value="high">High</option>
+                                <option value="urgent">Urgent</option>
+                            </select>
+                        </div>
+
+                        <div class="form-group">
+                            <label class="form-label">Status</label>
+                            <select class="form-select" id="taskDetailStatus">
+                                <option value="todo">To Do</option>
+                                <option value="in-progress">In Progress</option>
+                                <option value="completed">Completed</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label">Tags</label>
+                        <input
+                            type="text"
+                            class="form-input"
+                            id="taskDetailTags"
+                        />
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label">Dependencies</label>
+                        <input
+                            type="text"
+                            class="form-input"
+                            id="taskDetailDependencies"
+                        />
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label">Assignee</label>
+                        <select class="form-select" id="taskDetailAssignee">
+                            <option value="ai">AI</option>
+                            <option value="human">Human</option>
+                            <option value="collaborative">Collaborative</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label">Progress (%)</label>
+                        <input
+                            type="number"
+                            class="form-input"
+                            id="taskDetailProgress"
+                            min="0"
+                            max="100"
+                        />
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label">Context Notes</label>
+                        <textarea
+                            class="form-textarea"
+                            id="taskDetailContext"
+                        ></textarea>
+                    </div>
+
+                    <div class="form-footer">
+                        <button class="btn btn-danger" onclick="deleteTask()">
+                            Delete
+                        </button>
+                        <button class="btn btn-primary" onclick="updateTask()">
+                            Save Changes
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Memory Detail Modal -->
+        <div class="modal-overlay" id="memoryDetailModal">
+            <div class="modal">
+                <div class="modal-header">
+                    <h3 class="modal-title">Memory Details</h3>
+                    <button
+                        class="modal-close"
+                        onclick="closeModal('memoryDetailModal')"
+                    >
+                        &times;
+                    </button>
+                </div>
+                <div class="modal-body">
+                    <div class="form-group">
+                        <label class="form-label">Moment</label>
+                        <input
+                            type="text"
+                            class="form-input"
+                            id="memoryDetailMoment"
+                        />
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label">Meaning</label>
+                        <textarea
+                            class="form-textarea"
+                            id="memoryDetailMeaning"
+                        ></textarea>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label">Reason</label>
+                        <textarea
+                            class="form-textarea"
+                            id="memoryDetailReason"
+                        ></textarea>
+                    </div>
+
+                    <div class="form-grid">
+                        <div class="form-group">
+                            <label class="form-label">Importance</label>
+                            <select
+                                class="form-select"
+                                id="memoryDetailImportance"
+                            >
+                                <option value="low">Low</option>
+                                <option value="medium">Medium</option>
+                                <option value="high">High</option>
+                                <option value="critical">Critical</option>
+                            </select>
+                        </div>
+
+                        <div class="form-group">
+                            <label class="form-label">Term</label>
+                            <select class="form-select" id="memoryDetailTerm">
+                                <option value="short">Short</option>
+                                <option value="long">Long</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label">Memory Type</label>
+                        <select class="form-select" id="memoryDetailType">
+                            <option value="standard">Standard</option>
+                            <option value="secret">Secret</option>
+                            <option value="human">Human</option>
+                            <option value="short">Short</option>
+                            <option value="long">Long</option>
+                            <option value="emotional">Emotional</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label">Tags</label>
+                        <input
+                            type="text"
+                            class="form-input"
+                            id="memoryDetailTags"
+                        />
+                    </div>
+
+                    <div class="form-footer">
+                        <button class="btn btn-danger" onclick="deleteMemory()">
+                            Delete
+                        </button>
+                        <button
+                            class="btn btn-primary"
+                            onclick="updateMemory()"
+                        >
+                            Save Changes
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Idea Detail Modal -->
+        <div class="modal-overlay" id="ideaDetailModal">
+            <div class="modal">
+                <div class="modal-header">
+                    <h3 class="modal-title">Idea Details</h3>
+                    <button
+                        class="modal-close"
+                        onclick="closeModal('ideaDetailModal')"
+                    >
+                        &times;
+                    </button>
+                </div>
+                <div class="modal-body">
+                    <div class="form-group">
+                        <label class="form-label">Idea</label>
+                        <textarea
+                            class="form-textarea"
+                            id="ideaDetailContent"
+                        ></textarea>
+                    </div>
+
+                    <div class="form-grid">
+                        <div class="form-group">
+                            <label class="form-label">Share Level</label>
+                            <select class="form-select" id="ideaDetailShare">
+                                <option value="private">Private</option>
+                                <option value="team">Team</option>
+                                <option value="public">Public</option>
+                            </select>
+                        </div>
+
+                        <div class="form-group">
+                            <label class="form-label">Importance</label>
+                            <select
+                                class="form-select"
+                                id="ideaDetailImportance"
+                            >
+                                <option value="low">Low</option>
+                                <option value="medium">Medium</option>
+                                <option value="high">High</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label">Tags</label>
+                        <input
+                            type="text"
+                            class="form-input"
+                            id="ideaDetailTags"
+                        />
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label">Context</label>
+                        <textarea
+                            class="form-textarea"
+                            id="ideaDetailContext"
+                        ></textarea>
+                    </div>
+
+                    <div class="form-footer">
+                        <button class="btn btn-danger" onclick="deleteIdea()">
+                            Delete
+                        </button>
+                        <button class="btn btn-primary" onclick="updateIdea()">
+                            Save Changes
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Agent Detail Modal -->
+        <div class="modal-overlay" id="agentDetailModal">
+            <div class="modal">
+                <div class="modal-header">
+                    <h3 class="modal-title">Agent Details</h3>
+                    <button
+                        class="modal-close"
+                        onclick="closeModal('agentDetailModal')"
+                    >
+                        &times;
+                    </button>
+                </div>
+                <div class="modal-body">
+                    <div class="form-group">
+                        <label class="form-label">Name</label>
+                        <input
+                            type="text"
+                            class="form-input"
+                            id="agentDetailName"
+                        />
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label">Description</label>
+                        <textarea
+                            class="form-textarea"
+                            id="agentDetailDescription"
+                        ></textarea>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label">Category</label>
+                        <select class="form-select" id="agentDetailCategory">
+                            <option value="general">General</option>
+                            <option value="technical">Technical</option>
+                            <option value="creative">Creative</option>
+                            <option value="management">Management</option>
+                        </select>
+                    </div>
+
+                    <div class="form-grid">
+                        <div class="form-group">
+                            <label class="form-label">Model Provider</label>
+                            <select
+                                class="form-select"
+                                id="agentDetailModelProvider"
+                            >
+                                <option value="todozi">Todozi</option>
+                                <option value="maestro">Maestro</option>
+                            </select>
+                        </div>
+
+                        <div class="form-group">
+                            <label class="form-label">Model Name</label>
+                            <input
+                                type="text"
+                                class="form-input"
+                                id="agentDetailModelName"
+                            />
+                        </div>
+                    </div>
+
+                    <div class="form-grid">
+                        <div class="form-group">
+                            <label class="form-label">Temperature</label>
+                            <input
+                                type="number"
+                                class="form-input"
+                                id="agentDetailTemperature"
+                                min="0"
+                                max="2"
+                                step="0.1"
+                            />
+                        </div>
+
+                        <div class="form-group">
+                            <label class="form-label">Max Tokens</label>
+                            <input
+                                type="number"
+                                class="form-input"
+                                id="agentDetailMaxTokens"
+                            />
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label">Capabilities</label>
+                        <input
+                            type="text"
+                            class="form-input"
+                            id="agentDetailCapabilities"
+                        />
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label">Specializations</label>
+                        <input
+                            type="text"
+                            class="form-input"
+                            id="agentDetailSpecializations"
+                        />
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label">Tags</label>
+                        <input
+                            type="text"
+                            class="form-input"
+                            id="agentDetailTags"
+                        />
+                    </div>
+
+                    <div class="form-footer">
+                        <button class="btn btn-danger" onclick="deleteAgent()">
+                            Delete
+                        </button>
+                        <button class="btn btn-primary" onclick="updateAgent()">
+                            Save Changes
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Training Data Detail Modal -->
+        <div class="modal-overlay" id="trainingDetailModal">
+            <div class="modal">
+                <div class="modal-header">
+                    <h3 class="modal-title">Training Data Details</h3>
+                    <button
+                        class="modal-close"
+                        onclick="closeModal('trainingDetailModal')"
+                    >
+                        &times;
+                    </button>
+                </div>
+                <div class="modal-body">
+                    <div class="form-group">
+                        <label class="form-label">Data Type</label>
+                        <select class="form-select" id="trainingDetailDataType">
+                            <option value="instruction">Instruction</option>
+                            <option value="completion">Completion</option>
+                            <option value="conversation">Conversation</option>
+                            <option value="code">Code</option>
+                            <option value="analysis">Analysis</option>
+                            <option value="planning">Planning</option>
+                            <option value="review">Review</option>
+                            <option value="documentation">Documentation</option>
+                            <option value="example">Example</option>
+                            <option value="test">Test</option>
+                            <option value="validation">Validation</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label">Prompt</label>
+                        <textarea
+                            class="form-textarea"
+                            id="trainingDetailPrompt"
+                        ></textarea>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label">Completion</label>
+                        <textarea
+                            class="form-textarea"
+                            id="trainingDetailCompletion"
+                        ></textarea>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label">Context</label>
+                        <textarea
+                            class="form-textarea"
+                            id="trainingDetailContext"
+                        ></textarea>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label">Tags</label>
+                        <input
+                            type="text"
+                            class="form-input"
+                            id="trainingDetailTags"
+                        />
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label">Quality Score</label>
+                        <input
+                            type="number"
+                            class="form-input"
+                            id="trainingDetailQuality"
+                            min="0"
+                            max="1"
+                            step="0.1"
+                        />
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label">Source</label>
+                        <select class="form-select" id="trainingDetailSource">
+                            <option value="manual">Manual</option>
+                            <option value="chat">Chat</option>
+                            <option value="api">API</option>
+                        </select>
+                    </div>
+
+                    <div class="form-footer">
+                        <button
+                            class="btn btn-danger"
+                            onclick="deleteTrainingData()"
+                        >
+                            Delete
+                        </button>
+                        <button
+                            class="btn btn-primary"
+                            onclick="updateTrainingData()"
+                        >
+                            Save Changes
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Queue Item Detail Modal -->
+        <div class="modal-overlay" id="queueDetailModal">
+            <div class="modal">
+                <div class="modal-header">
+                    <h3 class="modal-title">Queue Item Details</h3>
+                    <button
+                        class="modal-close"
+                        onclick="closeModal('queueDetailModal')"
+                    >
+                        &times;
+                    </button>
+                </div>
+                <div class="modal-body">
+                    <div class="form-group">
+                        <label class="form-label">Task Name</label>
+                        <input
+                            type="text"
+                            class="form-input"
+                            id="queueDetailTaskName"
+                        />
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label">Task Description</label>
+                        <textarea
+                            class="form-textarea"
+                            id="queueDetailTaskDescription"
+                        ></textarea>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label">Priority</label>
+                        <select class="form-select" id="queueDetailPriority">
+                            <option value="low">Low</option>
+                            <option value="medium">Medium</option>
+                            <option value="high">High</option>
+                            <option value="urgent">Urgent</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label">Project ID</label>
+                        <input
+                            type="text"
+                            class="form-input"
+                            id="queueDetailProjectId"
+                        />
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label">Status</label>
+                        <select class="form-select" id="queueDetailStatus">
+                            <option value="backlog">Backlog</option>
+                            <option value="active">Active</option>
+                            <option value="complete">Complete</option>
+                        </select>
+                    </div>
+
+                    <div class="form-footer">
+                        <button
+                            class="btn btn-danger"
+                            onclick="deleteQueueItem()"
+                        >
+                            Delete
+                        </button>
+                        <button
+                            class="btn btn-primary"
+                            onclick="updateQueueItem()"
+                        >
+                            Save Changes
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Feeling Detail Modal -->
+        <div class="modal-overlay" id="feelingDetailModal">
+            <div class="modal">
+                <div class="modal-header">
+                    <h3 class="modal-title">Feeling Details</h3>
+                    <button
+                        class="modal-close"
+                        onclick="closeModal('feelingDetailModal')"
+                    >
+                        &times;
+                    </button>
+                </div>
+                <div class="modal-body">
+                    <div class="form-group">
+                        <label class="form-label">Emotion</label>
+                        <select class="form-select" id="feelingDetailEmotion">
+                            <option value="happy">Happy</option>
+                            <option value="sad">Sad</option>
+                            <option value="angry">Angry</option>
+                            <option value="fearful">Fearful</option>
+                            <option value="surprised">Surprised</option>
+                            <option value="disgusted">Disgusted</option>
+                            <option value="excited">Excited</option>
+                            <option value="anxious">Anxious</option>
+                            <option value="confident">Confident</option>
+                            <option value="frustrated">Frustrated</option>
+                            <option value="motivated">Motivated</option>
+                            <option value="overwhelmed">Overwhelmed</option>
+                            <option value="curious">Curious</option>
+                            <option value="satisfied">Satisfied</option>
+                            <option value="disappointed">Disappointed</option>
+                            <option value="grateful">Grateful</option>
+                            <option value="proud">Proud</option>
+                            <option value="ashamed">Ashamed</option>
+                            <option value="hopeful">Hopeful</option>
+                            <option value="resigned">Resigned</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label">Intensity</label>
+                        <input
+                            type="range"
+                            class="form-input"
+                            id="feelingDetailIntensity"
+                            min="1"
+                            max="10"
+                        />
+                        <div id="detailIntensityValue">5</div>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label">Description</label>
+                        <textarea
+                            class="form-textarea"
+                            id="feelingDetailDescription"
+                        ></textarea>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label">Context</label>
+                        <input
+                            type="text"
+                            class="form-input"
+                            id="feelingDetailContext"
+                        />
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label">Tags</label>
+                        <input
+                            type="text"
+                            class="form-input"
+                            id="feelingDetailTags"
+                        />
+                    </div>
+
+                    <div class="form-footer">
+                        <button
+                            class="btn btn-danger"
+                            onclick="deleteFeeling()"
+                        >
+                            Delete
+                        </button>
+                        <button
+                            class="btn btn-primary"
+                            onclick="updateFeeling()"
+                        >
+                            Save Changes
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Create Project Modal -->
+        <div class="modal-overlay" id="createProjectModal">
+            <div class="modal">
+                <div class="modal-header">
+                    <h3 class="modal-title">Create New Project</h3>
+                    <button
+                        class="modal-close"
+                        onclick="closeModal('createProjectModal')"
+                    >
+                        &times;
+                    </button>
+                </div>
+                <div class="modal-body">
+                    <div class="form-group">
+                        <label class="form-label">Project Name</label>
+                        <input
+                            type="text"
+                            class="form-input"
+                            id="createProjectName"
+                            placeholder="Enter project name"
+                        />
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label">Description</label>
+                        <textarea
+                            class="form-textarea"
+                            id="createProjectDescription"
+                            placeholder="Project description (optional)"
+                        ></textarea>
+                    </div>
+
+                    <div class="form-grid">
+                        <div class="form-group">
+                            <label class="form-label">Priority</label>
+                            <select
+                                class="form-select"
+                                id="createProjectPriority"
+                            >
+                                <option value="low">Low</option>
+                                <option value="medium" selected>Medium</option>
+                                <option value="high">High</option>
+                                <option value="urgent">Urgent</option>
+                            </select>
+                        </div>
+
+                        <div class="form-group">
+                            <label class="form-label">Status</label>
+                            <select
+                                class="form-select"
+                                id="createProjectStatus"
+                            >
+                                <option value="active" selected>Active</option>
+                                <option value="on-hold">On Hold</option>
+                                <option value="completed">Completed</option>
+                                <option value="cancelled">Cancelled</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label">Color Theme</label>
+                        <select class="form-select" id="createProjectColor">
+                            <option value="blue">Blue</option>
+                            <option value="green">Green</option>
+                            <option value="purple">Purple</option>
+                            <option value="red">Red</option>
+                            <option value="orange">Orange</option>
+                            <option value="teal">Teal</option>
+                        </select>
+                    </div>
+
+                    <div class="form-footer">
+                        <button
+                            class="btn btn-secondary"
+                            onclick="closeModal('createProjectModal')"
+                        >
+                            Cancel
+                        </button>
+                        <button
+                            class="btn btn-primary"
+                            onclick="createProject()"
+                        >
+                            Create Project
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Toast Notification -->
+        <div class="toast" id="toast"></div>
+
+        <script></script>
+    </body>
+</html>

@@ -1,0 +1,56 @@
+{
+  "source_file": "/opt/homebrew/var/www/forge/todozi_hf/cleaned2/combined_deduplicated.json",
+  "total_entries": 55145,
+  "timestamp": "20251027_215112",
+  "seed": 42,
+  "batches": [
+    {
+      "name": "micro",
+      "size": 551,
+      "proportion": 0.01,
+      "filename": "batch_micro_20251027_215112.json"
+    },
+    {
+      "name": "tiny",
+      "size": 2757,
+      "proportion": 0.05,
+      "filename": "batch_tiny_20251027_215112.json"
+    },
+    {
+      "name": "small",
+      "size": 5514,
+      "proportion": 0.1,
+      "filename": "batch_small_20251027_215112.json"
+    },
+    {
+      "name": "quarter",
+      "size": 13786,
+      "proportion": 0.25,
+      "filename": "batch_quarter_20251027_215112.json"
+    },
+    {
+      "name": "half",
+      "size": 27572,
+      "proportion": 0.5,
+      "filename": "batch_half_20251027_215112.json"
+    },
+    {
+      "name": "three_quarters",
+      "size": 41358,
+      "proportion": 0.75,
+      "filename": "batch_three_quarters_20251027_215112.json"
+    },
+    {
+      "name": "large",
+      "size": 49630,
+      "proportion": 0.9,
+      "filename": "batch_large_20251027_215112.json"
+    },
+    {
+      "name": "full",
+      "size": 55145,
+      "proportion": 1.0,
+      "filename": "batch_full_20251027_215112.json"
+    }
+  ]
+}

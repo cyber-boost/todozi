@@ -1,0 +1,98 @@
+{
+  "type": "function",
+  "function": {
+    "name": "todozi_tool",
+    "description": "Todozi coordination hub for AI-human collaboration.",
+    "parameters": {
+      "type": "object",
+      "properties": {
+        "action": {
+          "type": "string",
+          "enum": [
+            "task", "urgent", "high", "low", "ai", "human", "collab",
+            "find", "ai_search", "fast_search", "smart_search",
+            "remember", "important_memory", "idea", "breakthrough_idea",
+            "complete", "start", "stats", "queue", "chat",
+            "extract", "expand", "plan", "strategy"
+          ],
+          "description": "🚀 SIMPLE ACTIONS: task=create task, urgent=urgent task, find=search everything, remember=save memory, idea=save idea, complete=finish task, start=begin task, stats=get overview, ai=AI task, human=human task, collab=collaborative task, extract=AI extract tasks from text, expand=AI expand task into subtasks, plan=AI plan complex projects, strategy=AI strategic planning & enhancement"
+        },
+        "content": {
+          "type": "string",
+          "description": "📝 WHAT TO DO: The main content - task description, search query, memory text, idea text, or task ID to complete/start"
+        },
+        "extra": {
+          "type": "string",
+          "description": "💡 OPTIONAL EXTRAS: Additional context, meaning for memories, project name, or any extra details"
+        },
+        "project": {
+          "type": "string",
+          "description": "📁 PROJECT: Project name for organization (optional)"
+        }
+      },
+      "required": ["action", "content"],
+      "examples": [
+        {
+          "description": "Create a simple task",
+          "example": {"action": "task", "content": "Fix the login bug"}
+        },
+        {
+          "description": "Create urgent task",
+          "example": {"action": "urgent", "content": "Server is down - fix immediately"}
+        },
+        {
+          "description": "Search everything with AI + keywords",
+          "example": {"action": "find", "content": "authentication issues"}
+        },
+        {
+          "description": "AI-only semantic search",
+          "example": {"action": "ai_search", "content": "similar to user management"}
+        },
+        {
+          "description": "Remember something important",
+          "example": {"action": "remember", "content": "User prefers dark mode", "extra": "UI design preference"}
+        },
+        {
+          "description": "Save breakthrough idea",
+          "example": {"action": "breakthrough_idea", "content": "Voice-controlled task manager"}
+        },
+        {
+          "description": "Complete a task",
+          "example": {"action": "complete", "content": "task_12345"}
+        },
+        {
+          "description": "Get quick overview",
+          "example": {"action": "stats", "content": ""}
+        },
+        {
+          "description": "Create AI task (queued for AI systems)",
+          "example": {"action": "ai", "content": "Analyze code performance bottlenecks"}
+        },
+        {
+          "description": "Create human task (appears in TUI)",
+          "example": {"action": "human", "content": "Review pull request #123"}
+        },
+        {
+          "description": "Process chat with Todozi tags",
+          "example": {"action": "chat", "content": "I need to <todozi>fix bug; 2h; high; myproject; todo</todozi> and remember this"}
+        },
+        {
+          "description": "Extract tasks from text using todozi.com AI",
+          "example": {"action": "extract", "content": "I need to build a web app with authentication, payments, and email notifications"}
+        },
+        {
+          "description": "Expand task into subtasks using todozi.com AI",
+          "example": {"action": "expand", "content": "Build user authentication system", "extra": "for a Rust web application"}
+        },
+        {
+          "description": "AI project planning with comprehensive task breakdown",
+          "example": {"action": "plan", "content": "Build a complete e-commerce platform", "extra": "with payment integration and inventory management"}
+        },
+        {
+          "description": "AI strategic planning with enhanced analysis",
+          "example": {"action": "strategy", "content": "Optimize our development workflow", "extra": "for a team of 5 developers using agile methodology"}
+        }
+      ]
+    }
+  }
+}

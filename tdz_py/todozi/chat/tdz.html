@@ -1,0 +1,1119 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Todozi - AI-Driven Task Management</title>
+    <style>
+        :root {
+            --primary: #4361ee;
+            --primary-dark: #3a56d4;
+            --secondary: #7209b7;
+            --success: #06d6a0;
+            --warning: #ffd166;
+            --danger: #ef476f;
+            --dark: #1a1a2e;
+            --darker: #0d0d1a;
+            --light: #f8f9fa;
+            --gray: #6c757d;
+            --light-gray: #e9ecef;
+            --border: #dee2e6;
+            --sidebar-bg: #161625;
+            --shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+            --radius: 12px;
+            --transition: all 0.3s ease;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: "Segoe UI", system-ui, -apple-system, sans-serif;
+        }
+
+        body {
+            background: linear-gradient(135deg, #f5f7fa 0%, #e4edf5 100%);
+            color: var(--dark);
+            min-height: 100vh;
+            overflow: hidden;
+        }
+
+        .app-container {
+            display: flex;
+            height: 100vh;
+            width: 100vw;
+        }
+
+        /* Left Sidebar - Chat History (20%) */
+        .chat-history-sidebar {
+            width: 20%;
+            background: var(--sidebar-bg);
+            color: #fff;
+            display: flex;
+            flex-direction: column;
+            border-right: 1px solid rgb(255 255 255 / .05);
+        }
+
+        .sidebar-header {
+            padding: 20px;
+            border-bottom: 1px solid rgb(255 255 255 / .05);
+            background: linear-gradient(135deg, var(--primary), var(--secondary));
+        }
+
+        .logo {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .logo-icon {
+            width: 36px;
+            height: 36px;
+            background: rgba(255, 255, 255, 0.2);
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 700;
+            font-size: 18px;
+        }
+
+        .logo-text {
+            font-size: 20px;
+            font-weight: 700;
+            color: #fff;
+        }
+
+        .chat-history-list {
+            flex: 1;
+            overflow-y: auto;
+            padding: 12px;
+        }
+
+        .chat-history-item {
+            padding: 12px 16px;
+            margin-bottom: 8px;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: var(--transition);
+            border-left: 3px solid transparent;
+        }
+
+        .chat-history-item:hover {
+            background: rgb(255 255 255 / .08);
+        }
+
+        .chat-history-item.active {
+            background: rgb(67 97 238 / .2);
+            border-left-color: var(--primary);
+        }
+
+        .chat-title {
+            font-weight: 500;
+            margin-bottom: 4px;
+            color: #fff;
+            font-size: 14px;
+        }
+
+        .chat-preview {
+            font-size: 12px;
+            color: #a0a0c0;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+
+        .chat-time {
+            font-size: 11px;
+            color: #7070a0;
+            margin-top: 4px;
+        }
+
+        .new-chat-btn {
+            margin: 12px;
+            padding: 12px;
+            background: linear-gradient(135deg, var(--primary), var(--secondary));
+            border: none;
+            border-radius: 8px;
+            color: white;
+            font-weight: 600;
+            cursor: pointer;
+            transition: var(--transition);
+        }
+
+        .new-chat-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(67, 97, 238, 0.3);
+        }
+
+        /* Middle - Chat Interface (40%) */
+        .chat-interface {
+            width: 40%;
+            background: #fff;
+            display: flex;
+            flex-direction: column;
+            border-right: 1px solid var(--border);
+        }
+
+        .chat-header {
+            padding: 20px;
+            border-bottom: 1px solid var(--border);
+            background: #fff;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+        }
+
+        .chat-header-title {
+            font-size: 18px;
+            font-weight: 600;
+            color: var(--dark);
+            margin-bottom: 4px;
+        }
+
+        .chat-header-subtitle {
+            font-size: 14px;
+            color: var(--gray);
+        }
+
+        .chat-messages {
+            flex: 1;
+            overflow-y: auto;
+            padding: 20px;
+            background: #fafbfc;
+        }
+
+        .message {
+            margin-bottom: 20px;
+            animation: fadeIn 0.3s ease;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .message-user {
+            display: flex;
+            justify-content: flex-end;
+        }
+
+        .message-bubble {
+            max-width: 80%;
+            padding: 12px 16px;
+            border-radius: 12px;
+            font-size: 14px;
+            line-height: 1.5;
+        }
+
+        .message-user .message-bubble {
+            background: linear-gradient(135deg, var(--primary), var(--secondary));
+            color: white;
+            border-bottom-right-radius: 4px;
+        }
+
+        .message-assistant .message-bubble {
+            background: white;
+            border: 1px solid var(--border);
+            color: var(--dark);
+            border-bottom-left-radius: 4px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+        }
+
+        .message-tag {
+            display: inline-block;
+            background: rgba(67, 97, 238, 0.1);
+            color: var(--primary);
+            padding: 2px 8px;
+            border-radius: 4px;
+            font-size: 12px;
+            font-family: monospace;
+            margin: 4px 2px;
+        }
+
+        .chat-input-container {
+            padding: 20px;
+            border-top: 1px solid var(--border);
+            background: white;
+        }
+
+        .chat-input-wrapper {
+            display: flex;
+            gap: 12px;
+            align-items: flex-end;
+        }
+
+        .chat-input {
+            flex: 1;
+            padding: 12px 16px;
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            font-size: 14px;
+            resize: none;
+            min-height: 44px;
+            max-height: 120px;
+            transition: var(--transition);
+        }
+
+        .chat-input:focus {
+            outline: none;
+            border-color: var(--primary);
+            box-shadow: 0 0 0 3px rgba(67, 97, 238, 0.1);
+        }
+
+        .chat-send-btn {
+            padding: 12px 20px;
+            background: linear-gradient(135deg, var(--primary), var(--secondary));
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: var(--transition);
+        }
+
+        .chat-send-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(67, 97, 238, 0.3);
+        }
+
+        .input-hints {
+            margin-top: 8px;
+            font-size: 12px;
+            color: var(--gray);
+        }
+
+        .hint-tag {
+            color: var(--primary);
+            font-family: monospace;
+            background: rgba(67, 97, 238, 0.05);
+            padding: 2px 4px;
+            border-radius: 3px;
+        }
+
+        /* Right - Dynamic Todozi Panel (40%) */
+        .todozi-panel {
+            width: 40%;
+            background: #f8f9fa;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .panel-header {
+            padding: 20px;
+            background: white;
+            border-bottom: 1px solid var(--border);
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+        }
+
+        .panel-controls {
+            display: flex;
+            gap: 12px;
+            align-items: center;
+            margin-bottom: 16px;
+        }
+
+        .project-selector {
+            flex: 1;
+            padding: 10px 12px;
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            background: white;
+            font-size: 14px;
+            cursor: pointer;
+            transition: var(--transition);
+        }
+
+        .project-selector:focus {
+            outline: none;
+            border-color: var(--primary);
+            box-shadow: 0 0 0 3px rgba(67, 97, 238, 0.1);
+        }
+
+        .view-tabs {
+            display: flex;
+            background: var(--light-gray);
+            border-radius: 8px;
+            padding: 4px;
+        }
+
+        .view-tab {
+            padding: 8px 16px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 500;
+            transition: var(--transition);
+            color: var(--gray);
+        }
+
+        .view-tab:hover {
+            background: rgba(255, 255, 255, 0.5);
+        }
+
+        .view-tab.active {
+            background: white;
+            color: var(--primary);
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+
+        .panel-content {
+            flex: 1;
+            overflow-y: auto;
+            padding: 20px;
+        }
+
+        .stats-row {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 12px;
+            margin-bottom: 20px;
+        }
+
+        .stat-card {
+            background: white;
+            padding: 16px;
+            border-radius: 8px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+        }
+
+        .stat-label {
+            font-size: 12px;
+            color: var(--gray);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-bottom: 4px;
+        }
+
+        .stat-value {
+            font-size: 24px;
+            font-weight: 700;
+            background: linear-gradient(135deg, var(--primary), var(--secondary));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .task-list {
+            background: white;
+            border-radius: 12px;
+            padding: 16px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+        }
+
+        .task-list-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 16px;
+            padding-bottom: 12px;
+            border-bottom: 1px solid var(--light-gray);
+        }
+
+        .task-list-title {
+            font-size: 16px;
+            font-weight: 600;
+            color: var(--dark);
+        }
+
+        .task-count {
+            background: var(--light-gray);
+            padding: 4px 10px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 500;
+            color: var(--gray);
+        }
+
+        .task-item {
+            display: flex;
+            align-items: start;
+            padding: 12px;
+            margin-bottom: 8px;
+            border-radius: 8px;
+            transition: var(--transition);
+            cursor: pointer;
+            border: 1px solid transparent;
+        }
+
+        .task-item:hover {
+            background: #f8f9ff;
+            border-color: var(--primary);
+            transform: translateX(4px);
+        }
+
+        .task-checkbox {
+            width: 20px;
+            height: 20px;
+            border: 2px solid var(--border);
+            border-radius: 5px;
+            margin-right: 12px;
+            margin-top: 2px;
+            cursor: pointer;
+            transition: var(--transition);
+            flex-shrink: 0;
+        }
+
+        .task-checkbox:hover {
+            border-color: var(--primary);
+            background: rgba(67, 97, 238, 0.05);
+        }
+
+        .task-checkbox.checked {
+            background: linear-gradient(135deg, var(--primary), var(--secondary));
+            border-color: var(--primary);
+            position: relative;
+        }
+
+        .task-checkbox.checked::after {
+            content: "✓";
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            color: white;
+            font-size: 12px;
+            font-weight: bold;
+        }
+
+        .task-content {
+            flex: 1;
+        }
+
+        .task-title {
+            font-size: 14px;
+            font-weight: 500;
+            color: var(--dark);
+            margin-bottom: 4px;
+        }
+
+        .task-meta {
+            display: flex;
+            gap: 12px;
+            font-size: 12px;
+            color: var(--gray);
+        }
+
+        .task-priority {
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-weight: 500;
+        }
+
+        .priority-high {
+            background: rgba(239, 71, 111, 0.1);
+            color: var(--danger);
+        }
+
+        .priority-medium {
+            background: rgba(255, 209, 102, 0.1);
+            color: #ff9e00;
+        }
+
+        .priority-low {
+            background: rgba(6, 214, 160, 0.1);
+            color: var(--success);
+        }
+
+        .task-assignee {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+
+        .assignee-badge {
+            padding: 2px 6px;
+            border-radius: 4px;
+            background: rgba(114, 9, 183, 0.1);
+            color: var(--secondary);
+            font-weight: 500;
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 40px;
+            color: var(--gray);
+        }
+
+        .empty-state-icon {
+            font-size: 48px;
+            margin-bottom: 16px;
+            opacity: 0.3;
+        }
+
+        .empty-state-title {
+            font-size: 18px;
+            font-weight: 600;
+            margin-bottom: 8px;
+            color: var(--dark);
+        }
+
+        .empty-state-desc {
+            font-size: 14px;
+            color: var(--gray);
+        }
+    </style>
+</head>
+<body>
+    <div class="app-container">
+        <!-- Left Sidebar - Chat History (20%) -->
+        <div class="chat-history-sidebar">
+            <div class="sidebar-header">
+                <div class="logo">
+                    <div class="logo-icon">T</div>
+                    <div class="logo-text">Todozi</div>
+                </div>
+            </div>
+            
+            <button class="new-chat-btn">+ New Chat</button>
+            
+            <div class="chat-history-list">
+                <!-- Chat history will be loaded dynamically -->
+                <div class="chat-history-item active">
+                    <div class="chat-title">Welcome to Todozi</div>
+                    <div class="chat-preview">Start a conversation with AI...</div>
+                    <div class="chat-time">Now</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Middle - Chat Interface (40%) -->
+        <div class="chat-interface">
+            <div class="chat-header">
+                <div class="chat-header-title">Website Launch Planning</div>
+                <div class="chat-header-subtitle">AI Assistant: Planner Agent</div>
+            </div>
+            
+            <div class="chat-messages">
+                <div class="message message-assistant">
+                    <div class="message-bubble">
+                        <strong>Welcome to Todozi! 🎉</strong><br><br>
+                        I'm your AI assistant powered by Todozi's comprehensive task management system.
+                        I can help you organize tasks, capture ideas, save memories, and manage your projects.
+                        <br><br>
+                        <strong>Try using Todozi tags in your messages:</strong>
+                        <br>• <code>&lt;todozi&gt;action; time; priority; project; status&lt;/todozi&gt;</code> for tasks
+                        <br>• <code>&lt;memory&gt;what; meaning; importance; term&lt;/memory&gt;</code> for knowledge
+                        <br>• <code>&lt;idea&gt;idea; importance&lt;/idea&gt;</code> for innovation
+                        <br><br>
+                        <em>Start typing a message to begin!</em>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="chat-input-container">
+                <div class="chat-input-wrapper">
+                    <textarea class="chat-input" placeholder="Type your message... Use tags like &lt;todozi&gt;, &lt;memory&gt;, &lt;idea&gt;" rows="1"></textarea>
+                    <button class="chat-send-btn">Send</button>
+                </div>
+                <div class="input-hints">
+                    Tip: Use <span class="hint-tag">&lt;todozi&gt;</span> for tasks, <span class="hint-tag">&lt;memory&gt;</span> for notes, <span class="hint-tag">&lt;idea&gt;</span> for ideas
+                </div>
+            </div>
+        </div>
+
+        <!-- Right - Dynamic Todozi Panel (40%) -->
+        <div class="todozi-panel">
+            <div class="panel-header">
+                <div class="panel-controls">
+                    <select class="project-selector">
+                        <option value="all">All Projects</option>
+                        <!-- Projects will be loaded dynamically -->
+                    </select>
+                </div>
+                
+                <div class="view-tabs">
+                    <div class="view-tab active">Active Tasks</div>
+                    <div class="view-tab">Completed</div>
+                    <div class="view-tab">Agents</div>
+                    <div class="view-tab">Analytics</div>
+                </div>
+            </div>
+            
+            <div class="panel-content">
+                <div class="stats-row">
+                    <div class="stat-card">
+                        <div class="stat-label">Total Tasks</div>
+                        <div class="stat-value">0</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-label">Active Tasks</div>
+                        <div class="stat-value">0</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-label">Agents</div>
+                        <div class="stat-value">0</div>
+                    </div>
+                </div>
+
+                <div class="task-list">
+                    <div class="task-list-header">
+                        <div class="task-list-title">Active Tasks</div>
+                        <div class="task-count">0 tasks</div>
+                    </div>
+                    <!-- Tasks will be loaded dynamically -->
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <script>
+        // Global state
+        let currentSessionId = null;
+        let chatSessions = [];
+        let tasks = [];
+        let agents = [];
+        let projects = [];
+
+        // DOM elements
+        const chatHistoryList = document.querySelector('.chat-history-list');
+        const chatMessages = document.querySelector('.chat-messages');
+        const chatInput = document.querySelector('.chat-input');
+        const chatSendBtn = document.querySelector('.chat-send-btn');
+        const newChatBtn = document.querySelector('.new-chat-btn');
+        const projectSelector = document.querySelector('.project-selector');
+        const taskList = document.querySelector('.task-list');
+        const statsCards = document.querySelectorAll('.stat-value');
+        const viewTabs = document.querySelectorAll('.view-tab');
+
+        // Initialize
+        async function init() {
+            await loadAgents();
+            await loadProjects();
+            await loadChatHistory();
+            await loadTasks();
+            await loadStats();
+            setupEventListeners();
+            updateUI();
+        }
+
+        // Event listeners
+        function setupEventListeners() {
+            chatSendBtn.addEventListener('click', sendMessage);
+            newChatBtn.addEventListener('click', createNewChat);
+            chatInput.addEventListener('keypress', function(e) {
+                if (e.key === 'Enter' && !e.shiftKey) {
+                    e.preventDefault();
+                    sendMessage();
+                }
+            });
+            chatInput.addEventListener('input', function() {
+                this.style.height = 'auto';
+                this.style.height = Math.min(this.scrollHeight, 120) + 'px';
+            });
+            projectSelector.addEventListener('change', loadTasks);
+        }
+
+        // Load functions
+        async function loadAgents() {
+            try {
+                const response = await fetch('/api/agents');
+                const data = await response.json();
+                agents = data.agents || [];
+            } catch (error) {
+                console.error('Failed to load agents:', error);
+                agents = [];
+            }
+        }
+
+        async function loadProjects() {
+            try {
+                const response = await fetch('/api/projects');
+                const data = await response.json();
+                projects = data.projects || [];
+                updateProjectSelector();
+            } catch (error) {
+                console.error('Failed to load projects:', error);
+                projects = [{ name: 'general', description: 'General tasks' }];
+                updateProjectSelector();
+            }
+        }
+
+        async function loadChatHistory() {
+            try {
+                const response = await fetch('/api/chat/history');
+                const data = await response.json();
+                chatSessions = data.history || [];
+                renderChatHistory();
+            } catch (error) {
+                console.error('Failed to load chat history:', error);
+                // Use empty chat history
+                chatSessions = [];
+                renderChatHistory();
+            }
+        }
+
+        function renderChatHistory() {
+            chatHistoryList.innerHTML = '';
+            chatSessions.forEach(session => {
+                const item = document.createElement('div');
+                item.className = 'chat-history-item';
+                if (session.id === currentSessionId) item.classList.add('active');
+                item.innerHTML = `
+                    <div class="chat-title">${session.title}</div>
+                    <div class="chat-preview">${session.preview}</div>
+                    <div class="chat-time">${formatTime(session.last_message)}</div>
+                `;
+                item.addEventListener('click', () => loadSession(session.id));
+                chatHistoryList.appendChild(item);
+            });
+        }
+
+        async function createNewChat() {
+            try {
+                // Reset current session and clear messages
+                currentSessionId = null;
+                chatMessages.innerHTML = '';
+
+                // Clear active state from all chat items
+                document.querySelectorAll('.chat-history-item').forEach(item => {
+                    item.classList.remove('active');
+                });
+
+                // Show welcome message
+                const welcomeMsg = document.createElement('div');
+                welcomeMsg.className = 'message message-assistant';
+                welcomeMsg.innerHTML = `
+                    <div class="message-bubble">
+                        Welcome to Todozi! I'm your AI assistant. You can use Todozi tags to create tasks, save memories, and capture ideas.
+                        <br><br>
+                        Try: <code>&lt;todozi&gt;Build user authentication; 4 hours; high; web-app; todo&lt;/todozi&gt;</code>
+                    </div>
+                `;
+                chatMessages.appendChild(welcomeMsg);
+
+                // Reload chat history
+                await loadChatHistory();
+            } catch (error) {
+                console.error('Failed to create new chat:', error);
+            }
+        }
+
+        async function loadSession(sessionId) {
+            try {
+                currentSessionId = sessionId;
+
+                // Update active state
+                document.querySelectorAll('.chat-history-item').forEach(item => {
+                    item.classList.remove('active');
+                });
+                event.currentTarget.classList.add('active');
+
+                // For now, just show the session info (chat history API returns basic data)
+                // In a full implementation, we'd load the actual conversation
+                chatMessages.innerHTML = '';
+                const sessionMsg = document.createElement('div');
+                sessionMsg.className = 'message message-assistant';
+                sessionMsg.innerHTML = `
+                    <div class="message-bubble">
+                        Loaded chat session: ${sessionId}
+                        <br><br>
+                        This session would show the previous conversation messages.
+                    </div>
+                `;
+                chatMessages.appendChild(sessionMsg);
+
+            } catch (error) {
+                console.error('Failed to load session:', error);
+            }
+        }
+
+        function renderMessages(messages) {
+            chatMessages.innerHTML = '';
+            messages.forEach(message => {
+                const messageDiv = document.createElement('div');
+                messageDiv.className = `message message-${message.role}`;
+
+                let content = message.content;
+                if (message.tags && message.tags.length > 0) {
+                    message.tags.forEach(tag => {
+                        content = content.replace(
+                            new RegExp(`&lt;${tag}&gt;(.*?)&lt;/${tag}&gt;`, 'g'),
+                            `<span class="message-tag">&lt;${tag}&gt;$1&lt;/${tag}&gt;</span>`
+                        );
+                    });
+                }
+
+                messageDiv.innerHTML = `<div class="message-bubble">${content}</div>`;
+                chatMessages.appendChild(messageDiv);
+            });
+            chatMessages.scrollTop = chatMessages.scrollHeight;
+        }
+
+        async function sendMessage() {
+            const message = chatInput.value.trim();
+            if (!message) return;
+
+            // Clear input
+            chatInput.value = '';
+            chatInput.style.height = 'auto';
+
+            // Show loading
+            chatSendBtn.disabled = true;
+            chatSendBtn.textContent = 'Sending...';
+
+            try {
+                // Add user message to UI
+                const userDiv = document.createElement('div');
+                userDiv.className = 'message message-user';
+                userDiv.innerHTML = `<div class="message-bubble">${message}</div>`;
+                chatMessages.appendChild(userDiv);
+                chatMessages.scrollTop = chatMessages.scrollHeight;
+
+                // Send to chat API
+                const response = await fetch('/api/chat/process', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ message })
+                });
+
+                const data = await response.json();
+
+                // Add AI response to UI
+                if (data.content) {
+                    const aiDiv = document.createElement('div');
+                    aiDiv.className = 'message message-assistant';
+
+                    // Process Todozi tags in response
+                    let content = data.content.processed_message || data.content.tasks || 'Message processed successfully';
+                    if (typeof content === 'object') {
+                        content = JSON.stringify(content, null, 2);
+                    }
+
+                    // Highlight Todozi tags
+                    content = content.replace(/<(todozi|memory|idea|error)>.*?<\/\1>/g,
+                        '<span class="message-tag">$&</span>');
+
+                    aiDiv.innerHTML = `<div class="message-bubble">${content}</div>`;
+                    chatMessages.appendChild(aiDiv);
+                    chatMessages.scrollTop = chatMessages.scrollHeight;
+                }
+
+                // Reload data
+                await loadTasks();
+                await loadStats();
+
+            } catch (error) {
+                console.error('Failed to send message:', error);
+                // Add error message
+                const errorDiv = document.createElement('div');
+                errorDiv.className = 'message message-assistant';
+                errorDiv.innerHTML = `<div class="message-bubble">Sorry, there was an error processing your message: ${error.message}</div>`;
+                chatMessages.appendChild(errorDiv);
+            } finally {
+                chatSendBtn.disabled = false;
+                chatSendBtn.textContent = 'Send';
+            }
+        }
+
+        // Todozi functions
+        async function loadTasks() {
+            try {
+                const response = await fetch('/api/tasks');
+                const data = await response.json();
+                tasks = data.tasks || [];
+                renderTasks(tasks);
+            } catch (error) {
+                console.error('Failed to load tasks:', error);
+                tasks = [];
+                renderTasks([]);
+            }
+        }
+
+        async function loadStats() {
+            try {
+                const response = await fetch('/api/stats');
+                const data = await response.json();
+                updateStats(data);
+            } catch (error) {
+                console.error('Failed to load stats:', error);
+                // Set default stats
+                updateStats({
+                    data: { tasks: 0, agents: 0, memories: 0, training_data: 0, feelings: 0 }
+                });
+            }
+        }
+
+        function updateStats(stats) {
+            if (stats.data) {
+                statsCards[0].textContent = stats.data.tasks || 0;
+                statsCards[1].textContent = stats.data.agents || 0;
+                statsCards[2].textContent = stats.data.training_data || 0;
+            } else {
+                statsCards[0].textContent = stats.total_tasks || 0;
+                statsCards[1].textContent = stats.active_tasks || 0;
+                statsCards[2].textContent = stats.ai_assigned || 0;
+            }
+        }
+
+        function renderTasks(tasks) {
+            const taskListContent = taskList.querySelector('.task-list-header').nextElementSibling;
+            taskListContent.innerHTML = '';
+
+            if (tasks.length === 0) {
+                taskListContent.innerHTML = `
+                    <div class="empty-state">
+                        <div class="empty-state-icon">📋</div>
+                        <div class="empty-state-title">No tasks yet</div>
+                        <div class="empty-state-desc">Start chatting to create tasks with Todozi tags!</div>
+                    </div>
+                `;
+                return;
+            }
+
+            tasks.forEach(task => {
+                const taskDiv = document.createElement('div');
+                taskDiv.className = 'task-item';
+                taskDiv.innerHTML = `
+                    <div class="task-checkbox ${task.status === 'done' ? 'checked' : ''}"></div>
+                    <div class="task-content">
+                        <div class="task-title">${task.action || task.title}</div>
+                        <div class="task-meta">
+                            <span class="task-priority priority-${task.priority || 'medium'}">${task.priority || 'medium'}</span>
+                            <span class="task-time">⏱ ${task.time || task.estimate || '2 hours'}</span>
+                            <span class="task-assignee">
+                                <span class="assignee-badge">${task.assignee || '🤖 AI'}</span>
+                            </span>
+                        </div>
+                    </div>
+                `;
+
+                const checkbox = taskDiv.querySelector('.task-checkbox');
+                checkbox.addEventListener('click', async function(e) {
+                    e.stopPropagation();
+                    if (task.status === 'done') return;
+
+                    try {
+                        await fetch(`/api/tasks/${task.id}`, {
+                            method: 'PUT',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ status: 'done' })
+                        });
+                        this.classList.add('checked');
+                        task.status = 'done';
+                        await loadStats(); // Refresh stats
+                    } catch (error) {
+                        console.error('Failed to complete task:', error);
+                    }
+                });
+
+                taskListContent.appendChild(taskDiv);
+            });
+        }
+
+        function updateProjectSelector() {
+            projectSelector.innerHTML = '';
+            projects.forEach(project => {
+                const option = document.createElement('option');
+                option.value = project.name;
+                option.textContent = `${project.name} - ${project.description}`;
+                if (project.name === 'general') option.selected = true;
+                projectSelector.appendChild(option);
+            });
+        }
+
+        function updateUI() {
+            // Update view tabs
+            viewTabs.forEach((tab, index) => {
+                tab.addEventListener('click', () => {
+                    viewTabs.forEach(t => t.classList.remove('active'));
+                    tab.classList.add('active');
+
+                    // Update panel content based on tab
+                    updatePanelContent(index);
+                });
+            });
+        }
+
+        function updatePanelContent(tabIndex) {
+            const panelContent = document.querySelector('.panel-content');
+
+            switch(tabIndex) {
+                case 0: // Active Tasks
+                    renderTasks(tasks.filter(t => t.status !== 'done'));
+                    break;
+                case 1: // Completed Tasks
+                    renderTasks(tasks.filter(t => t.status === 'done'));
+                    break;
+                case 2: // Agents
+                    renderAgents();
+                    break;
+                case 3: // Analytics
+                    renderAnalytics();
+                    break;
+            }
+        }
+
+        function renderAgents() {
+            const panelContent = document.querySelector('.panel-content');
+            panelContent.innerHTML = `
+                <div class="task-list">
+                    <div class="task-list-header">
+                        <div class="task-list-title">Available Agents</div>
+                        <div class="task-count">${agents.length} agents</div>
+                    </div>
+                    <div style="padding: 16px;">
+                        ${agents.map(agent => `
+                            <div class="task-item">
+                                <div class="task-content">
+                                    <div class="task-title">${agent.name}</div>
+                                    <div class="task-meta">
+                                        <span class="task-priority priority-high">${agent.category}</span>
+                                        <span class="task-assignee">
+                                            <span class="assignee-badge">${agent.status === 'active' ? '🟢' : '🔴'} ${agent.status}</span>
+                                        </span>
+                                    </div>
+                                </div>
+                            </div>
+                        `).join('')}
+                    </div>
+                </div>
+            `;
+        }
+
+        function renderAnalytics() {
+            const panelContent = document.querySelector('.panel-content');
+            panelContent.innerHTML = `
+                <div class="stats-row">
+                    <div class="stat-card">
+                        <div class="stat-label">Total Tasks</div>
+                        <div class="stat-value">${tasks.length}</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-label">Active Tasks</div>
+                        <div class="stat-value">${tasks.filter(t => t.status !== 'done').length}</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-label">Completed Tasks</div>
+                        <div class="stat-value">${tasks.filter(t => t.status === 'done').length}</div>
+                    </div>
+                </div>
+                <div class="task-list" style="margin-top: 20px;">
+                    <div class="task-list-header">
+                        <div class="task-list-title">System Analytics</div>
+                    </div>
+                    <div style="padding: 16px;">
+                        <p>🤖 Agents: ${agents.length}</p>
+                        <p>📁 Projects: ${projects.length}</p>
+                        <p>🧠 Training Data: Available via API</p>
+                        <p>⚡ Performance: Real-time monitoring</p>
+                        <p>📊 Analytics: Comprehensive tracking</p>
+                    </div>
+                </div>
+            `;
+        }
+
+        // Utility functions
+        function formatTime(timestamp) {
+            const date = new Date(timestamp);
+            const now = new Date();
+            const diff = now - date;
+
+            if (diff < 60000) return 'Just now';
+            if (diff < 3600000) return `${Math.floor(diff / 60000)} min ago`;
+            if (diff < 86400000) return `${Math.floor(diff / 3600000)} hours ago`;
+            return date.toLocaleDateString();
+        }
+
+        // Initialize when DOM is loaded
+        document.addEventListener('DOMContentLoaded', init);
+    </script>
+</body>
+</html>
