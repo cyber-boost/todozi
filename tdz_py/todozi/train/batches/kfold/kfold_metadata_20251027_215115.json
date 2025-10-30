@@ -1,0 +1,51 @@
+{
+  "source_file": "/opt/homebrew/var/www/forge/todozi_hf/cleaned2/combined_deduplicated.json",
+  "total_entries": 55145,
+  "timestamp": "20251027_215115",
+  "seed": 42,
+  "k_folds": 5,
+  "fold_size_base": 11029,
+  "remainder_distributed": 0,
+  "folds": [
+    {
+      "fold_number": 1,
+      "filename": "fold_1_of_5_20251027_215115.json",
+      "entry_count": 11029,
+      "percentage": 20.0,
+      "start_index": 0,
+      "end_index": 11029
+    },
+    {
+      "fold_number": 2,
+      "filename": "fold_2_of_5_20251027_215115.json",
+      "entry_count": 11029,
+      "percentage": 20.0,
+      "start_index": 11029,
+      "end_index": 22058
+    },
+    {
+      "fold_number": 3,
+      "filename": "fold_3_of_5_20251027_215115.json",
+      "entry_count": 11029,
+      "percentage": 20.0,
+      "start_index": 22058,
+      "end_index": 33087
+    },
+    {
+      "fold_number": 4,
+      "filename": "fold_4_of_5_20251027_215115.json",
+      "entry_count": 11029,
+      "percentage": 20.0,
+      "start_index": 33087,
+      "end_index": 44116
+    },
+    {
+      "fold_number": 5,
+      "filename": "fold_5_of_5_20251027_215115.json",
+      "entry_count": 11029,
+      "percentage": 20.0,
+      "start_index": 44116,
+      "end_index": 55145
+    }
+  ]
+}

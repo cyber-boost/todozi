@@ -8,17 +8,17 @@ license = "MIT"
 repository = "https://github.com/cyber-boost/todozi"
 keywords = ["todo", "task-management", "ai", "productivity"]
 categories = ["command-line-utilities", "development-tools"]
-
+exclude = ["target/**", "Cargo.lock"]
 # Binary targets
 [[bin]]
 name = "todozi"
 path = "src/main.rs"
-required-features = ["core", "cli", "tui", "server]
+required-features = ["core", "cli", "tui", "server"]
 
 [[bin]]
 name = "tdz"
 path = "src/main.rs"
-required-features = ["core", "cli", "tui", "server]
+required-features = ["core", "cli", "tui", "server"]
 
 # Library target
 [lib]
@@ -66,6 +66,7 @@ tabled = { version = "0.14", optional = true }
 thiserror = "1.0"
 tokenizers = "0.20"
 tokio = { version = "1.0", features = ["full"], optional = true }
+rayon = { version = "1.11.0", optional = true }
 uuid = { version = "1.0", features = ["v4", "serde"] }
 hlx = "1.2.5"
 
@@ -84,6 +85,14 @@ pyo3 = { version = "0.21", features = ["abi3-py38"], optional = true }
 napi = { version = "2.16", default-features = false, features = ["napi4", "tokio_rt"], optional = true }
 napi-derive = { version = "2.16", optional = true }
 
-# Development dependencies
+[package.metadata.docs.rs]
+all-features = true
+
 [dev-dependencies]
 tempfile = "3.0"
+
+#[profile.release]
+#opt-level = 3
+#lto = true
+#codegen-units = 1
+#strip = true

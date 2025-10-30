@@ -1483,6 +1483,11 @@ class TodoziServer {
             }
         });
 
+        // Root route - serve the web interface
+        this.app.get('/', (req, res) => {
+            res.sendFile(path.join(__dirname, 'tdz.html'));
+        });
+
         // Mount all routes under different prefixes
         this.app.use('/api', router);
         this.app.use('/api/tdz', router);
@@ -1491,7 +1496,7 @@ class TodoziServer {
         // Serve static files
         this.app.use(express.static(path.join(__dirname, '..', 'static')));
 
-        // Catch-all handler
+        // Catch-all handler for API routes
         this.app.use('*', (req, res) => {
             res.status(404).json({ error: 'Route not found', path: req.path });
         });
@@ -1561,6 +1566,7 @@ class TodoziServer {
 
         console.log('🚀 Todozi Enhanced Server starting...');
         console.log(`📡 Server running on http://${addr}`);
+        console.log(`🌐 Web interface: http://${addr}`);
         console.log(`🤖 Todozi client: ${this.todoziClient ? 'Available' : 'Not Available'}`);
         console.log(`🎯 Available agents: ${this.mockAgents.length}`);
         console.log();
@@ -1647,7 +1653,7 @@ class TodoziServer {
 }
 
 // Export for use as module
-module.exports = TodoziServer;
+module.exports = { TodoziServer, ServerConfig };
 
 // Run directly if called as script
 if (require.main === module) {

@@ -1,0 +1,7 @@
+torch>=2.0.0
+transformers>=4.36.0
+trl>=0.7.0
+datasets>=2.14.0
+gradio>=4.0.0,<5.0.0
+accelerate>=0.24.0
+safetensors>=0.4.0

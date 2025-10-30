@@ -1,7 +1,7 @@
 {
   "name": "todozi",
-  "version": "0.1.0",
-  "description": "AI/Human task management system - Node.js bindings",
+  "version": "0.1.1",
+  "description": "AI/Human task management system",
   "main": "todozi.js",
   "types": "index.d.ts",
   "keywords": [
@@ -45,11 +45,11 @@
     "ollama": "^0.3.0"
   },
   "optionalDependencies": {
-    "@todozi/darwin-x64": "^0.1.0",
-    "@todozi/darwin-arm64": "^0.1.0",
-    "@todozi/linux-x64-gnu": "^0.1.0",
-    "@todozi/linux-arm64-gnu": "^0.1.0",
-    "@todozi/win32-x64-msvc": "^0.1.0"
+    "todozi-win32-x64-msvc": "0.1.1",
+    "todozi-darwin-x64": "0.1.1",
+    "todozi-linux-x64-gnu": "0.1.1",
+    "todozi-darwin-arm64": "0.1.1",
+    "todozi-linux-arm64-gnu": "0.1.1"
   },
   "scripts": {
     "artifacts": "napi artifacts",
@@ -62,7 +62,7 @@
     "start": "node server.js",
     "server": "node server.js",
     "chat": "node chat.js",
-    "cli": "node tdz.js",
+    "cli": "tdz",
     "dev": "node server.js",
     "install-cli": "npm link"
   },

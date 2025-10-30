@@ -9,3 +9,7 @@ api/*
 summaries/*
 web/*
 z_archive/*
+.gitignore
+osxcross/
+*.sh
+.*

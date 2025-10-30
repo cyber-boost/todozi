@@ -200,3 +200,10 @@ impl From<candle_core::Error> for TodoziError {
         TodoziError::CandleError(err.to_string())
     }
 }
+
+#[cfg(feature = "nodejs")]
+impl From<TodoziError> for napi::Error {
+    fn from(err: TodoziError) -> Self {
+        napi::Error::from_reason(format!("{}", err))
+    }
+}

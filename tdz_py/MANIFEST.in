@@ -1,3 +1,12 @@
 include README.md
 recursive-include todozi *.py
 recursive-include todozi *.tcss
+exclude todozi/train/**
+exclude todozi/**/*.bin
+exclude todozi/**/*.safetensors
+exclude todozi/**/*.pth
+exclude todozi/**/*.onnx
+exclude todozi/**/*.pkl
+exclude todozi/**/*.h5
+exclude todozi/**/*.pb
+exclude todozi/**/*.tflite

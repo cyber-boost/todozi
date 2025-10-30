@@ -32,11 +32,22 @@ dependencies = [
 ]
 
 [project.scripts]
-todozi-tui = "todozi.tui:main"
-todozi-cli = "todozi.main:main"
+todozi = "todozi.tui:main"
+tdz = "todozi.main:main"
 
 [tool.maturin]
-manifest-path = "../Cargo.toml"
+manifest-path = "../tdz/Cargo.toml"
 python-source = "."
 module-name = "todozi"
 features = ["python", "pyo3-extension-module"]
+exclude = [
+    "todozi/train/**",
+    "**/*.bin",
+    "**/*.safetensors",
+    "**/*.pth",
+    "**/*.onnx",
+    "**/*.pkl",
+    "**/*.h5",
+    "**/*.pb",
+    "**/*.tflite"
+]

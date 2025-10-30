@@ -72,15 +72,22 @@ export OLLAMA_HOST=https://ollama.com
 ```bash
 # Start the complete server with web UI
 npm start
+# Or start with the CLI:
+tdz server
 # Open http://localhost:8636
 ```
 
 #### **💻 CLI Tool**
 ```bash
 # Use the command-line interface
-node tdz.js task "Build user authentication"
-node tdz.js urgent "Fix critical bug"
-node tdz.js list
+tdz task "Build user authentication"
+tdz urgent "Fix critical bug"
+tdz list
+
+# Start the HTTP server directly
+tdz server --port 8275 --host 0.0.0.0
+# Or use the dedicated server binary
+todozi-server
 ```
 
 #### **🔧 Programmatic API**

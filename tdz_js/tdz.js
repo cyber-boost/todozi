@@ -651,8 +651,34 @@ class TodoziCLI {
             .option('-h, --host <host>', 'Host to bind to', '0.0.0.0')
             .action(async (options) => {
                 console.log(`🚀 Starting Todozi server on ${options.host}:${options.port}...`);
-                console.log('💡 Server functionality available in server.js');
-                console.log('💻 Run: node server.js');
+
+                // Import and start the server directly
+                const { TodoziServer, ServerConfig } = require('./server.js');
+
+                const config = new ServerConfig();
+                config.port = parseInt(options.port);
+                config.host = options.host;
+                const server = new TodoziServer(config);
+
+                // Handle graceful shutdown
+                process.on('SIGINT', () => {
+                    console.log('\n⚠️  Received SIGINT, shutting down gracefully...');
+                    server.stop();
+                    process.exit(0);
+                });
+
+                process.on('SIGTERM', () => {
+                    console.log('\n⚠️  Received SIGTERM, shutting down gracefully...');
+                    server.stop();
+                    process.exit(0);
+                });
+
+                try {
+                    await server.start();
+                } catch (error) {
+                    console.error('💥 Failed to start server:', error);
+                    process.exit(1);
+                }
             });
 
         // Backup commands

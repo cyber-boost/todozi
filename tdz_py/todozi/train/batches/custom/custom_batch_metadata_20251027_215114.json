@@ -1,0 +1,153 @@
+{
+  "source_file": "/opt/homebrew/var/www/forge/todozi_hf/cleaned2/combined_deduplicated.json",
+  "total_entries": 55145,
+  "timestamp": "20251027_215114",
+  "seed": 42,
+  "ensure_unique": true,
+  "num_samples": 3,
+  "batch_sizes": [
+    {
+      "label": "100",
+      "count": 100
+    },
+    {
+      "label": "500",
+      "count": 500
+    },
+    {
+      "label": "1000",
+      "count": 1000
+    },
+    {
+      "label": "5000",
+      "count": 5000
+    },
+    {
+      "label": "10%",
+      "count": 5514
+    },
+    {
+      "label": "20%",
+      "count": 11029
+    },
+    {
+      "label": "30%",
+      "count": 16543
+    }
+  ],
+  "batches_created": [
+    {
+      "filename": "batch_100_sample1_20251027_215114.json",
+      "size_label": "100",
+      "sample_number": 1,
+      "entry_count": 100,
+      "percentage": 0.18134010336385892
+    },
+    {
+      "filename": "batch_100_sample2_20251027_215114.json",
+      "size_label": "100",
+      "sample_number": 2,
+      "entry_count": 100,
+      "percentage": 0.18134010336385892
+    },
+    {
+      "filename": "batch_100_sample3_20251027_215114.json",
+      "size_label": "100",
+      "sample_number": 3,
+      "entry_count": 100,
+      "percentage": 0.18134010336385892
+    },
+    {
+      "filename": "batch_500_sample1_20251027_215114.json",
+      "size_label": "500",
+      "sample_number": 1,
+      "entry_count": 500,
+      "percentage": 0.9067005168192945
+    },
+    {
+      "filename": "batch_500_sample2_20251027_215114.json",
+      "size_label": "500",
+      "sample_number": 2,
+      "entry_count": 500,
+      "percentage": 0.9067005168192945
+    },
+    {
+      "filename": "batch_500_sample3_20251027_215114.json",
+      "size_label": "500",
+      "sample_number": 3,
+      "entry_count": 500,
+      "percentage": 0.9067005168192945
+    },
+    {
+      "filename": "batch_1000_sample1_20251027_215114.json",
+      "size_label": "1000",
+      "sample_number": 1,
+      "entry_count": 1000,
+      "percentage": 1.813401033638589
+    },
+    {
+      "filename": "batch_1000_sample2_20251027_215114.json",
+      "size_label": "1000",
+      "sample_number": 2,
+      "entry_count": 1000,
+      "percentage": 1.813401033638589
+    },
+    {
+      "filename": "batch_1000_sample3_20251027_215114.json",
+      "size_label": "1000",
+      "sample_number": 3,
+      "entry_count": 1000,
+      "percentage": 1.813401033638589
+    },
+    {
+      "filename": "batch_5000_sample1_20251027_215114.json",
+      "size_label": "5000",
+      "sample_number": 1,
+      "entry_count": 5000,
+      "percentage": 9.067005168192946
+    },
+    {
+      "filename": "batch_5000_sample2_20251027_215114.json",
+      "size_label": "5000",
+      "sample_number": 2,
+      "entry_count": 5000,
+      "percentage": 9.067005168192946
+    },
+    {
+      "filename": "batch_5000_sample3_20251027_215114.json",
+      "size_label": "5000",
+      "sample_number": 3,
+      "entry_count": 5000,
+      "percentage": 9.067005168192946
+    },
+    {
+      "filename": "batch_10%_sample1_20251027_215114.json",
+      "size_label": "10%",
+      "sample_number": 1,
+      "entry_count": 5514,
+      "percentage": 9.99909329948318
+    },
+    {
+      "filename": "batch_10%_sample2_20251027_215114.json",
+      "size_label": "10%",
+      "sample_number": 2,
+      "entry_count": 5514,
+      "percentage": 9.99909329948318
+    },
+    {
+      "filename": "batch_10%_sample3_20251027_215114.json",
+      "size_label": "10%",
+      "sample_number": 3,
+      "entry_count": 5514,
+      "percentage": 9.99909329948318
+    },
+    {
+      "filename": "batch_20%_sample1_20251027_215114.json",
+      "size_label": "20%",
+      "sample_number": 1,
+      "entry_count": 11029,
+      "percentage": 20.0
+    }
+  ],
+  "total_unique_entries_used": 47371
+}
