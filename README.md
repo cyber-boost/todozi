@@ -1,21 +1,7 @@
-### Quick usage example
+![Todozi TUI](https://github.com/cyber-boost/todozi/blob/main/media/tui-1.jpg?raw=true)
 
-```sh
-# Initialise a new Todozi workspace
-todozi init
+# Todozi
 
-# Add a task
-todozi add task "Write documentation" --time "2h" --priority "high" --project "docs" --status "todo"
-
-# List all tasks in the “docs” project
-todozi list tasks --project docs
-
-# Show a specific task
-todozi show task <task-id>
-
-# Export embeddings
-todozi export-embeddings --output my_embeddings.hlx
-```
 ### Top‑level commands (`Commands` enum)
 
 | Command | Description / Sub‑commands |
@@ -1037,6 +1023,8 @@ Valid options are: ai, human, collaborative, or a specific agent ID
 
 
 --- 
+
+![Todozi TUI](https://github.com/cyber-boost/todozi/blob/main/media/tui-2.jpg?raw=true)
 
 # Todozi Tags Reference
 
