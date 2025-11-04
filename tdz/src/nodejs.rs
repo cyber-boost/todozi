@@ -335,6 +335,65 @@ impl Todozi {
         })
     }
 
+    #[napi]
+    pub fn done_types(&self) -> Result<String> {
+        Ok(Done::types().to_string())
+    }
+
+    #[napi]
+    pub fn done_default_filters(&self) -> Result<String> {
+        Ok("TaskFilters created".to_string())
+    }
+
+    #[napi]
+    pub fn done_default_update(&self) -> Result<String> {
+        Ok("TaskUpdate created".to_string())
+    }
+
+    #[napi]
+    pub fn search_with_filters(&self, search: Option<String>, priority: Option<String>, status: Option<String>, project: Option<String>, limit: Option<u32>) -> Result<Vec<JsTask>> {
+        use crate::models::TaskFilters;
+        let mut filters = TaskFilters::default();
+        if let Some(s) = search {
+            filters.search = Some(s);
+        }
+        if let Some(p) = priority {
+            filters.priority = p.parse().ok();
+        }
+        if let Some(s) = status {
+            filters.status = s.parse().ok();
+        }
+        if let Some(p) = project {
+            filters.project = Some(p);
+        }
+        self.runtime.block_on(async {
+            Done::search_with_filters(filters, limit.map(|l| l as usize)).await
+                .map(|tasks| tasks.into_iter().map(JsTask::from).collect())
+                .map_err(|e| Error::from_reason(format!("{}", e)))
+        })
+    }
+
+    #[napi]
+    pub fn update_task_full(&self, task_id: String, action: Option<String>, priority: Option<String>, status: Option<String>, project: Option<String>) -> Result<()> {
+        use crate::models::TaskUpdate;
+        let mut updates = TaskUpdate::default();
+        if let Some(a) = action {
+            updates.action = Some(a);
+        }
+        if let Some(p) = priority {
+            updates.priority = p.parse().ok();
+        }
+        if let Some(s) = status {
+            updates.status = s.parse().ok();
+        }
+        if let Some(p) = project {
+            updates.parent_project = Some(p);
+        }
+        self.runtime.block_on(async {
+            Done::update_task_full(&task_id, updates).await.map_err(|e| Error::from_reason(format!("{}", e)))
+        })
+    }
+
     // ========== Actions API (8 methods) ==========
     #[napi]
     pub fn ai_task(&self, action: String) -> Result<String> {
@@ -648,6 +707,90 @@ impl Todozi {
         self.runtime.block_on(async { Tags::remove_from_task(&task_id, &tag).await.map_err(|e| Error::from_reason(format!("{}", e))) })
     }
 
+    #[napi]
+    pub fn create_tag(&self, name: String, description: Option<String>) -> Result<String> {
+        self.runtime.block_on(async { Tags::create(&name, description.as_deref()).await.map_err(|e| Error::from_reason(format!("{}", e))) })
+    }
+
+    #[napi]
+    pub fn update_tag(&self, tag_id: String, name: Option<String>, description: Option<String>, category: Option<String>) -> Result<()> {
+        use crate::tags::TagUpdate;
+        self.runtime.block_on(async {
+            let mut manager = TagManager::new();
+            let mut updates = TagUpdate::new();
+            if let Some(n) = name {
+                updates = updates.name(n);
+            }
+            if let Some(d) = description {
+                updates = updates.description(d);
+            }
+            if let Some(c) = category {
+                updates = updates.category(c);
+            }
+            manager.update_tag(&tag_id, updates).await.map_err(|e| Error::from_reason(format!("{}", e)))
+        })
+    }
+
+    #[napi]
+    pub fn delete_tag(&self, tag_id: String) -> Result<()> {
+        self.runtime.block_on(async {
+            let mut manager = TagManager::new();
+            manager.delete_tag(&tag_id).await.map_err(|e| Error::from_reason(format!("{}", e)))
+        })
+    }
+
+    #[napi]
+    pub fn increment_tag_usage(&self, tag_name: String) -> Result<()> {
+        self.runtime.block_on(async {
+            let mut manager = TagManager::new();
+            manager.increment_tag_usage(&tag_name).await.map_err(|e| Error::from_reason(format!("{}", e)))
+        })
+    }
+
+    #[napi]
+    pub fn merge_tags(&self, source_tag_id: String, target_tag_id: String) -> Result<()> {
+        self.runtime.block_on(async {
+            let mut manager = TagManager::new();
+            manager.merge_tags(&source_tag_id, &target_tag_id).await.map_err(|e| Error::from_reason(format!("{}", e)))
+        })
+    }
+
+    #[napi]
+    pub fn get_tag(&self, tag_id: String) -> Result<Option<JsTag>> {
+        let manager = TagManager::new();
+        Ok(manager.get_tag(&tag_id).map(|t| JsTag::from(t.clone())))
+    }
+
+    #[napi]
+    pub fn get_tag_by_name(&self, name: String) -> Result<Option<JsTag>> {
+        let manager = TagManager::new();
+        Ok(manager.get_tag_by_name(&name).map(|t| JsTag::from(t.clone())))
+    }
+
+    #[napi]
+    pub fn get_all_tags(&self) -> Result<Vec<JsTag>> {
+        let manager = TagManager::new();
+        Ok(manager.get_all_tags().into_iter().map(|t| JsTag::from(t.clone())).collect())
+    }
+
+    #[napi]
+    pub fn search_tags(&self, query: String) -> Result<Vec<JsTag>> {
+        let manager = TagManager::new();
+        Ok(manager.search_tags(&query).into_iter().map(|t| JsTag::from(t.clone())).collect())
+    }
+
+    #[napi]
+    pub fn get_tags_by_category(&self, category: String) -> Result<Vec<JsTag>> {
+        let manager = TagManager::new();
+        Ok(manager.get_tags_by_category(&category).into_iter().map(|t| JsTag::from(t.clone())).collect())
+    }
+
+    #[napi]
+    pub fn get_most_used_tags(&self, limit: u32) -> Result<Vec<JsTag>> {
+        let manager = TagManager::new();
+        Ok(manager.get_most_used_tags(limit as usize).into_iter().map(|t| JsTag::from(t.clone())).collect())
+    }
+
     // ========== Configuration (2 methods) ==========
     #[napi]
     pub fn set_project(&self, project_name: String) {
@@ -772,6 +915,106 @@ impl Todozi {
         })
     }
 
+    #[napi]
+    pub fn storage_create_backup(&self) -> Result<String> {
+        self.runtime.block_on(async {
+            let storage = Storage::new().await?;
+            storage.create_backup().map_err(|e| Error::from_reason(format!("{}", e)))
+        })
+    }
+
+    #[napi]
+    pub fn storage_list_backups(&self) -> Result<Vec<String>> {
+        self.runtime.block_on(async {
+            let storage = Storage::new().await?;
+            storage.list_backups().map_err(|e| Error::from_reason(format!("{}", e)))
+        })
+    }
+
+    #[napi]
+    pub fn storage_restore_backup(&self, backup_name: String) -> Result<()> {
+        self.runtime.block_on(async {
+            let storage = Storage::new().await?;
+            storage.restore_backup(&backup_name).map_err(|e| Error::from_reason(format!("{}", e)))
+        })
+    }
+
+    #[napi]
+    pub fn storage_get_task_from_any_project(&self, task_id: String) -> Result<JsTask> {
+        self.runtime.block_on(async {
+            let storage = Storage::new().await?;
+            storage.get_task_from_any_project(&task_id).map(JsTask::from).map_err(|e| Error::from_reason(format!("{}", e)))
+        })
+    }
+
+    #[napi]
+    pub fn storage_delete_task_from_project(&self, task_id: String) -> Result<()> {
+        self.runtime.block_on(async {
+            let storage = Storage::new().await?;
+            storage.delete_task_from_project(&task_id).map_err(|e| Error::from_reason(format!("{}", e)))
+        })
+    }
+
+    #[napi]
+    pub fn storage_get_all_active_tasks(&self) -> Result<Vec<JsTask>> {
+        self.runtime.block_on(async {
+            let storage = Storage::new().await?;
+            storage.get_all_active_tasks().map(|tasks| tasks.into_iter().map(JsTask::from).collect()).map_err(|e| Error::from_reason(format!("{}", e)))
+        })
+    }
+
+    #[napi]
+    pub fn storage_get_all_completed_tasks(&self) -> Result<Vec<JsTask>> {
+        self.runtime.block_on(async {
+            let storage = Storage::new().await?;
+            storage.get_all_completed_tasks().map(|tasks| tasks.into_iter().map(JsTask::from).collect()).map_err(|e| Error::from_reason(format!("{}", e)))
+        })
+    }
+
+    #[napi]
+    pub fn storage_get_project_stats(&self, project_name: String) -> Result<String> {
+        self.runtime.block_on(async {
+            let storage = Storage::new().await?;
+            storage.get_project_stats(&project_name).map(|stats| format!("Project: {}, Total: {}, Active: {}, Completed: {}, Archived: {}, Deleted: {}", 
+                stats.project_name, stats.total_tasks, stats.active_tasks, stats.completed_tasks, stats.archived_tasks, stats.deleted_tasks))
+                .map_err(|e| Error::from_reason(format!("{}", e)))
+        })
+    }
+
+    #[napi]
+    pub fn storage_search_tasks_semantic(&self, query: String, max_results: Option<u32>) -> Result<Vec<JsTask>> {
+        self.runtime.block_on(async {
+            let storage = Storage::new().await?;
+            storage.search_tasks_semantic(&query, max_results.map(|m| m as usize).unwrap_or(10)).await
+                .map(|results| results.into_iter().map(|r| JsTask::from(r.task)).collect())
+                .map_err(|e| Error::from_reason(format!("{}", e)))
+        })
+    }
+
+    #[napi]
+    pub fn storage_get_ai_tasks(&self) -> Result<Vec<JsTask>> {
+        self.runtime.block_on(async {
+            let storage = Storage::new().await?;
+            storage.get_ai_tasks().map(|tasks| tasks.into_iter().map(JsTask::from).collect()).map_err(|e| Error::from_reason(format!("{}", e)))
+        })
+    }
+
+    #[napi]
+    pub fn storage_get_human_tasks(&self) -> Result<Vec<JsTask>> {
+        self.runtime.block_on(async {
+            let storage = Storage::new().await?;
+            storage.get_human_tasks().map(|tasks| tasks.into_iter().map(JsTask::from).collect()).map_err(|e| Error::from_reason(format!("{}", e)))
+        })
+    }
+
+    #[napi]
+    pub fn storage_get_collaborative_tasks(&self) -> Result<Vec<JsTask>> {
+        self.runtime.block_on(async {
+            let storage = Storage::new().await?;
+            storage.get_collaborative_tasks().map(|tasks| tasks.into_iter().map(JsTask::from).collect()).map_err(|e| Error::from_reason(format!("{}", e)))
+        })
+    }
+
     // ========== TDZ Commands API (3 methods) ==========
     #[napi]
     pub fn tdz_execute_command(&self, command: String) -> Result<String> {
@@ -818,6 +1061,119 @@ impl Todozi {
             reminder_mgr.activate_reminder(&reminder_id).await
                 .map_err(|e| Error::from_reason(format!("{}", e)))
         })
+    }
+
+    #[napi]
+    pub fn create_reminder(&self, content: String, remind_at: String, priority: String) -> Result<String> {
+        use crate::models::{Reminder, ReminderPriority, ReminderStatus};
+        self.runtime.block_on(async {
+            let remind_time = chrono::DateTime::parse_from_rfc3339(&remind_at)
+                .map(|dt| dt.with_timezone(&chrono::Utc))
+                .map_err(|_| Error::from_reason("Invalid datetime format"))?;
+            let priority_enum = priority.parse().unwrap_or(ReminderPriority::Medium);
+            let reminder = Reminder {
+                id: String::new(),
+                content,
+                remind_at: remind_time,
+                priority: priority_enum,
+                status: ReminderStatus::Pending,
+                tags: Vec::new(),
+                created_at: chrono::Utc::now(),
+                updated_at: chrono::Utc::now(),
+            };
+            let mut reminder_mgr = ReminderMgr::new();
+            reminder_mgr.create_reminder(reminder).await
+                .map_err(|e| Error::from_reason(format!("{}", e)))
+        })
+    }
+
+    #[napi]
+    pub fn update_reminder(&self, reminder_id: String, content: Option<String>, priority: Option<String>, status: Option<String>) -> Result<()> {
+        use crate::models::{ReminderUpdate, ReminderPriority, ReminderStatus};
+        self.runtime.block_on(async {
+            let mut updates = ReminderUpdate::new();
+            if let Some(c) = content {
+                updates = updates.content(c);
+            }
+            if let Some(p) = priority {
+                if let Ok(prio) = p.parse::<ReminderPriority>() {
+                    updates = updates.priority(prio);
+                }
+            }
+            if let Some(s) = status {
+                if let Ok(stat) = s.parse::<ReminderStatus>() {
+                    updates = updates.status(stat);
+                }
+            }
+            let mut reminder_mgr = ReminderMgr::new();
+            reminder_mgr.update_reminder(&reminder_id, updates).await
+                .map_err(|e| Error::from_reason(format!("{}", e)))
+        })
+    }
+
+    #[napi]
+    pub fn delete_reminder(&self, reminder_id: String) -> Result<()> {
+        self.runtime.block_on(async {
+            let mut reminder_mgr = ReminderMgr::new();
+            reminder_mgr.delete_reminder(&reminder_id).await
+                .map_err(|e| Error::from_reason(format!("{}", e)))
+        })
+    }
+
+    #[napi]
+    pub fn mark_reminder_completed(&self, reminder_id: String) -> Result<()> {
+        self.runtime.block_on(async {
+            let mut reminder_mgr = ReminderMgr::new();
+            reminder_mgr.mark_reminder_completed(&reminder_id).await
+                .map_err(|e| Error::from_reason(format!("{}", e)))
+        })
+    }
+
+    #[napi]
+    pub fn mark_reminder_cancelled(&self, reminder_id: String) -> Result<()> {
+        self.runtime.block_on(async {
+            let mut reminder_mgr = ReminderMgr::new();
+            reminder_mgr.mark_reminder_cancelled(&reminder_id).await
+                .map_err(|e| Error::from_reason(format!("{}", e)))
+        })
+    }
+
+    #[napi]
+    pub fn get_reminder(&self, reminder_id: String) -> Result<Option<JsReminder>> {
+        let reminder_mgr = ReminderMgr::new();
+        Ok(reminder_mgr.get_reminder(&reminder_id).map(|r| JsReminder::from(r.clone())))
+    }
+
+    #[napi]
+    pub fn get_all_reminders(&self) -> Result<Vec<JsReminder>> {
+        let reminder_mgr = ReminderMgr::new();
+        Ok(reminder_mgr.get_all_reminders().into_iter().map(|r| JsReminder::from(r.clone())).collect())
+    }
+
+    #[napi]
+    pub fn search_reminders(&self, query: String) -> Result<Vec<JsReminder>> {
+        let reminder_mgr = ReminderMgr::new();
+        Ok(reminder_mgr.search_reminders(&query).into_iter().map(|r| JsReminder::from(r.clone())).collect())
+    }
+
+    #[napi]
+    pub fn get_pending_reminders(&self) -> Result<Vec<JsReminder>> {
+        use crate::models::ReminderStatus;
+        let reminder_mgr = ReminderMgr::new();
+        Ok(reminder_mgr.get_reminders_by_status(ReminderStatus::Pending).into_iter().map(|r| JsReminder::from(r.clone())).collect())
+    }
+
+    #[napi]
+    pub fn get_active_reminders(&self) -> Result<Vec<JsReminder>> {
+        use crate::models::ReminderStatus;
+        let reminder_mgr = ReminderMgr::new();
+        Ok(reminder_mgr.get_reminders_by_status(ReminderStatus::Active).into_iter().map(|r| JsReminder::from(r.clone())).collect())
+    }
+
+    #[napi]
+    pub fn get_overdue_reminders(&self) -> Result<Vec<JsReminder>> {
+        let reminder_mgr = ReminderMgr::new();
+        Ok(reminder_mgr.get_overdue_reminders().into_iter().map(|r| JsReminder::from(r.clone())).collect())
     }
 
 

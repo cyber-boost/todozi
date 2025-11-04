@@ -296,6 +296,64 @@ impl PyTodozi {
         })
     }
 
+    pub fn done_types(&self) -> PyResult<String> {
+        Ok(Done::types().to_string())
+    }
+
+    pub fn done_default_filters(&self) -> PyResult<String> {
+        Ok("TaskFilters created".to_string())
+    }
+
+    pub fn done_default_update(&self) -> PyResult<String> {
+        Ok("TaskUpdate created".to_string())
+    }
+
+    pub fn done_embedding_config(&self) -> PyResult<String> {
+        Ok("TodoziEmbeddingConfig default values".to_string())
+    }
+
+    pub fn search_with_filters(&self, search: Option<String>, priority: Option<String>, status: Option<String>, project: Option<String>, limit: Option<usize>) -> PyResult<Vec<PyTask>> {
+        use crate::models::TaskFilters;
+        let mut filters = TaskFilters::default();
+        if let Some(s) = search {
+            filters.search = Some(s);
+        }
+        if let Some(p) = priority {
+            filters.priority = p.parse().ok();
+        }
+        if let Some(s) = status {
+            filters.status = s.parse().ok();
+        }
+        if let Some(p) = project {
+            filters.project = Some(p);
+        }
+        self.runtime.block_on(async {
+            Done::search_with_filters(filters, limit).await
+                .map(|tasks| tasks.into_iter().map(PyTask::from).collect())
+                .map_err(|e| PyException::new_err(format!("{}", e)))
+        })
+    }
+
+    pub fn update_task_full(&self, task_id: String, action: Option<String>, priority: Option<String>, status: Option<String>, project: Option<String>) -> PyResult<()> {
+        use crate::models::TaskUpdate;
+        let mut updates = TaskUpdate::default();
+        if let Some(a) = action {
+            updates.action = Some(a);
+        }
+        if let Some(p) = priority {
+            updates.priority = p.parse().ok();
+        }
+        if let Some(s) = status {
+            updates.status = s.parse().ok();
+        }
+        if let Some(p) = project {
+            updates.parent_project = Some(p);
+        }
+        self.runtime.block_on(async {
+            Done::update_task_full(&task_id, updates).await.map_err(|e| PyException::new_err(format!("{}", e)))
+        })
+    }
+
     // ========== Actions API (8 methods) ==========
     pub fn ai_task(&self, action: String) -> PyResult<String> {
         self.runtime.block_on(async { Actions::ai(&action).await.map_err(|e| PyException::new_err(format!("{}", e))) })
@@ -557,6 +615,79 @@ impl PyTodozi {
         self.runtime.block_on(async { Tags::remove_from_task(&task_id, &tag).await.map_err(|e| PyException::new_err(format!("{}", e))) })
     }
 
+    pub fn create_tag(&self, name: String, description: Option<String>) -> PyResult<String> {
+        self.runtime.block_on(async { Tags::create(&name, description.as_deref()).await.map_err(|e| PyException::new_err(format!("{}", e))) })
+    }
+
+    pub fn update_tag(&self, tag_id: String, name: Option<String>, description: Option<String>, category: Option<String>) -> PyResult<()> {
+        use crate::tags::TagUpdate;
+        self.runtime.block_on(async {
+            let mut manager = TagManager::new();
+            let mut updates = TagUpdate::new();
+            if let Some(n) = name {
+                updates = updates.name(n);
+            }
+            if let Some(d) = description {
+                updates = updates.description(d);
+            }
+            if let Some(c) = category {
+                updates = updates.category(c);
+            }
+            manager.update_tag(&tag_id, updates).await.map_err(|e| PyException::new_err(format!("{}", e)))
+        })
+    }
+
+    pub fn delete_tag(&self, tag_id: String) -> PyResult<()> {
+        self.runtime.block_on(async {
+            let mut manager = TagManager::new();
+            manager.delete_tag(&tag_id).await.map_err(|e| PyException::new_err(format!("{}", e)))
+        })
+    }
+
+    pub fn increment_tag_usage(&self, tag_name: String) -> PyResult<()> {
+        self.runtime.block_on(async {
+            let mut manager = TagManager::new();
+            manager.increment_tag_usage(&tag_name).await.map_err(|e| PyException::new_err(format!("{}", e)))
+        })
+    }
+
+    pub fn merge_tags(&self, source_tag_id: String, target_tag_id: String) -> PyResult<()> {
+        self.runtime.block_on(async {
+            let mut manager = TagManager::new();
+            manager.merge_tags(&source_tag_id, &target_tag_id).await.map_err(|e| PyException::new_err(format!("{}", e)))
+        })
+    }
+
+    pub fn get_tag(&self, tag_id: String) -> PyResult<Option<PyTag>> {
+        let manager = TagManager::new();
+        Ok(manager.get_tag(&tag_id).map(|t| PyTag::from(t.clone())))
+    }
+
+    pub fn get_tag_by_name(&self, name: String) -> PyResult<Option<PyTag>> {
+        let manager = TagManager::new();
+        Ok(manager.get_tag_by_name(&name).map(|t| PyTag::from(t.clone())))
+    }
+
+    pub fn get_all_tags(&self) -> PyResult<Vec<PyTag>> {
+        let manager = TagManager::new();
+        Ok(manager.get_all_tags().into_iter().map(|t| PyTag::from(t.clone())).collect())
+    }
+
+    pub fn search_tags(&self, query: String) -> PyResult<Vec<PyTag>> {
+        let manager = TagManager::new();
+        Ok(manager.search_tags(&query).into_iter().map(|t| PyTag::from(t.clone())).collect())
+    }
+
+    pub fn get_tags_by_category(&self, category: String) -> PyResult<Vec<PyTag>> {
+        let manager = TagManager::new();
+        Ok(manager.get_tags_by_category(&category).into_iter().map(|t| PyTag::from(t.clone())).collect())
+    }
+
+    pub fn get_most_used_tags(&self, limit: usize) -> PyResult<Vec<PyTag>> {
+        let manager = TagManager::new();
+        Ok(manager.get_most_used_tags(limit).into_iter().map(|t| PyTag::from(t.clone())).collect())
+    }
+
     // ========== Configuration (2 methods) ==========
     pub fn set_project(&self, project_name: String) {
         Done::set_project(project_name);
@@ -663,6 +794,94 @@ impl PyTodozi {
         })
     }
 
+    pub fn storage_create_backup(&self) -> PyResult<String> {
+        self.runtime.block_on(async {
+            let storage = Storage::new().await.map_err(|e| PyException::new_err(format!("{}", e)))?;
+            storage.create_backup().map_err(|e| PyException::new_err(format!("{}", e)))
+        })
+    }
+
+    pub fn storage_list_backups(&self) -> PyResult<Vec<String>> {
+        self.runtime.block_on(async {
+            let storage = Storage::new().await.map_err(|e| PyException::new_err(format!("{}", e)))?;
+            storage.list_backups().map_err(|e| PyException::new_err(format!("{}", e)))
+        })
+    }
+
+    pub fn storage_restore_backup(&self, backup_name: String) -> PyResult<()> {
+        self.runtime.block_on(async {
+            let storage = Storage::new().await.map_err(|e| PyException::new_err(format!("{}", e)))?;
+            storage.restore_backup(&backup_name).map_err(|e| PyException::new_err(format!("{}", e)))
+        })
+    }
+
+    pub fn storage_get_task_from_any_project(&self, task_id: String) -> PyResult<PyTask> {
+        self.runtime.block_on(async {
+            let storage = Storage::new().await.map_err(|e| PyException::new_err(format!("{}", e)))?;
+            storage.get_task_from_any_project(&task_id).map(PyTask::from).map_err(|e| PyException::new_err(format!("{}", e)))
+        })
+    }
+
+    pub fn storage_delete_task_from_project(&self, task_id: String) -> PyResult<()> {
+        self.runtime.block_on(async {
+            let storage = Storage::new().await.map_err(|e| PyException::new_err(format!("{}", e)))?;
+            storage.delete_task_from_project(&task_id).map_err(|e| PyException::new_err(format!("{}", e)))
+        })
+    }
+
+    pub fn storage_get_all_active_tasks(&self) -> PyResult<Vec<PyTask>> {
+        self.runtime.block_on(async {
+            let storage = Storage::new().await.map_err(|e| PyException::new_err(format!("{}", e)))?;
+            storage.get_all_active_tasks().map(|tasks| tasks.into_iter().map(PyTask::from).collect()).map_err(|e| PyException::new_err(format!("{}", e)))
+        })
+    }
+
+    pub fn storage_get_all_completed_tasks(&self) -> PyResult<Vec<PyTask>> {
+        self.runtime.block_on(async {
+            let storage = Storage::new().await.map_err(|e| PyException::new_err(format!("{}", e)))?;
+            storage.get_all_completed_tasks().map(|tasks| tasks.into_iter().map(PyTask::from).collect()).map_err(|e| PyException::new_err(format!("{}", e)))
+        })
+    }
+
+    pub fn storage_get_project_stats(&self, project_name: String) -> PyResult<String> {
+        self.runtime.block_on(async {
+            let storage = Storage::new().await.map_err(|e| PyException::new_err(format!("{}", e)))?;
+            storage.get_project_stats(&project_name).map(|stats| format!("Project: {}, Total: {}, Active: {}, Completed: {}, Archived: {}, Deleted: {}", 
+                stats.project_name, stats.total_tasks, stats.active_tasks, stats.completed_tasks, stats.archived_tasks, stats.deleted_tasks))
+                .map_err(|e| PyException::new_err(format!("{}", e)))
+        })
+    }
+
+    pub fn storage_search_tasks_semantic(&self, query: String, max_results: Option<usize>) -> PyResult<Vec<PyTask>> {
+        self.runtime.block_on(async {
+            let storage = Storage::new().await.map_err(|e| PyException::new_err(format!("{}", e)))?;
+            storage.search_tasks_semantic(&query, max_results.unwrap_or(10)).await
+                .map(|results| results.into_iter().map(|r| PyTask::from(r.task)).collect())
+                .map_err(|e| PyException::new_err(format!("{}", e)))
+        })
+    }
+
+    pub fn storage_get_ai_tasks(&self) -> PyResult<Vec<PyTask>> {
+        self.runtime.block_on(async {
+            let storage = Storage::new().await.map_err(|e| PyException::new_err(format!("{}", e)))?;
+            storage.get_ai_tasks().map(|tasks| tasks.into_iter().map(PyTask::from).collect()).map_err(|e| PyException::new_err(format!("{}", e)))
+        })
+    }
+
+    pub fn storage_get_human_tasks(&self) -> PyResult<Vec<PyTask>> {
+        self.runtime.block_on(async {
+            let storage = Storage::new().await.map_err(|e| PyException::new_err(format!("{}", e)))?;
+            storage.get_human_tasks().map(|tasks| tasks.into_iter().map(PyTask::from).collect()).map_err(|e| PyException::new_err(format!("{}", e)))
+        })
+    }
+
+    pub fn storage_get_collaborative_tasks(&self) -> PyResult<Vec<PyTask>> {
+        self.runtime.block_on(async {
+            let storage = Storage::new().await.map_err(|e| PyException::new_err(format!("{}", e)))?;
+            storage.get_collaborative_tasks().map(|tasks| tasks.into_iter().map(PyTask::from).collect()).map_err(|e| PyException::new_err(format!("{}", e)))
+        })
+    }
+
     // ========== Reminder API ==========
     pub fn activate_reminder(&self, reminder_id: String) -> PyResult<()> {
         self.runtime.block_on(async {
@@ -672,10 +891,112 @@ impl PyTodozi {
         })
     }
 
+    pub fn create_reminder(&self, content: String, remind_at: String, priority: String) -> PyResult<String> {
+        use crate::models::{Reminder, ReminderPriority, ReminderStatus};
+        self.runtime.block_on(async {
+            let remind_time = chrono::DateTime::parse_from_rfc3339(&remind_at)
+                .map(|dt| dt.with_timezone(&chrono::Utc))
+                .map_err(|_| PyException::new_err("Invalid datetime format"))?;
+            let priority_enum = priority.parse().unwrap_or(ReminderPriority::Medium);
+            let reminder = Reminder {
+                id: String::new(),
+                content,
+                remind_at: remind_time,
+                priority: priority_enum,
+                status: ReminderStatus::Pending,
+                tags: Vec::new(),
+                created_at: chrono::Utc::now(),
+                updated_at: chrono::Utc::now(),
+            };
+            let mut reminder_mgr = ReminderMgr::new();
+            reminder_mgr.create_reminder(reminder).await
+                .map_err(|e| PyException::new_err(format!("{}", e)))
+        })
+    }
+
+    pub fn update_reminder(&self, reminder_id: String, content: Option<String>, priority: Option<String>, status: Option<String>) -> PyResult<()> {
+        use crate::models::{ReminderUpdate, ReminderPriority, ReminderStatus};
+        self.runtime.block_on(async {
+            let mut updates = ReminderUpdate::new();
+            if let Some(c) = content {
+                updates = updates.content(c);
+            }
+            if let Some(p) = priority {
+                if let Ok(prio) = p.parse::<ReminderPriority>() {
+                    updates = updates.priority(prio);
+                }
+            }
+            if let Some(s) = status {
+                if let Ok(stat) = s.parse::<ReminderStatus>() {
+                    updates = updates.status(stat);
+                }
+            }
+            let mut reminder_mgr = ReminderMgr::new();
+            reminder_mgr.update_reminder(&reminder_id, updates).await
+                .map_err(|e| PyException::new_err(format!("{}", e)))
+        })
+    }
+
+    pub fn delete_reminder(&self, reminder_id: String) -> PyResult<()> {
+        self.runtime.block_on(async {
+            let mut reminder_mgr = ReminderMgr::new();
+            reminder_mgr.delete_reminder(&reminder_id).await
+                .map_err(|e| PyException::new_err(format!("{}", e)))
+        })
+    }
+
+    pub fn mark_reminder_completed(&self, reminder_id: String) -> PyResult<()> {
+        self.runtime.block_on(async {
+            let mut reminder_mgr = ReminderMgr::new();
+            reminder_mgr.mark_reminder_completed(&reminder_id).await
+                .map_err(|e| PyException::new_err(format!("{}", e)))
+        })
+    }
+
+    pub fn mark_reminder_cancelled(&self, reminder_id: String) -> PyResult<()> {
+        self.runtime.block_on(async {
+            let mut reminder_mgr = ReminderMgr::new();
+            reminder_mgr.mark_reminder_cancelled(&reminder_id).await
+                .map_err(|e| PyException::new_err(format!("{}", e)))
+        })
+    }
+
     pub fn active_percentage(&self) -> PyResult<f64> {
         let reminder_mgr = ReminderMgr::new();
         let stats = reminder_mgr.get_reminder_statistics();
         Ok(stats.active_percentage())
+    }
+
+    pub fn get_reminder(&self, reminder_id: String) -> PyResult<Option<PyReminder>> {
+        let reminder_mgr = ReminderMgr::new();
+        Ok(reminder_mgr.get_reminder(&reminder_id).map(|r| PyReminder::from(r.clone())))
+    }
+
+    pub fn get_all_reminders(&self) -> PyResult<Vec<PyReminder>> {
+        let reminder_mgr = ReminderMgr::new();
+        Ok(reminder_mgr.get_all_reminders().into_iter().map(|r| PyReminder::from(r.clone())).collect())
+    }
+
+    pub fn search_reminders(&self, query: String) -> PyResult<Vec<PyReminder>> {
+        let reminder_mgr = ReminderMgr::new();
+        Ok(reminder_mgr.search_reminders(&query).into_iter().map(|r| PyReminder::from(r.clone())).collect())
+    }
+
+    pub fn get_pending_reminders(&self) -> PyResult<Vec<PyReminder>> {
+        use crate::models::ReminderStatus;
+        let reminder_mgr = ReminderMgr::new();
+        Ok(reminder_mgr.get_reminders_by_status(ReminderStatus::Pending).into_iter().map(|r| PyReminder::from(r.clone())).collect())
+    }
+
+    pub fn get_active_reminders(&self) -> PyResult<Vec<PyReminder>> {
+        use crate::models::ReminderStatus;
+        let reminder_mgr = ReminderMgr::new();
+        Ok(reminder_mgr.get_reminders_by_status(ReminderStatus::Active).into_iter().map(|r| PyReminder::from(r.clone())).collect())
+    }
+
+    pub fn get_overdue_reminders(&self) -> PyResult<Vec<PyReminder>> {
+        let reminder_mgr = ReminderMgr::new();
+        Ok(reminder_mgr.get_overdue_reminders().into_iter().map(|r| PyReminder::from(r.clone())).collect())
     }
 
     // ========== API Key Management ==========

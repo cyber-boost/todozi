@@ -68,6 +68,7 @@ api/*
 summaries/*
 web/*
 z_archive/
+archive/
 osxcross/
 *.sh
 .*
