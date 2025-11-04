@@ -1271,6 +1271,429 @@ impl PyTodozi {
         })
     }
 
+    // ========== Summary API ==========
+    pub fn create_summary(&self, content: String, priority: String, context: Option<String>, tags: Option<Vec<String>>) -> PyResult<String> {
+        self.runtime.block_on(async {
+            let mut manager = crate::summary::SummaryManager::new();
+            use crate::models::{Summary, SummaryPriority};
+            let summary = Summary {
+                id: String::new(),
+                content,
+                context,
+                priority: priority.parse().unwrap_or(SummaryPriority::Medium),
+                tags: tags.unwrap_or_default(),
+                created_at: chrono::Utc::now(),
+                updated_at: chrono::Utc::now(),
+            };
+            manager.create_summary(summary).await.map_err(|e| PyException::new_err(format!("{}", e)))
+        })
+    }
+
+    pub fn get_summary(&self, summary_id: String) -> PyResult<Option<PySummary>> {
+        self.runtime.block_on(async {
+            let manager = crate::summary::SummaryManager::new();
+            Ok(manager.get_summary(&summary_id).map(|s| PySummary::from(s.clone())))
+        })
+    }
+
+    pub fn list_summaries(&self) -> PyResult<Vec<PySummary>> {
+        self.runtime.block_on(async {
+            let manager = crate::summary::SummaryManager::new();
+            Ok(manager.get_all_summaries().into_iter().map(|s| PySummary::from(s.clone())).collect())
+        })
+    }
+
+    pub fn update_summary(&self, summary_id: String, content: Option<String>, context: Option<String>, priority: Option<String>, tags: Option<Vec<String>>) -> PyResult<()> {
+        self.runtime.block_on(async {
+            let mut manager = crate::summary::SummaryManager::new();
+            use crate::summary::SummaryUpdate;
+            let updates = SummaryUpdate {
+                content,
+                context,
+                priority: priority.and_then(|p| p.parse().ok()),
+                tags,
+            };
+            manager.update_summary(&summary_id, updates).await.map_err(|e| PyException::new_err(format!("{}", e)))
+        })
+    }
+
+    pub fn delete_summary(&self, summary_id: String) -> PyResult<()> {
+        self.runtime.block_on(async {
+            let mut manager = crate::summary::SummaryManager::new();
+            manager.delete_summary(&summary_id).await.map_err(|e| PyException::new_err(format!("{}", e)))
+        })
+    }
+
+    pub fn search_summaries(&self, query: String) -> PyResult<Vec<PySummary>> {
+        self.runtime.block_on(async {
+            let manager = crate::summary::SummaryManager::new();
+            Ok(manager.search_summaries(&query).into_iter().map(|s| PySummary::from(s.clone())).collect())
+        })
+    }
+
+    pub fn get_summaries_by_priority(&self, priority: String) -> PyResult<Vec<PySummary>> {
+        self.runtime.block_on(async {
+            use crate::models::SummaryPriority;
+            let manager = crate::summary::SummaryManager::new();
+            let priority = priority.parse::<SummaryPriority>().map_err(|e| PyException::new_err(format!("{}", e)))?;
+            Ok(manager.get_summaries_by_priority(priority).into_iter().map(|s| PySummary::from(s.clone())).collect())
+        })
+    }
+
+    pub fn get_recent_summaries(&self, limit: usize) -> PyResult<Vec<PySummary>> {
+        self.runtime.block_on(async {
+            let manager = crate::summary::SummaryManager::new();
+            Ok(manager.get_recent_summaries(limit).into_iter().map(|s| PySummary::from(s.clone())).collect())
+        })
+    }
+
+    // ========== Comprehensive Reminder API ==========
+    pub fn create_reminder(&self, content: String, remind_at: String, priority: String, tags: Option<Vec<String>>) -> PyResult<String> {
+        self.runtime.block_on(async {
+            let mut manager = crate::reminder::ReminderManager::new();
+            use crate::models::{Reminder, ReminderPriority, ReminderStatus};
+            let remind_at = chrono::DateTime::parse_from_rfc3339(&remind_at)
+                .map(|dt| dt.with_timezone(&chrono::Utc))
+                .map_err(|e| PyException::new_err(format!("Invalid datetime: {}", e)))?;
+            let reminder = Reminder {
+                id: String::new(),
+                content,
+                remind_at,
+                priority: priority.parse().unwrap_or(ReminderPriority::Medium),
+                status: ReminderStatus::Pending,
+                tags: tags.unwrap_or_default(),
+                created_at: chrono::Utc::now(),
+                updated_at: chrono::Utc::now(),
+            };
+            manager.create_reminder(reminder).await.map_err(|e| PyException::new_err(format!("{}", e)))
+        })
+    }
+
+    pub fn get_reminder(&self, reminder_id: String) -> PyResult<Option<PyReminder>> {
+        self.runtime.block_on(async {
+            let manager = crate::reminder::ReminderManager::new();
+            Ok(manager.get_reminder(&reminder_id).map(|r| PyReminder::from(r.clone())))
+        })
+    }
+
+    pub fn list_reminders(&self) -> PyResult<Vec<PyReminder>> {
+        self.runtime.block_on(async {
+            let manager = crate::reminder::ReminderManager::new();
+            Ok(manager.get_all_reminders().into_iter().map(|r| PyReminder::from(r.clone())).collect())
+        })
+    }
+
+    pub fn update_reminder(&self, reminder_id: String, content: Option<String>, remind_at: Option<String>, priority: Option<String>, status: Option<String>, tags: Option<Vec<String>>) -> PyResult<()> {
+        self.runtime.block_on(async {
+            let mut manager = crate::reminder::ReminderManager::new();
+            use crate::reminder::ReminderUpdate;
+            let remind_at = if let Some(dt_str) = remind_at {
+                Some(chrono::DateTime::parse_from_rfc3339(&dt_str)
+                    .map(|dt| dt.with_timezone(&chrono::Utc))
+                    .map_err(|e| PyException::new_err(format!("Invalid datetime: {}", e)))?)
+            } else {
+                None
+            };
+            let updates = ReminderUpdate {
+                content,
+                remind_at,
+                priority: priority.and_then(|p| p.parse().ok()),
+                status: status.and_then(|s| s.parse().ok()),
+                tags,
+            };
+            manager.update_reminder(&reminder_id, updates).await.map_err(|e| PyException::new_err(format!("{}", e)))
+        })
+    }
+
+    pub fn delete_reminder(&self, reminder_id: String) -> PyResult<()> {
+        self.runtime.block_on(async {
+            let mut manager = crate::reminder::ReminderManager::new();
+            manager.delete_reminder(&reminder_id).await.map_err(|e| PyException::new_err(format!("{}", e)))
+        })
+    }
+
+    pub fn get_pending_reminders(&self) -> PyResult<Vec<PyReminder>> {
+        self.runtime.block_on(async {
+            let manager = crate::reminder::ReminderManager::new();
+            Ok(manager.get_pending_reminders().into_iter().map(|r| PyReminder::from(r.clone())).collect())
+        })
+    }
+
+    pub fn get_active_reminders(&self) -> PyResult<Vec<PyReminder>> {
+        self.runtime.block_on(async {
+            let manager = crate::reminder::ReminderManager::new();
+            Ok(manager.get_active_reminders().into_iter().map(|r| PyReminder::from(r.clone())).collect())
+        })
+    }
+
+    pub fn get_overdue_reminders(&self) -> PyResult<Vec<PyReminder>> {
+        self.runtime.block_on(async {
+            let manager = crate::reminder::ReminderManager::new();
+            Ok(manager.get_overdue_reminders().into_iter().map(|r| PyReminder::from(r.clone())).collect())
+        })
+    }
+
+    pub fn mark_reminder_completed(&self, reminder_id: String) -> PyResult<()> {
+        self.runtime.block_on(async {
+            let mut manager = crate::reminder::ReminderManager::new();
+            manager.mark_reminder_completed(&reminder_id).await.map_err(|e| PyException::new_err(format!("{}", e)))
+        })
+    }
+
+    pub fn mark_reminder_cancelled(&self, reminder_id: String) -> PyResult<()> {
+        self.runtime.block_on(async {
+            let mut manager = crate::reminder::ReminderManager::new();
+            manager.mark_reminder_cancelled(&reminder_id).await.map_err(|e| PyException::new_err(format!("{}", e)))
+        })
+    }
+
+    pub fn get_reminder_statistics(&self) -> PyResult<String> {
+        self.runtime.block_on(async {
+            let manager = crate::reminder::ReminderManager::new();
+            let stats = manager.get_reminder_statistics();
+            Ok(format!(
+                "Total: {}, Pending: {}, Active: {}, Overdue: {}",
+                stats.total_reminders, stats.pending_reminders, stats.active_reminders, stats.overdue_reminders
+            ))
+        })
+    }
+
+    // ========== Comprehensive Agent API ==========
+    pub fn create_agent(&self, name: String, description: String, capabilities: Vec<String>, specializations: Vec<String>) -> PyResult<String> {
+        self.runtime.block_on(async {
+            let mut manager = crate::agent::AgentManager::new();
+            use crate::models::{Agent, AgentMetadata, AgentStatus};
+            let agent = Agent {
+                id: String::new(),
+                name,
+                description,
+                capabilities,
+                specializations,
+                metadata: AgentMetadata {
+                    status: AgentStatus::Available,
+                    last_active: chrono::Utc::now(),
+                },
+                created_at: chrono::Utc::now(),
+                updated_at: chrono::Utc::now(),
+            };
+            manager.create_agent(agent).await.map_err(|e| PyException::new_err(format!("{}", e)))
+        })
+    }
+
+    pub fn get_agent(&self, agent_id: String) -> PyResult<Option<String>> {
+        self.runtime.block_on(async {
+            let manager = crate::agent::AgentManager::new();
+            Ok(manager.get_agent(&agent_id).map(|a| format!("{}: {} - {}", a.id, a.name, a.description)))
+        })
+    }
+
+    pub fn list_agents(&self) -> PyResult<Vec<String>> {
+        self.runtime.block_on(async {
+            let manager = crate::agent::AgentManager::new();
+            Ok(manager.get_all_agents().into_iter().map(|a| format!("{}: {} - {}", a.id, a.name, a.description)).collect())
+        })
+    }
+
+    pub fn list_available_agents(&self) -> PyResult<Vec<String>> {
+        self.runtime.block_on(async {
+            let manager = crate::agent::AgentManager::new();
+            Ok(manager.get_available_agents().into_iter().map(|a| format!("{}: {} - {}", a.id, a.name, a.description)).collect())
+        })
+    }
+
+    pub fn update_agent(&self, agent_id: String, name: Option<String>, description: Option<String>, capabilities: Option<Vec<String>>, specializations: Option<Vec<String>>, status: Option<String>) -> PyResult<()> {
+        self.runtime.block_on(async {
+            let mut manager = crate::agent::AgentManager::new();
+            use crate::agent::AgentUpdate;
+            let updates = AgentUpdate {
+                name,
+                description,
+                capabilities,
+                specializations,
+                status: status.and_then(|s| s.parse().ok()),
+            };
+            manager.update_agent(&agent_id, updates).await.map_err(|e| PyException::new_err(format!("{}", e)))
+        })
+    }
+
+    pub fn update_agent_status(&self, agent_id: String, status: String) -> PyResult<()> {
+        self.runtime.block_on(async {
+            use crate::models::AgentStatus;
+            let mut manager = crate::agent::AgentManager::new();
+            let status = status.parse::<AgentStatus>().map_err(|e| PyException::new_err(format!("{}", e)))?;
+            manager.update_agent_status(&agent_id, status).await.map_err(|e| PyException::new_err(format!("{}", e)))
+        })
+    }
+
+    pub fn assign_task_to_agent(&self, task_id: String, agent_id: String, project_id: String) -> PyResult<String> {
+        self.runtime.block_on(async {
+            let mut manager = crate::agent::AgentManager::new();
+            manager.assign_task_to_agent(task_id, &agent_id, project_id).await.map_err(|e| PyException::new_err(format!("{}", e)))
+        })
+    }
+
+    pub fn complete_agent_assignment(&self, task_id: String) -> PyResult<()> {
+        self.runtime.block_on(async {
+            let mut manager = crate::agent::AgentManager::new();
+            manager.complete_agent_assignment(&task_id).await.map_err(|e| PyException::new_err(format!("{}", e)))
+        })
+    }
+
+    pub fn get_agent_statistics(&self) -> PyResult<String> {
+        self.runtime.block_on(async {
+            let manager = crate::agent::AgentManager::new();
+            let stats = manager.get_agent_statistics();
+            Ok(format!(
+                "Total: {}, Available: {}, Busy: {}, Inactive: {}, Assignments: {}, Completed: {}",
+                stats.total_agents, stats.available_agents, stats.busy_agents, stats.inactive_agents, stats.total_assignments, stats.completed_assignments
+            ))
+        })
+    }
+
+    // ========== TDZ Command Parsing ==========
+    pub fn tdz_parse_command(&self, input: String) -> PyResult<String> {
+        parse_tdz_command(&input)
+            .map(|cmd| format!("Command parsed: {:?}", cmd))
+            .map_err(|e| PyException::new_err(format!("{}", e)))
+    }
+
+    pub fn tdz_execute_command(&self, command: String) -> PyResult<String> {
+        self.runtime.block_on(async {
+            let commands = parse_tdz_command(&command).map_err(|e| PyException::new_err(format!("{}", e)))?;
+            if commands.is_empty() {
+                return Err(PyException::new_err("No commands found in input"));
+            }
+            let result = execute_tdz_command(&commands[0], "https://todozi.com/api", None).await
+                .map_err(|e| PyException::new_err(format!("{}", e)))?;
+            Ok(serde_json::to_string(&result).unwrap_or_else(|_| "Failed to serialize result".to_string()))
+        })
+    }
+
+    // ========== CLI Operations ==========
+    pub fn cli_add_task(&self, content: String, priority: Option<String>) -> PyResult<()> {
+        self.runtime.block_on(async {
+            let priority = priority.as_deref().and_then(|p| match p {
+                "urgent" => Some(Priority::Urgent),
+                "high" => Some(Priority::High),
+                "medium" => Some(Priority::Medium),
+                "low" => Some(Priority::Low),
+                _ => None,
+            });
+            Done::create_task(&content, priority, None, None, None).await.map(|_| ()).map_err(|e| PyException::new_err(format!("{}", e)))
+        })
+    }
+
+    pub fn cli_list_tasks(&self) -> PyResult<Vec<PyTask>> {
+        self.runtime.block_on(async {
+            Done::search_tasks("", false, None).await.map(|tasks| tasks.into_iter().map(PyTask::from).collect()).map_err(|e| PyException::new_err(format!("{}", e)))
+        })
+    }
+
+    pub fn cli_show_task(&self, task_id: String) -> PyResult<PyTask> {
+        self.runtime.block_on(async {
+            Done::init().await.map_err(|e| PyException::new_err(format!("{}", e)))?;
+            let storage = Storage::new().await.map_err(|e| PyException::new_err(format!("{}", e)))?;
+            storage.get_task_from_any_project(&task_id).map(PyTask::from).map_err(|e| PyException::new_err(format!("{}", e)))
+        })
+    }
+
+    pub fn cli_update_task(&self, task_id: String, action: Option<String>, priority: Option<String>, status: Option<String>) -> PyResult<()> {
+        self.runtime.block_on(async {
+            let status = status.as_deref().and_then(|s| match s {
+                "todo" => Some(Status::Todo),
+                "in_progress" => Some(Status::InProgress),
+                "done" => Some(Status::Done),
+                _ => None,
+            });
+            if let Some(status) = status {
+                Done::update_task_status(&task_id, status).await.map_err(|e| PyException::new_err(format!("{}", e)))
+            } else {
+                Ok(())
+            }
+        })
+    }
+
+    pub fn cli_complete_task(&self, task_id: String) -> PyResult<()> {
+        self.runtime.block_on(async {
+            Done::update_task_status(&task_id, Status::Done).await.map_err(|e| PyException::new_err(format!("{}", e)))
+        })
+    }
+
+    pub fn cli_delete_task(&self, task_id: String) -> PyResult<()> {
+        self.runtime.block_on(async {
+            Done::init().await.map_err(|e| PyException::new_err(format!("{}", e)))?;
+            let storage = Storage::new().await.map_err(|e| PyException::new_err(format!("{}", e)))?;
+            storage.delete_task_from_project(&task_id).map_err(|e| PyException::new_err(format!("{}", e)))
+        })
+    }
+
+    pub fn cli_search_tasks(&self, query: String) -> PyResult<Vec<PyTask>> {
+        self.runtime.block_on(async {
+            Done::search_tasks(&query, false, None).await.map(|tasks| tasks.into_iter().map(PyTask::from).collect()).map_err(|e| PyException::new_err(format!("{}", e)))
+        })
+    }
+
+    pub fn cli_create_backup(&self, ) -> PyResult<String> {
+        self.runtime.block_on(async {
+            Done::init().await.map_err(|e| PyException::new_err(format!("{}", e)))?;
+            let storage = Storage::new().await.map_err(|e| PyException::new_err(format!("{}", e)))?;
+            storage.create_backup().await.map_err(|e| PyException::new_err(format!("{}", e)))
+        })
+    }
+
+    pub fn cli_list_backups(&self) -> PyResult<Vec<String>> {
+        self.runtime.block_on(async {
+            Done::init().await.map_err(|e| PyException::new_err(format!("{}", e)))?;
+            let storage = Storage::new().await.map_err(|e| PyException::new_err(format!("{}", e)))?;
+            storage.list_backups().await.map_err(|e| PyException::new_err(format!("{}", e)))
+        })
+    }
+
+    pub fn cli_restore_backup(&self, backup_name: String) -> PyResult<()> {
+        self.runtime.block_on(async {
+            Done::init().await.map_err(|e| PyException::new_err(format!("{}", e)))?;
+            let storage = Storage::new().await.map_err(|e| PyException::new_err(format!("{}", e)))?;
+            storage.restore_backup(&backup_name).await.map_err(|e| PyException::new_err(format!("{}", e)))
+        })
+    }
+
+    pub fn cli_create_memory(&self, moment: String, meaning: String, reason: String) -> PyResult<()> {
+        self.runtime.block_on(async {
+            Done::create_memory(&moment, &meaning, &reason).await.map(|_| ()).map_err(|e| PyException::new_err(format!("{}", e)))
+        })
+    }
+
+    pub fn cli_create_idea(&self, content: String) -> PyResult<()> {
+        self.runtime.block_on(async {
+            Done::create_idea(&content, None).await.map(|_| ()).map_err(|e| PyException::new_err(format!("{}", e)))
+        })
+    }
+
+    pub fn cli_chat(&self, message: String) -> PyResult<String> {
+        self.runtime.block_on(async {
+            Tdz::chat(&message).await.map_err(|e| PyException::new_err(format!("{}", e)))
+        })
+    }
+
+    pub fn cli_register_with_server(&self, server_url: String) -> PyResult<()> {
+        self.runtime.block_on(async {
+            register_with_server(&server_url).await.map(|_| ()).map_err(|e| PyException::new_err(format!("{}", e)))
+        })
+    }
+
+    pub fn cli_get_registration_status(&self) -> PyResult<Option<PyRegistrationInfo>> {
+        self.runtime.block_on(async {
+            let info = get_registration_info().await.map_err(|e| PyException::new_err(format!("{}", e)))?;
+            Ok(info.map(PyRegistrationInfo::from))
+        })
+    }
+
+    pub fn cli_clear_registration(&self) -> PyResult<()> {
+        self.runtime.block_on(async {
+            clear_registration().await.map_err(|e| PyException::new_err(format!("{}", e)))
+        })
+    }
+
 }
 
 // ========== Data Types ==========
