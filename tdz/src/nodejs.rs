@@ -1281,6 +1281,313 @@ impl Todozi {
             clear_registration().await.map_err(|e| Error::from_reason(format!("{}", e)))
         })
     }
+
+    // ========== Summary API ==========
+    #[napi]
+    pub fn create_summary(&self, content: String, priority: String, context: Option<String>, tags: Option<Vec<String>>) -> Result<String> {
+        self.runtime.block_on(async {
+            let mut manager = crate::summary::SummaryManager::new();
+            use crate::models::{Summary, SummaryPriority};
+            let summary = Summary {
+                id: String::new(),
+                content,
+                context,
+                priority: priority.parse().unwrap_or(SummaryPriority::Medium),
+                tags: tags.unwrap_or_default(),
+                created_at: chrono::Utc::now(),
+                updated_at: chrono::Utc::now(),
+            };
+            manager.create_summary(summary).await.map_err(|e| Error::from_reason(format!("{}", e)))
+        })
+    }
+
+    #[napi]
+    pub fn get_summary(&self, summary_id: String) -> Result<Option<JsSummary>> {
+        self.runtime.block_on(async {
+            let manager = crate::summary::SummaryManager::new();
+            Ok(manager.get_summary(&summary_id).map(|s| JsSummary::from(s.clone())))
+        })
+    }
+
+    #[napi]
+    pub fn list_summaries(&self) -> Result<Vec<JsSummary>> {
+        self.runtime.block_on(async {
+            let manager = crate::summary::SummaryManager::new();
+            Ok(manager.get_all_summaries().into_iter().map(|s| JsSummary::from(s.clone())).collect())
+        })
+    }
+
+    #[napi]
+    pub fn update_summary(&self, summary_id: String, content: Option<String>, context: Option<String>, priority: Option<String>, tags: Option<Vec<String>>) -> Result<()> {
+        self.runtime.block_on(async {
+            let mut manager = crate::summary::SummaryManager::new();
+            use crate::summary::SummaryUpdate;
+            let updates = SummaryUpdate {
+                content,
+                context,
+                priority: priority.and_then(|p| p.parse().ok()),
+                tags,
+            };
+            manager.update_summary(&summary_id, updates).await.map_err(|e| Error::from_reason(format!("{}", e)))
+        })
+    }
+
+    #[napi]
+    pub fn delete_summary(&self, summary_id: String) -> Result<()> {
+        self.runtime.block_on(async {
+            let mut manager = crate::summary::SummaryManager::new();
+            manager.delete_summary(&summary_id).await.map_err(|e| Error::from_reason(format!("{}", e)))
+        })
+    }
+
+    #[napi]
+    pub fn search_summaries(&self, query: String) -> Result<Vec<JsSummary>> {
+        self.runtime.block_on(async {
+            let manager = crate::summary::SummaryManager::new();
+            Ok(manager.search_summaries(&query).into_iter().map(|s| JsSummary::from(s.clone())).collect())
+        })
+    }
+
+    #[napi]
+    pub fn get_summaries_by_priority(&self, priority: String) -> Result<Vec<JsSummary>> {
+        self.runtime.block_on(async {
+            use crate::models::SummaryPriority;
+            let manager = crate::summary::SummaryManager::new();
+            let priority = priority.parse::<SummaryPriority>().map_err(|e| Error::from_reason(format!("{}", e)))?;
+            Ok(manager.get_summaries_by_priority(priority).into_iter().map(|s| JsSummary::from(s.clone())).collect())
+        })
+    }
+
+    #[napi]
+    pub fn get_recent_summaries(&self, limit: u32) -> Result<Vec<JsSummary>> {
+        self.runtime.block_on(async {
+            let manager = crate::summary::SummaryManager::new();
+            Ok(manager.get_recent_summaries(limit as usize).into_iter().map(|s| JsSummary::from(s.clone())).collect())
+        })
+    }
+
+    // ========== Comprehensive Reminder API ==========
+    #[napi]
+    pub fn create_reminder(&self, content: String, remind_at: String, priority: String, tags: Option<Vec<String>>) -> Result<String> {
+        self.runtime.block_on(async {
+            let mut manager = crate::reminder::ReminderManager::new();
+            use crate::models::{Reminder, ReminderPriority, ReminderStatus};
+            let remind_at = chrono::DateTime::parse_from_rfc3339(&remind_at)
+                .map(|dt| dt.with_timezone(&chrono::Utc))
+                .map_err(|e| Error::from_reason(format!("Invalid datetime: {}", e)))?;
+            let reminder = Reminder {
+                id: String::new(),
+                content,
+                remind_at,
+                priority: priority.parse().unwrap_or(ReminderPriority::Medium),
+                status: ReminderStatus::Pending,
+                tags: tags.unwrap_or_default(),
+                created_at: chrono::Utc::now(),
+                updated_at: chrono::Utc::now(),
+            };
+            manager.create_reminder(reminder).await.map_err(|e| Error::from_reason(format!("{}", e)))
+        })
+    }
+
+    #[napi]
+    pub fn get_reminder(&self, reminder_id: String) -> Result<Option<JsReminder>> {
+        self.runtime.block_on(async {
+            let manager = crate::reminder::ReminderManager::new();
+            Ok(manager.get_reminder(&reminder_id).map(|r| JsReminder::from(r.clone())))
+        })
+    }
+
+    #[napi]
+    pub fn list_reminders(&self) -> Result<Vec<JsReminder>> {
+        self.runtime.block_on(async {
+            let manager = crate::reminder::ReminderManager::new();
+            Ok(manager.get_all_reminders().into_iter().map(|r| JsReminder::from(r.clone())).collect())
+        })
+    }
+
+    #[napi]
+    pub fn update_reminder(&self, reminder_id: String, content: Option<String>, remind_at: Option<String>, priority: Option<String>, status: Option<String>, tags: Option<Vec<String>>) -> Result<()> {
+        self.runtime.block_on(async {
+            let mut manager = crate::reminder::ReminderManager::new();
+            use crate::reminder::ReminderUpdate;
+            let remind_at = if let Some(dt_str) = remind_at {
+                Some(chrono::DateTime::parse_from_rfc3339(&dt_str)
+                    .map(|dt| dt.with_timezone(&chrono::Utc))
+                    .map_err(|e| Error::from_reason(format!("Invalid datetime: {}", e)))?)
+            } else {
+                None
+            };
+            let updates = ReminderUpdate {
+                content,
+                remind_at,
+                priority: priority.and_then(|p| p.parse().ok()),
+                status: status.and_then(|s| s.parse().ok()),
+                tags,
+            };
+            manager.update_reminder(&reminder_id, updates).await.map_err(|e| Error::from_reason(format!("{}", e)))
+        })
+    }
+
+    #[napi]
+    pub fn delete_reminder(&self, reminder_id: String) -> Result<()> {
+        self.runtime.block_on(async {
+            let mut manager = crate::reminder::ReminderManager::new();
+            manager.delete_reminder(&reminder_id).await.map_err(|e| Error::from_reason(format!("{}", e)))
+        })
+    }
+
+    #[napi]
+    pub fn get_pending_reminders(&self) -> Result<Vec<JsReminder>> {
+        self.runtime.block_on(async {
+            let manager = crate::reminder::ReminderManager::new();
+            Ok(manager.get_pending_reminders().into_iter().map(|r| JsReminder::from(r.clone())).collect())
+        })
+    }
+
+    #[napi]
+    pub fn get_active_reminders(&self) -> Result<Vec<JsReminder>> {
+        self.runtime.block_on(async {
+            let manager = crate::reminder::ReminderManager::new();
+            Ok(manager.get_active_reminders().into_iter().map(|r| JsReminder::from(r.clone())).collect())
+        })
+    }
+
+    #[napi]
+    pub fn get_overdue_reminders(&self) -> Result<Vec<JsReminder>> {
+        self.runtime.block_on(async {
+            let manager = crate::reminder::ReminderManager::new();
+            Ok(manager.get_overdue_reminders().into_iter().map(|r| JsReminder::from(r.clone())).collect())
+        })
+    }
+
+    #[napi]
+    pub fn mark_reminder_completed(&self, reminder_id: String) -> Result<()> {
+        self.runtime.block_on(async {
+            let mut manager = crate::reminder::ReminderManager::new();
+            manager.mark_reminder_completed(&reminder_id).await.map_err(|e| Error::from_reason(format!("{}", e)))
+        })
+    }
+
+    #[napi]
+    pub fn mark_reminder_cancelled(&self, reminder_id: String) -> Result<()> {
+        self.runtime.block_on(async {
+            let mut manager = crate::reminder::ReminderManager::new();
+            manager.mark_reminder_cancelled(&reminder_id).await.map_err(|e| Error::from_reason(format!("{}", e)))
+        })
+    }
+
+    #[napi]
+    pub fn get_reminder_statistics(&self) -> Result<String> {
+        self.runtime.block_on(async {
+            let manager = crate::reminder::ReminderManager::new();
+            let stats = manager.get_reminder_statistics();
+            Ok(format!(
+                "Total: {}, Pending: {}, Active: {}, Overdue: {}",
+                stats.total_reminders, stats.pending_reminders, stats.active_reminders, stats.overdue_reminders
+            ))
+        })
+    }
+
+    // ========== Comprehensive Agent API ==========
+    #[napi]
+    pub fn create_agent(&self, name: String, description: String, capabilities: Vec<String>, specializations: Vec<String>) -> Result<String> {
+        self.runtime.block_on(async {
+            let mut manager = crate::agent::AgentManager::new();
+            use crate::models::{Agent, AgentMetadata, AgentStatus};
+            let agent = Agent {
+                id: String::new(),
+                name,
+                description,
+                capabilities,
+                specializations,
+                metadata: AgentMetadata {
+                    status: AgentStatus::Available,
+                    last_active: chrono::Utc::now(),
+                },
+                created_at: chrono::Utc::now(),
+                updated_at: chrono::Utc::now(),
+            };
+            manager.create_agent(agent).await.map_err(|e| Error::from_reason(format!("{}", e)))
+        })
+    }
+
+    #[napi]
+    pub fn get_agent(&self, agent_id: String) -> Result<Option<String>> {
+        self.runtime.block_on(async {
+            let manager = crate::agent::AgentManager::new();
+            Ok(manager.get_agent(&agent_id).map(|a| format!("{}: {} - {}", a.id, a.name, a.description)))
+        })
+    }
+
+    #[napi]
+    pub fn list_agents(&self) -> Result<Vec<String>> {
+        self.runtime.block_on(async {
+            let manager = crate::agent::AgentManager::new();
+            Ok(manager.get_all_agents().into_iter().map(|a| format!("{}: {} - {}", a.id, a.name, a.description)).collect())
+        })
+    }
+
+    #[napi]
+    pub fn list_available_agents(&self) -> Result<Vec<String>> {
+        self.runtime.block_on(async {
+            let manager = crate::agent::AgentManager::new();
+            Ok(manager.get_available_agents().into_iter().map(|a| format!("{}: {} - {}", a.id, a.name, a.description)).collect())
+        })
+    }
+
+    #[napi]
+    pub fn update_agent(&self, agent_id: String, name: Option<String>, description: Option<String>, capabilities: Option<Vec<String>>, specializations: Option<Vec<String>>, status: Option<String>) -> Result<()> {
+        self.runtime.block_on(async {
+            let mut manager = crate::agent::AgentManager::new();
+            use crate::agent::AgentUpdate;
+            let updates = AgentUpdate {
+                name,
+                description,
+                capabilities,
+                specializations,
+                status: status.and_then(|s| s.parse().ok()),
+            };
+            manager.update_agent(&agent_id, updates).await.map_err(|e| Error::from_reason(format!("{}", e)))
+        })
+    }
+
+    #[napi]
+    pub fn update_agent_status(&self, agent_id: String, status: String) -> Result<()> {
+        self.runtime.block_on(async {
+            use crate::models::AgentStatus;
+            let mut manager = crate::agent::AgentManager::new();
+            let status = status.parse::<AgentStatus>().map_err(|e| Error::from_reason(format!("{}", e)))?;
+            manager.update_agent_status(&agent_id, status).await.map_err(|e| Error::from_reason(format!("{}", e)))
+        })
+    }
+
+    #[napi]
+    pub fn assign_task_to_agent(&self, task_id: String, agent_id: String, project_id: String) -> Result<String> {
+        self.runtime.block_on(async {
+            let mut manager = crate::agent::AgentManager::new();
+            manager.assign_task_to_agent(task_id, &agent_id, project_id).await.map_err(|e| Error::from_reason(format!("{}", e)))
+        })
+    }
+
+    #[napi]
+    pub fn complete_agent_assignment(&self, task_id: String) -> Result<()> {
+        self.runtime.block_on(async {
+            let mut manager = crate::agent::AgentManager::new();
+            manager.complete_agent_assignment(&task_id).await.map_err(|e| Error::from_reason(format!("{}", e)))
+        })
+    }
+
+    #[napi]
+    pub fn get_agent_statistics(&self) -> Result<String> {
+        self.runtime.block_on(async {
+            let manager = crate::agent::AgentManager::new();
+            let stats = manager.get_agent_statistics();
+            Ok(format!(
+                "Total: {}, Available: {}, Busy: {}, Inactive: {}, Assignments: {}, Completed: {}",
+                stats.total_agents, stats.available_agents, stats.busy_agents, stats.inactive_agents, stats.total_assignments, stats.completed_assignments
+            ))
+        })
+    }
 }
 
 #[napi(object)]
