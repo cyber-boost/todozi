@@ -67,7 +67,15 @@ pip-delete-this-directory.txt
 api/*
 summaries/*
 web/*
-z_archive/*
+z_archive/
 osxcross/
 *.sh
 .*
+
+docker-osxcross/
+osxcross-toolchain/
+tdz_gui/ 
+
+# Rust build artifacts - ignore all target directories anywhere
+target/
+**/target/
