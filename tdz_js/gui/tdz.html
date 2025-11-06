@@ -5,7 +5,9 @@
         <meta name="viewport" content="width=device-width, initial-scale=1.0" />
         <title>Todozi - Enhanced Task Management</title>
         <link rel="stylesheet" href="./tdz_style.css" />
+        <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.js"></script>
         <script src="./tdz_client.js"></script>
+        <script src="./tdz_enhancements.js"></script>
     </head>
     <body>
         <div class="app-container">
@@ -151,10 +153,12 @@
                                 stroke-width="2"
                             >
                                 <path
-                                    d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"
+                                    d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"
                                 />
+                                <line x1="12" y1="9" x2="12" y2="13" />
+                                <line x1="12" y1="17" x2="12.01" y2="17" />
                             </svg>
-                            <span>Feelings</span>
+                            <span>Error Tracking</span>
                             <span class="nav-item-count" id="feelingsCount"
                                 >0</span
                             >
@@ -262,6 +266,13 @@
                             />
                         </div>
 
+                        <button class="icon-button" onclick="toggleDarkMode()" id="themeToggle" title="Toggle dark mode">
+                            <svg class="theme-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path class="sun-icon" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z" />
+                                <path class="moon-icon" style="display: none;" d="M21 12.79A9 9 0 1111.21 3 7 7 0 0021 12.79z" />
+                            </svg>
+                        </button>
+
                         <div
                             class="user-avatar"
                             onclick="showProfileMenu(event)"
@@ -342,6 +353,37 @@
                     <div id="tasksView">
                         <div class="section-header">
                             <h2 class="section-title">Tasks</h2>
+                            <div class="view-switcher">
+                                <button class="view-button active" onclick="switchTaskView('list')" data-view="list">
+                                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                        <line x1="8" y1="6" x2="21" y2="6"></line>
+                                        <line x1="8" y1="12" x2="21" y2="12"></line>
+                                        <line x1="8" y1="18" x2="21" y2="18"></line>
+                                        <line x1="3" y1="6" x2="3.01" y2="6"></line>
+                                        <line x1="3" y1="12" x2="3.01" y2="12"></line>
+                                        <line x1="3" y1="18" x2="3.01" y2="18"></line>
+                                    </svg>
+                                    List
+                                </button>
+                                <button class="view-button" onclick="switchTaskView('kanban')" data-view="kanban">
+                                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                        <rect x="3" y="3" width="7" height="7"></rect>
+                                        <rect x="14" y="3" width="7" height="7"></rect>
+                                        <rect x="14" y="14" width="7" height="7"></rect>
+                                        <rect x="3" y="14" width="7" height="7"></rect>
+                                    </svg>
+                                    Kanban
+                                </button>
+                                <button class="view-button" onclick="switchTaskView('calendar')" data-view="calendar">
+                                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                        <rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect>
+                                        <line x1="16" y1="2" x2="16" y2="6"></line>
+                                        <line x1="8" y1="2" x2="8" y2="6"></line>
+                                        <line x1="3" y1="10" x2="21" y2="10"></line>
+                                    </svg>
+                                    Calendar
+                                </button>
+                            </div>
                             <button
                                 class="btn btn-primary"
                                 onclick="showCreateModal()"
@@ -368,6 +410,49 @@
                                     Create Your First Task
                                 </button>
                             </div>
+                        </div>
+
+                        <!-- Kanban Board View -->
+                        <div class="kanban-board" id="kanbanBoard" style="display: none;">
+                            <div class="kanban-column" data-status="todo">
+                                <div class="kanban-header">
+                                    <h3>To Do</h3>
+                                    <span class="kanban-count">0</span>
+                                </div>
+                                <div class="kanban-tasks" data-status="todo"></div>
+                            </div>
+                            <div class="kanban-column" data-status="in-progress">
+                                <div class="kanban-header">
+                                    <h3>In Progress</h3>
+                                    <span class="kanban-count">0</span>
+                                </div>
+                                <div class="kanban-tasks" data-status="in-progress"></div>
+                            </div>
+                            <div class="kanban-column" data-status="completed">
+                                <div class="kanban-header">
+                                    <h3>Completed</h3>
+                                    <span class="kanban-count">0</span>
+                                </div>
+                                <div class="kanban-tasks" data-status="completed"></div>
+                            </div>
+                        </div>
+
+                        <!-- Calendar View -->
+                        <div class="calendar-view" id="calendarView" style="display: none;">
+                            <div class="calendar-header">
+                                <button class="calendar-nav" onclick="previousMonth()">
+                                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                        <polyline points="15 18 9 12 15 6"></polyline>
+                                    </svg>
+                                </button>
+                                <h3 id="calendarMonth">January 2025</h3>
+                                <button class="calendar-nav" onclick="nextMonth()">
+                                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                        <polyline points="9 18 15 12 9 6"></polyline>
+                                    </svg>
+                                </button>
+                            </div>
+                            <div class="calendar-grid" id="calendarGrid"></div>
                         </div>
                     </div>
 
@@ -428,14 +513,22 @@
                             <h2 class="section-title">Analytics Dashboard</h2>
                         </div>
 
-                        <div class="empty-state">
-                            <div class="empty-state-icon">📊</div>
-                            <div class="empty-state-title">
-                                Analytics Coming Soon
+                        <div class="analytics-grid">
+                            <div class="chart-card">
+                                <h3 class="chart-title">Task Completion Trend</h3>
+                                <canvas id="completionTrendChart"></canvas>
                             </div>
-                            <div class="empty-state-desc">
-                                Detailed analytics and insights will be
-                                available in a future update
+                            <div class="chart-card">
+                                <h3 class="chart-title">Tasks by Priority</h3>
+                                <canvas id="priorityChart"></canvas>
+                            </div>
+                            <div class="chart-card">
+                                <h3 class="chart-title">Tasks by Status</h3>
+                                <canvas id="statusChart"></canvas>
+                            </div>
+                            <div class="chart-card">
+                                <h3 class="chart-title">Weekly Activity</h3>
+                                <canvas id="activityChart"></canvas>
                             </div>
                         </div>
                     </div>
