@@ -237,8 +237,7 @@ MIT License - see [LICENSE](LICENSE) file for details.
 
 ## Roadmap
 
-- [ ] Mobile SDK (MAUI)
-- [ ] Web API integration
-- [ ] Advanced analytics dashboard
-- [ ] Plugin architecture
-- [ ] GraphQL API support
+- [Website](https://todozi.com) - Official Todozi website
+- [GitHub](https://github.com/cyber-boost/todozi) - Source code repository
+- [Todozi C Library](https://github.com/cyber-boost/todozi/tree/main/tdz_c) - The native C implementation
+- [Todozi Conan Package](https://conan.io/center/todozi) - C library package
