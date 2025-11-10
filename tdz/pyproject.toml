@@ -1,0 +1,63 @@
+[build-system]
+requires = ["maturin>=1.0,<2.0"]
+build-backend = "maturin"
+
+[project]
+name = "todozi"
+version = "1.1.7"
+description = "Python SDK for the todozi Configuration Language"
+readme = "README.md"
+license = {text = "MIT"}
+requires-python = ">=3.8"
+authors = [
+    {name = "Bernie", email = "bernie@todozi.cm"},
+    {name = "Buddy", email = "buddy@todozi.cm"},
+]
+maintainers = [
+    {name = "Bernie", email = "bernie@todozi.cm"},
+    {name = "Buddy", email = "buddy@todozi.cm"},
+]
+classifiers = [
+    "Development Status :: 5 - Production/Stable",
+    "Intended Audience :: Developers",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: OS Independent",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.8",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Rust",
+    "Topic :: Software Development :: Libraries :: Python Modules",
+    "Topic :: System :: Distributed Computing",
+]
+dependencies = []
+
+[project.urls]
+Homepage = "https://github.com/cyber-boost/todozi"
+Repository = "https://github.com/cyber-boost/todozi"
+Issues = "https://github.com/cyber-boost/todozi/issues"
+
+[project.scripts]
+todozi = "todozi.cli:main"
+
+[tool.maturin]
+# Configure Maturin to build the Python extension
+module-name = "todozi"
+python-source = "."
+features = ["python"]
+
+[tool.maturin.build-options]
+# Enable debug symbols in development
+debug = true
+
+[tool.maturin.sdist]
+# Include additional files in source distribution
+include = [
+    "todozi/tdz.py",
+    "todozi/tdz.pyi",
+    "build.py",
+    "README.md",
+    "tests/**/*",
+]

@@ -1,0 +1,20 @@
+{
+    "name": "todozi/todozi-php",
+    "description": "PHP bindings for Todozi task management system",
+    "type": "extension",
+    "version": "0.1.0",
+    "license": "MIT",
+    "authors": [
+        {
+            "name": "CyberBoost"
+        }
+    ],
+    "require": {
+        "php": ">=7.4"
+    },
+    "autoload": {
+        "psr-4": {
+            "Todozi\\": "src/"
+        }
+    }
+}

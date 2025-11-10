@@ -749,14 +749,14 @@ pub async fn tdz_cnt(
 
     // Process memories
     for memory in &chat_content.memories {
-        if let Ok(_) = crate::Memories::create(&memory.moment, &memory.meaning, &memory.reason).await {
+        if let Ok(_) = crate::Done::create_memory(&memory.moment, &memory.meaning, &memory.reason).await {
             processed_items.push(format!("Memory: {}", memory.moment));
         }
     }
 
     // Process ideas
     for idea in &chat_content.ideas {
-        if let Ok(_) = crate::Ideas::create(&idea.idea).await {
+        if let Ok(_) = crate::Done::create_idea(&idea.idea, None).await {
             processed_items.push(format!("Idea: {}", idea.idea));
         }
     }

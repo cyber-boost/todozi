@@ -1,0 +1,94 @@
+{
+  "type": "function",
+  "function": {
+    "name": "create_task",
+    "description": "Create a new task in the Todozi system with automatic AI assignment and queue management. Use this when users mention tasks, todos, or things they need to do.",
+    "parameters": {
+      "type": "object",
+      "properties": {
+        "action": {
+          "type": "string",
+          "description": "Task description/action to perform. Be specific and actionable.",
+          "examples": [
+            "Implement user authentication system",
+            "Write API documentation",
+            "Fix login bug in mobile app",
+            "Design database schema for e-commerce platform"
+          ]
+        },
+        "time": {
+          "type": "string",
+          "description": "Time estimate (e.g., '2 hours', '1 day', '1 week'). Optional but helpful for planning.",
+          "examples": ["2 hours", "1 day", "3 days", "1 week"]
+        },
+        "priority": {
+          "type": "string",
+          "enum": ["low", "medium", "high", "critical", "urgent"],
+          "description": "Priority level. Use 'urgent' or 'critical' for time-sensitive issues.",
+          "examples": ["low", "medium", "high", "urgent", "critical"]
+        },
+        "project": {
+          "type": "string",
+          "description": "Project name for organization. Use existing projects or create new ones.",
+          "examples": ["website_redesign", "mobile_app", "api_development", "infrastructure"]
+        },
+        "assignee": {
+          "type": "string",
+          "enum": ["ai", "human", "collaborative"],
+          "description": "Who should handle this task. 'ai' for AI processing, 'human' for manual work, 'collaborative' for both.",
+          "examples": ["ai", "human", "collaborative"]
+        },
+        "tags": {
+          "type": "string",
+          "description": "Comma-separated tags for categorization and search.",
+          "examples": ["frontend,ui,design", "backend,api,database", "testing,q&a", "documentation"]
+        },
+        "context": {
+          "type": "string",
+          "description": "Additional context, requirements, or background information.",
+          "examples": [
+            "This task requires knowledge of React and TypeScript",
+            "Must follow our existing design system",
+            "Coordinate with the backend team for API changes"
+          ]
+        }
+      },
+      "required": ["action"],
+      "examples": [
+        {
+          "description": "Create a high-priority task for AI processing",
+          "example": {
+            "action": "Implement user authentication system",
+            "time": "4 hours",
+            "priority": "high",
+            "project": "security_upgrade",
+            "assignee": "ai",
+            "tags": "security,authentication,backend",
+            "context": "Must integrate with existing user management system"
+          }
+        },
+        {
+          "description": "Create a collaborative task for human-AI work",
+          "example": {
+            "action": "Design new landing page",
+            "time": "2 days",
+            "priority": "medium",
+            "project": "marketing_site",
+            "assignee": "collaborative",
+            "tags": "design,frontend,marketing",
+            "context": "Should match our brand guidelines and be mobile-responsive"
+          }
+        },
+        {
+          "description": "Simple task creation",
+          "example": {
+            "action": "Fix typo in README",
+            "priority": "low",
+            "assignee": "human",
+            "tags": "documentation"
+          }
+        }
+      ]
+    }
+  }
+}

@@ -2,8 +2,9 @@ use serde_json::{json, Value};
 use std::collections::HashMap;
 use std::sync::Arc;
 use tokio::sync::Mutex;
-use crate::{Tdz, Storage, Find, Actions, Memories, Ideas, Queue, Stats, Easy, extract_content, strategy_content};
-use crate::emb::TodoziEmbeddingService;
+use crate::{Done, Storage, extract_content, strategy_content};
+use crate::emb::{TodoziEmbeddingService, SimilarityResult};
+use crate::models::QueueItem;
 
 #[derive(Debug)]
 pub enum ExecutorError {
@@ -162,7 +163,7 @@ async fn execute_simple_task(
         .get("content")
         .and_then(|v| v.as_str())
         .ok_or_else(|| ExecutorError::MissingParameter("content".to_string()))?;
-    match Easy::do_it(content).await {
+    match Done::task(content).await {
         Ok(task_id) => {
             Ok(ExecutionResult {
                 success: true,
@@ -190,7 +191,7 @@ async fn execute_urgent_task(
         .get("content")
         .and_then(|v| v.as_str())
         .ok_or_else(|| ExecutorError::MissingParameter("content".to_string()))?;
-    match Tdz::urgent(content).await {
+    match Done::urgent(content).await {
         Ok(task_id) => {
             Ok(ExecutionResult {
                 success: true,
@@ -222,7 +223,7 @@ async fn execute_high_task(
         .get("content")
         .and_then(|v| v.as_str())
         .ok_or_else(|| ExecutorError::MissingParameter("content".to_string()))?;
-    match Tdz::high(content).await {
+    match Done::high(content).await {
         Ok(task_id) => {
             Ok(ExecutionResult {
                 success: true,
@@ -254,7 +255,7 @@ async fn execute_low_task(
         .get("content")
         .and_then(|v| v.as_str())
         .ok_or_else(|| ExecutorError::MissingParameter("content".to_string()))?;
-    match Tdz::low(content).await {
+    match Done::low(content).await {
         Ok(task_id) => {
             Ok(ExecutionResult {
                 success: true,
@@ -286,7 +287,7 @@ async fn execute_ai_task(
         .get("content")
         .and_then(|v| v.as_str())
         .ok_or_else(|| ExecutorError::MissingParameter("content".to_string()))?;
-    match Actions::ai(content).await {
+    match Done::ai(content).await {
         Ok(task_id) => {
             Ok(ExecutionResult {
                 success: true,
@@ -320,7 +321,7 @@ async fn execute_human_task(
         .get("content")
         .and_then(|v| v.as_str())
         .ok_or_else(|| ExecutorError::MissingParameter("content".to_string()))?;
-    match Actions::human(content).await {
+    match Done::human(content).await {
         Ok(task_id) => {
             Ok(ExecutionResult {
                 success: true,
@@ -353,7 +354,7 @@ async fn execute_collab_task(
         .get("content")
         .and_then(|v| v.as_str())
         .ok_or_else(|| ExecutorError::MissingParameter("content".to_string()))?;
-    match Actions::collab(content).await {
+    match Done::collab(content).await {
         Ok(task_id) => {
             Ok(ExecutionResult {
                 success: true,
@@ -389,11 +390,11 @@ async fn execute_find(
         .get("content")
         .and_then(|v| v.as_str())
         .ok_or_else(|| ExecutorError::MissingParameter("content".to_string()))?;
-    match Find::tdz_find(content).await {
+    match Done::tdz_find(content).await {
         Ok(results) => {
             Ok(ExecutionResult {
                 success: true,
-                output: format!("🔍 Smart search results:\n{}", results),
+                output: format!("🔍 Smart search results:\n{:?}", results),
                 error: None,
                 metadata: HashMap::from([
                         ("action".to_string(), json!("find")),
@@ -415,13 +416,13 @@ async fn execute_ai_search(
         .get("content")
         .and_then(|v| v.as_str())
         .ok_or_else(|| ExecutorError::MissingParameter("content".to_string()))?;
-    match Find::deep(content).await {
+    match Done::deep(content).await {
         Ok(results) => {
-            let formatted = results
+            let formatted: String = results
                 .iter()
-                .map(|r| {
+                .map(|r: &SimilarityResult| {
                     format!(
-                        "• {} (similarity: {:.2})", r.text_content, r.similarity_score
+                        "• {} [ID: {}]", r.text_content, r.content_id
                     )
                 })
                 .collect::<Vec<_>>()
@@ -451,11 +452,11 @@ async fn execute_fast_search(
         .get("content")
         .and_then(|v| v.as_str())
         .ok_or_else(|| ExecutorError::MissingParameter("content".to_string()))?;
-    match Find::fast(content).await {
+    match Done::fast(content).await {
         Ok(results) => {
             Ok(ExecutionResult {
                 success: true,
-                output: format!("⚡ Fast search results:\n{}", results),
+                output: format!("⚡ Fast search results:\n{:?}", results),
                 error: None,
                 metadata: HashMap::from([
                         ("action".to_string(), json!("fast_search")),
@@ -479,11 +480,11 @@ async fn execute_smart_search(
         .get("content")
         .and_then(|v| v.as_str())
         .ok_or_else(|| ExecutorError::MissingParameter("content".to_string()))?;
-    match Find::smart(content).await {
+    match Done::smart(content).await {
         Ok(results) => {
             Ok(ExecutionResult {
                 success: true,
-                output: format!("🧠 Smart intent search results:\n{}", results),
+                output: format!("🧠 Smart intent search results:\n{:?}", results),
                 error: None,
                 metadata: HashMap::from([
                         ("action".to_string(), json!("smart_search")),
@@ -508,8 +509,9 @@ async fn execute_remember(
         .and_then(|v| v.as_str())
         .ok_or_else(|| ExecutorError::MissingParameter("content".to_string()))?;
     let extra = params.get("extra").and_then(|v| v.as_str()).unwrap_or(content);
-    match Memories::create(content, extra, "Created via simple interface").await {
-        Ok(memory_id) => {
+    match Done::create_memory(content, extra, "Created via simple interface").await {
+        Ok(memory_task) => {
+            let memory_id = memory_task.id;
             Ok(ExecutionResult {
                 success: true,
                 output: format!("🧠 Memory saved: {}", memory_id),
@@ -537,7 +539,7 @@ async fn execute_important_memory(
         .and_then(|v| v.as_str())
         .ok_or_else(|| ExecutorError::MissingParameter("content".to_string()))?;
     let extra = params.get("extra").and_then(|v| v.as_str()).unwrap_or(content);
-    match Memories::important(content, extra, "Important via simple interface").await {
+    match Done::important(content, extra, "Important via simple interface").await {
         Ok(memory_id) => {
             Ok(ExecutionResult {
                 success: true,
@@ -569,8 +571,9 @@ async fn execute_idea(
         .get("content")
         .and_then(|v| v.as_str())
         .ok_or_else(|| ExecutorError::MissingParameter("content".to_string()))?;
-    match Ideas::create(content).await {
-        Ok(idea_id) => {
+    match Done::create_idea(content, None).await {
+        Ok(idea_task) => {
+            let idea_id = idea_task.id;
             Ok(ExecutionResult {
                 success: true,
                 output: format!("💡 Idea saved: {}", idea_id),
@@ -597,7 +600,7 @@ async fn execute_breakthrough_idea(
         .get("content")
         .and_then(|v| v.as_str())
         .ok_or_else(|| ExecutorError::MissingParameter("content".to_string()))?;
-    match Ideas::breakthrough(content).await {
+    match Done::breakthrough(content).await {
         Ok(idea_id) => {
             Ok(ExecutionResult {
                 success: true,
@@ -629,7 +632,7 @@ async fn execute_complete(
         .get("content")
         .and_then(|v| v.as_str())
         .ok_or_else(|| ExecutorError::MissingParameter("content".to_string()))?;
-    match Actions::complete(content).await {
+    match Done::complete(content).await {
         Ok(_) => {
             Ok(ExecutionResult {
                 success: true,
@@ -657,7 +660,7 @@ async fn execute_start(
         .get("content")
         .and_then(|v| v.as_str())
         .ok_or_else(|| ExecutorError::MissingParameter("content".to_string()))?;
-    match Actions::begin(content).await {
+    match Done::begin(content).await {
         Ok(_) => {
             Ok(ExecutionResult {
                 success: true,
@@ -681,7 +684,7 @@ async fn execute_start(
 async fn execute_stats(
     _params: &serde_json::Map<String, Value>,
 ) -> Result<ExecutionResult, ExecutorError> {
-    match Stats::quick().await {
+    match Done::quick().await {
         Ok(stats) => {
             Ok(ExecutionResult {
                 success: true,
@@ -704,10 +707,10 @@ async fn execute_stats(
 async fn execute_queue(
     _params: &serde_json::Map<String, Value>,
 ) -> Result<ExecutionResult, ExecutorError> {
-    match Queue::list().await {
+    match Done::list_queue_items().await {
         Ok(items) => {
-            let backlog = Queue::backlog().await.unwrap_or_default();
-            let active = Queue::active().await.unwrap_or_default();
+            let backlog: Vec<QueueItem> = Done::backlog().await.unwrap_or_default();
+            let active: Vec<QueueItem> = Done::active().await.unwrap_or_default();
             Ok(ExecutionResult {
                 success: true,
                 output: format!(
@@ -742,7 +745,7 @@ async fn execute_chat(
         .get("content")
         .and_then(|v| v.as_str())
         .ok_or_else(|| ExecutorError::MissingParameter("content".to_string()))?;
-    match Tdz::chat(content).await {
+    match Done::chat(content).await {
         Ok(chat_content) => {
             let mut results = Vec::new();
             let mut metadata = HashMap::new();

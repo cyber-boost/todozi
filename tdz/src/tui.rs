@@ -2671,6 +2671,25 @@ impl TodoziApp {
                                 self.show_task_details = Some(task.clone());
                             }
                         }
+                        3 => {
+                            let actual_task_index = if task_index == 0 {
+                                0
+                            } else {
+                                task_index - 1
+                            };
+                            if actual_task_index < self.filtered_tasks.len() {
+                                let task = &self.filtered_tasks[actual_task_index];
+                                // Show steps editing message - for now, show details with steps
+                                // In future, could open a dedicated steps editor
+                                self.show_task_details = Some(task.clone());
+                                self.toast_notifications.push(ToastNotification {
+                                    message: format!("Use 'todozi steps show {}' to view/edit steps", task.id),
+                                    notification_type: ToastType::Info,
+                                    created_at: std::time::Instant::now(),
+                                    duration: std::time::Duration::from_secs(3),
+                                });
+                            }
+                        }
                         _ => {}
                     }
                     self.task_action_menu = None;
@@ -3071,7 +3090,7 @@ impl TodoziApp {
             f.render_stateful_widget(scrollbar, task_chunks[1], &mut scrollbar_state);
         }
         if let Some(task_index) = self.task_action_menu {
-            let menu_items = vec!["Edit Task", "Complete Task", "View Details"];
+            let menu_items = vec!["Edit Task", "Complete Task", "View Details", "Edit Steps"];
             let menu_height = menu_items.len() + 2;
             let menu_width = 20;
             let menu_x = 10;
@@ -3110,8 +3129,20 @@ impl TodoziApp {
             f.render_widget(menu_list, menu_area);
         }
         if let Some(task) = &self.show_task_details {
-            let details_width = 60;
-            let details_height = 20;
+            // Load steps for this task
+            let steps_data = crate::storage::load_task_steps(&task.id).ok().flatten();
+            
+            let details_width = 70;
+            let mut details_height = 20;
+            // Increase height if steps exist
+            if let Some(steps) = &steps_data {
+                if let Some(steps_array) = steps.get("steps").and_then(|s| s.as_array()) {
+                    details_height = (20 + steps_array.len() as u16 * 2).min(35);
+                }
+                if steps.get("summary").and_then(|s| s.as_str()).is_some() {
+                    details_height += 3;
+                }
+            }
             let details_x = (area.width.saturating_sub(details_width)) / 2;
             let details_y = (area.height.saturating_sub(details_height)) / 2;
             let details_area = Rect::new(
@@ -3120,23 +3151,91 @@ impl TodoziApp {
                 details_width,
                 details_height,
             );
-            let details_content = vec![
-                format!("Task ID: {}", task.id), format!("Action: {}", task.action),
-                format!("Time: {}", task.time), format!("Priority: {:?}", task.priority),
-                format!("Status: {:?}", task.status), format!("Project: {}", task
-                .parent_project), format!("Assignee: {:?}", task.assignee),
-                format!("Progress: {}%", task.progress.unwrap_or(0)),
-                format!("Created: {}", task.created_at.format("%Y-%m-%d %H:%M:%S")),
-                format!("Updated: {}", task.updated_at.format("%Y-%m-%d %H:%M:%S")), if !
-                task.tags.is_empty() { format!("Tags: {}", task.tags.join(", ")) } else {
-                "Tags: None".to_string() }, if ! task.dependencies.is_empty() {
-                format!("Dependencies: {}", task.dependencies.join(", ")) } else {
-                "Dependencies: None".to_string() }, if let Some(notes) = & task
-                .context_notes { format!("Notes: {}", notes) } else { "Notes: None"
-                .to_string() },
+            
+            let priority_str = format!("{:?}", task.priority);
+            let status_str = format!("{:?}", task.status);
+            let assignee_str = format!("{:?}", task.assignee);
+            let progress_str = format!("{}%", task.progress.unwrap_or(0));
+            let mut details_lines: Vec<Line> = vec![
+                Line::from(vec![Span::styled("Task ID: ", Style::default().bold()), Span::raw(task.id.as_str())]),
+                Line::from(vec![Span::styled("Action: ", Style::default().bold()), Span::raw(task.action.as_str())]),
+                Line::from(vec![Span::styled("Time: ", Style::default().bold()), Span::raw(task.time.as_str())]),
+                Line::from(vec![Span::styled("Priority: ", Style::default().bold()), Span::raw(&priority_str)]),
+                Line::from(vec![Span::styled("Status: ", Style::default().bold()), Span::raw(&status_str)]),
+                Line::from(vec![Span::styled("Project: ", Style::default().bold()), Span::raw(task.parent_project.as_str())]),
+                Line::from(vec![Span::styled("Assignee: ", Style::default().bold()), Span::raw(&assignee_str)]),
+                Line::from(vec![Span::styled("Progress: ", Style::default().bold()), Span::raw(&progress_str)]),
+                Line::from(""),
             ];
-            let details_text = details_content.join("\n");
-            let details_widget = Paragraph::new(details_text)
+            
+            // Add steps if available
+            if let Some(steps) = &steps_data {
+                if let Some(summary) = steps.get("summary").and_then(|s| s.as_str()) {
+                    if !summary.is_empty() {
+                        details_lines.push(Line::from(""));
+                        details_lines.push(Line::from(vec![
+                            Span::styled("📝 Summary: ", Style::default().fg(self.display_config.color_scheme.info).add_modifier(Modifier::BOLD))
+                        ]));
+                        // Split summary into multiple lines if too long
+                        let summary_words: Vec<&str> = summary.split_whitespace().collect();
+                        let mut current_line = String::new();
+                        for word in summary_words {
+                            if current_line.len() + word.len() + 1 > 60 {
+                                if !current_line.is_empty() {
+                                    let trimmed_line = current_line.trim().to_string();
+                                    details_lines.push(Line::from(trimmed_line));
+                                    current_line = String::new();
+                                }
+                            }
+                            if !current_line.is_empty() {
+                                current_line.push(' ');
+                            }
+                            current_line.push_str(word);
+                        }
+                        if !current_line.is_empty() {
+                            details_lines.push(Line::from(current_line));
+                        }
+                    }
+                }
+                
+                if let Some(steps_array) = steps.get("steps").and_then(|s| s.as_array()) {
+                    if !steps_array.is_empty() {
+                        details_lines.push(Line::from(""));
+                        details_lines.push(Line::from(vec![
+                            Span::styled("📌 Steps: ", Style::default().fg(self.display_config.color_scheme.primary).add_modifier(Modifier::BOLD))
+                        ]));
+                        for (i, step) in steps_array.iter().enumerate() {
+                            if let Some(step_str) = step.as_str() {
+                                details_lines.push(Line::from(vec![
+                                    Span::styled(format!("  {}. ", i + 1), Style::default().fg(self.display_config.color_scheme.muted)),
+                                    Span::raw(step_str),
+                                ]));
+                            }
+                        }
+                    }
+                }
+                
+                if let Some(status) = steps.get("status").and_then(|s| s.as_str()) {
+                    details_lines.push(Line::from(""));
+                    details_lines.push(Line::from(vec![
+                        Span::styled("Status: ", Style::default().bold()),
+                        Span::styled(status, Style::default().fg(
+                            match status {
+                                "done" => self.display_config.color_scheme.success,
+                                "archived" => self.display_config.color_scheme.muted,
+                                _ => self.display_config.color_scheme.info,
+                            }
+                        )),
+                    ]));
+                }
+            }
+            
+            details_lines.push(Line::from(""));
+            details_lines.push(Line::from(vec![
+                Span::styled("Press ESC to close", Style::default().fg(self.display_config.color_scheme.muted))
+            ]));
+            
+            let details_widget = Paragraph::new(details_lines)
                 .block(
                     Block::default()
                         .borders(Borders::ALL)

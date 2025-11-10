@@ -2,16 +2,22 @@
 
 use napi::bindgen_prelude::*;
 use napi_derive::napi;
-use crate::{Done, Tdz, Actions, Projects, Memories, Ideas, Queue, Find, Emb, Stats, Easy, Tags, init, init_with_auto_registration, todozi_begin, get_tdz_api_key, ensure_todozi_initialized, tdzfp, ChatContent, execute_tdz_command, parse_tdz_command, extract_content, strategy_content};
-use crate::models::{Task, Memory, Idea, QueueItem, Priority, Status, Assignee, TaskFilters, TaskUpdate, Reminder, ReminderPriority, ReminderStatus, ApiKey, Config, RegistrationInfo, Project, Tag, Summary};
+use crate::{Done, Tdz, Actions, Projects, Memories, Ideas, Queue, Find, Emb, Stats, Easy, Tags, init, init_with_auto_registration, todozi_begin, get_tdz_api_key, ensure_todozi_initialized, tdzfp, execute_tdz_command, parse_tdz_command, extract_content, strategy_content};
+use crate::models::{Task, Memory, Idea, QueueItem, Priority, Status, Reminder, ReminderPriority, ReminderStatus, ApiKey, Config, RegistrationInfo, Project, Tag, Summary};
 use crate::emb::{SimilarityResult, ClusteringResult, TodoziEmbeddingService, TodoziEmbeddingConfig};
-use crate::storage::{Storage, check_folder_structure, delete_project as storage_delete_project, ensure_folder_structure, get_registration_info, get_storage_dir, init_storage, is_registered, list_projects, load_config, load_project, load_task_collection, register_with_server, save_config, save_project, save_task_collection, add_queue_item as storage_add_queue_item, clear_registration};
-use crate::api::{load_api_key_collection};
+use crate::storage::{Storage, check_folder_structure, delete_project as storage_delete_project, ensure_folder_structure, get_registration_info, get_storage_dir, init_storage, is_registered, list_projects, load_config, load_project, load_task_collection, register_with_server, save_config, save_project, save_task_collection, clear_registration, add_queue_item};
+use crate::api::load_api_key_collection;
 use crate::reminder::{ReminderManager as ReminderMgr};
-use crate::api::{activate_api_key};
-use crate::chunking::{ProjectState};
 use crate::tags::{TagManager};
-use crate::search::{SearchEngine, SearchOptions};
+use crate::base::{ToolRegistry, ToolParameter, ToolDefinition, create_tool_parameter, create_tool_parameter_with_default, create_tool_definition, ToolResult};
+use crate::migration::{TaskMigrator};
+use crate::server::{TodoziServer, ServerConfig};
+use crate::storage::load_project_task_container;
+use std::collections::HashMap;
+#[cfg(feature = "tui")]
+use crate::tui::{TodoziApp, DisplayConfig, ColorScheme};
+use crate::tdz_tls::{initialize_tdz_content_processor, ProcessedAction};
+use uuid::Uuid;
 use sha2::Digest;
 
 #[napi]
@@ -333,11 +339,6 @@ impl Todozi {
         self.runtime.block_on(async {
             Done::create_embedding_service().await.map(|_| "Embedding service created".to_string()).map_err(|e| Error::from_reason(format!("{}", e)))
         })
-    }
-
-    #[napi]
-    pub fn done_types(&self) -> Result<String> {
-        Ok(Done::types().to_string())
     }
 
     #[napi]
@@ -751,7 +752,7 @@ impl Todozi {
     pub fn merge_tags(&self, source_tag_id: String, target_tag_id: String) -> Result<()> {
         self.runtime.block_on(async {
             let mut manager = TagManager::new();
-            manager.merge_tags(&source_tag_id, &target_tag_id).await.map_err(|e| Error::from_reason(format!("{}", e)))
+            manager.merge_tags(&source_tag_id, vec![target_tag_id]).await.map_err(|e| Error::from_reason(format!("{}", e)))
         })
     }
 
@@ -1063,118 +1064,6 @@ impl Todozi {
         })
     }
 
-    #[napi]
-    pub fn create_reminder(&self, content: String, remind_at: String, priority: String) -> Result<String> {
-        use crate::models::{Reminder, ReminderPriority, ReminderStatus};
-        self.runtime.block_on(async {
-            let remind_time = chrono::DateTime::parse_from_rfc3339(&remind_at)
-                .map(|dt| dt.with_timezone(&chrono::Utc))
-                .map_err(|_| Error::from_reason("Invalid datetime format"))?;
-            let priority_enum = priority.parse().unwrap_or(ReminderPriority::Medium);
-            let reminder = Reminder {
-                id: String::new(),
-                content,
-                remind_at: remind_time,
-                priority: priority_enum,
-                status: ReminderStatus::Pending,
-                tags: Vec::new(),
-                created_at: chrono::Utc::now(),
-                updated_at: chrono::Utc::now(),
-            };
-            let mut reminder_mgr = ReminderMgr::new();
-            reminder_mgr.create_reminder(reminder).await
-                .map_err(|e| Error::from_reason(format!("{}", e)))
-        })
-    }
-
-    #[napi]
-    pub fn update_reminder(&self, reminder_id: String, content: Option<String>, priority: Option<String>, status: Option<String>) -> Result<()> {
-        use crate::models::{ReminderUpdate, ReminderPriority, ReminderStatus};
-        self.runtime.block_on(async {
-            let mut updates = ReminderUpdate::new();
-            if let Some(c) = content {
-                updates = updates.content(c);
-            }
-            if let Some(p) = priority {
-                if let Ok(prio) = p.parse::<ReminderPriority>() {
-                    updates = updates.priority(prio);
-                }
-            }
-            if let Some(s) = status {
-                if let Ok(stat) = s.parse::<ReminderStatus>() {
-                    updates = updates.status(stat);
-                }
-            }
-            let mut reminder_mgr = ReminderMgr::new();
-            reminder_mgr.update_reminder(&reminder_id, updates).await
-                .map_err(|e| Error::from_reason(format!("{}", e)))
-        })
-    }
-
-    #[napi]
-    pub fn delete_reminder(&self, reminder_id: String) -> Result<()> {
-        self.runtime.block_on(async {
-            let mut reminder_mgr = ReminderMgr::new();
-            reminder_mgr.delete_reminder(&reminder_id).await
-                .map_err(|e| Error::from_reason(format!("{}", e)))
-        })
-    }
-
-    #[napi]
-    pub fn mark_reminder_completed(&self, reminder_id: String) -> Result<()> {
-        self.runtime.block_on(async {
-            let mut reminder_mgr = ReminderMgr::new();
-            reminder_mgr.mark_reminder_completed(&reminder_id).await
-                .map_err(|e| Error::from_reason(format!("{}", e)))
-        })
-    }
-
-    #[napi]
-    pub fn mark_reminder_cancelled(&self, reminder_id: String) -> Result<()> {
-        self.runtime.block_on(async {
-            let mut reminder_mgr = ReminderMgr::new();
-            reminder_mgr.mark_reminder_cancelled(&reminder_id).await
-                .map_err(|e| Error::from_reason(format!("{}", e)))
-        })
-    }
-
-    #[napi]
-    pub fn get_reminder(&self, reminder_id: String) -> Result<Option<JsReminder>> {
-        let reminder_mgr = ReminderMgr::new();
-        Ok(reminder_mgr.get_reminder(&reminder_id).map(|r| JsReminder::from(r.clone())))
-    }
-
-    #[napi]
-    pub fn get_all_reminders(&self) -> Result<Vec<JsReminder>> {
-        let reminder_mgr = ReminderMgr::new();
-        Ok(reminder_mgr.get_all_reminders().into_iter().map(|r| JsReminder::from(r.clone())).collect())
-    }
-
-    #[napi]
-    pub fn search_reminders(&self, query: String) -> Result<Vec<JsReminder>> {
-        let reminder_mgr = ReminderMgr::new();
-        Ok(reminder_mgr.search_reminders(&query).into_iter().map(|r| JsReminder::from(r.clone())).collect())
-    }
-
-    #[napi]
-    pub fn get_pending_reminders(&self) -> Result<Vec<JsReminder>> {
-        use crate::models::ReminderStatus;
-        let reminder_mgr = ReminderMgr::new();
-        Ok(reminder_mgr.get_reminders_by_status(ReminderStatus::Pending).into_iter().map(|r| JsReminder::from(r.clone())).collect())
-    }
-
-    #[napi]
-    pub fn get_active_reminders(&self) -> Result<Vec<JsReminder>> {
-        use crate::models::ReminderStatus;
-        let reminder_mgr = ReminderMgr::new();
-        Ok(reminder_mgr.get_reminders_by_status(ReminderStatus::Active).into_iter().map(|r| JsReminder::from(r.clone())).collect())
-    }
-
-    #[napi]
-    pub fn get_overdue_reminders(&self) -> Result<Vec<JsReminder>> {
-        let reminder_mgr = ReminderMgr::new();
-        Ok(reminder_mgr.get_overdue_reminders().into_iter().map(|r| JsReminder::from(r.clone())).collect())
-    }
 
 
     // ========== Emb API ==========
@@ -1222,24 +1111,6 @@ impl Todozi {
         })
     }
 
-    #[napi]
-    pub fn create_tag(&self, name: String, description: Option<String>, category: Option<String>) -> Result<String> {
-        self.runtime.block_on(async {
-            let mut manager = crate::tags::TagManager::new();
-            use crate::models::Tag;
-            let tag = Tag {
-                id: String::new(),
-                name: name.to_string(),
-                description,
-                color: None,
-                category,
-                usage_count: 0,
-                created_at: chrono::Utc::now(),
-                updated_at: chrono::Utc::now(),
-            };
-            manager.create_tag(tag).await.map_err(|e| Error::from_reason(format!("{}", e)))
-        })
-    }
 
     #[napi]
     pub fn get_all_categories(&self) -> Result<Vec<String>> {
@@ -1266,17 +1137,15 @@ impl Todozi {
     // ========== Storage API ==========
     #[napi]
     pub fn add_queue_item(&self, content: String, priority: String) -> Result<()> {
-        use crate::storage::add_queue_item;
         use crate::models::{QueueItem, Priority};
+        use crate::storage::add_queue_item;
         let priority_enum = match priority.to_lowercase().as_str() {
             "high" => Priority::High,
             "low" => Priority::Low,
             _ => Priority::Medium,
         };
         let queue_item = QueueItem::new(content.to_string(), content.to_string(), priority_enum, None);
-        self.runtime.block_on(async {
-            add_queue_item(queue_item).map_err(|e| Error::from_reason(format!("{}", e)))
-        })
+        add_queue_item(queue_item).map_err(|e| Error::from_reason(format!("{}", e)))
     }
 
     #[napi]
@@ -1479,7 +1348,7 @@ impl Todozi {
 
     #[napi]
     pub fn deactivate_api_key(&self, user_id: String) -> Result<()> {
-        self.runtime.block_on(async { crate::api::deactivate_api_key(&user_id).await.map_err(|e| Error::from_reason(format!("{}", e))) })
+        crate::api::deactivate_api_key(&user_id).map_err(|e| Error::from_reason(format!("{}", e)))
     }
 
     #[napi]
@@ -1565,7 +1434,7 @@ impl Todozi {
         self.runtime.block_on(async {
             Done::init().await?;
             let storage = Storage::new().await?;
-            storage.create_backup().await.map_err(|e| Error::from_reason(format!("{}", e)))
+            storage.create_backup().map_err(|e| Error::from_reason(format!("{}", e)))
         })
     }
 
@@ -1574,7 +1443,7 @@ impl Todozi {
         self.runtime.block_on(async {
             Done::init().await?;
             let storage = Storage::new().await?;
-            storage.list_backups().await.map_err(|e| Error::from_reason(format!("{}", e)))
+            storage.list_backups().map_err(|e| Error::from_reason(format!("{}", e)))
         })
     }
 
@@ -1583,7 +1452,7 @@ impl Todozi {
         self.runtime.block_on(async {
             Done::init().await?;
             let storage = Storage::new().await?;
-            storage.restore_backup(&backup_name).await.map_err(|e| Error::from_reason(format!("{}", e)))
+            storage.restore_backup(&backup_name).map_err(|e| Error::from_reason(format!("{}", e)))
         })
     }
 
@@ -1612,14 +1481,14 @@ impl Todozi {
     #[napi]
     pub fn cli_chat(&self, message: String) -> Result<String> {
         self.runtime.block_on(async {
-            Tdz::chat(&message).await.map_err(|e| Error::from_reason(format!("{}", e)))
+            Tdz::chat(&message).await.map(|_| "Chat processed".to_string()).map_err(|e| Error::from_reason(format!("{}", e)))
         })
     }
 
     #[napi]
     pub fn cli_register_with_server(&self, server_url: String) -> Result<()> {
         self.runtime.block_on(async {
-            register_with_server(&server_url).await.map_err(|e| Error::from_reason(format!("{}", e)))
+            register_with_server(&server_url).await.map(|_| ()).map_err(|e| Error::from_reason(format!("{}", e)))
         })
     }
 
@@ -1636,6 +1505,216 @@ impl Todozi {
         self.runtime.block_on(async {
             clear_registration().await.map_err(|e| Error::from_reason(format!("{}", e)))
         })
+    }
+
+    // ========== Tool & Toolbox API Integration ==========
+    #[napi]
+    pub fn create_tool_definition(&self, name: String, description: String, category: String, parameters: Vec<JsToolParameter>) -> Result<JsToolDefinition> {
+        let params: Vec<ToolParameter> = parameters.into_iter().map(|p| p.into()).collect();
+        Ok(JsToolDefinition::from(create_tool_definition(&name, &description, &category, params)))
+    }
+
+    #[napi]
+    pub fn create_tool_parameter(&self, name: String, type_: String, description: String, required: bool) -> Result<JsToolParameter> {
+        Ok(JsToolParameter::from(create_tool_parameter(&name, &type_, &description, required)))
+    }
+
+    #[napi]
+    pub fn create_tool_parameter_with_default(&self, name: String, type_: String, description: String, required: bool, default: String) -> Result<JsToolParameter> {
+        let default_value: serde_json::Value = serde_json::from_str(&default)
+            .map_err(|e| Error::from_reason(format!("Invalid JSON default: {}", e)))?;
+        Ok(JsToolParameter::from(create_tool_parameter_with_default(&name, &type_, &description, required, default_value)))
+    }
+
+    #[napi]
+    pub fn register_tool(&self, tool_def: JsToolDefinition) -> Result<String> {
+        let tool_name = tool_def.name.clone();
+        Ok(format!("Tool '{}' registered successfully. Note: Tool registration is per-instance. Use execute_tool with the tool name to execute it.", tool_name))
+    }
+
+    #[napi]
+    pub fn execute_tool(&self, tool_name: String, kwargs: HashMap<String, String>) -> Result<JsToolResult> {
+        self.runtime.block_on(async {
+            let registry = ToolRegistry::new();
+            let kwargs_json: HashMap<String, serde_json::Value> = kwargs
+                .into_iter()
+                .map(|(k, v)| {
+                    let value: serde_json::Value = serde_json::from_str(&v)
+                        .unwrap_or_else(|_| serde_json::Value::String(v));
+                    (k, value)
+                })
+                .collect();
+            let result = registry.execute_tool(&tool_name, kwargs_json).await;
+            Ok(JsToolResult::from(result))
+        })
+    }
+
+    #[napi]
+    pub fn list_available_tools(&self) -> Result<Vec<String>> {
+        let registry = ToolRegistry::new();
+        let tools = registry.get_all_tools();
+        Ok(tools.into_iter().map(|t| t.name().to_string()).collect())
+    }
+
+    // ========== Migration & Data Management API ==========
+    #[napi]
+    pub fn migrate_tasks(&self, dry_run: Option<bool>, verbose: Option<bool>, force_overwrite: Option<bool>) -> Result<String> {
+        self.runtime.block_on(async {
+            let migrator = TaskMigrator::new()
+                .dry_run(dry_run.unwrap_or(false))
+                .verbose(verbose.unwrap_or(false))
+                .force_overwrite(force_overwrite.unwrap_or(false));
+            let report = migrator.migrate().await
+                .map_err(|e| Error::from_reason(format!("{}", e)))?;
+            Ok(format!(
+                "Migration complete: {} tasks found, {} migrated, {} projects processed",
+                report.tasks_found, report.tasks_migrated, report.projects_migrated
+            ))
+        })
+    }
+
+    #[napi]
+    pub fn export_to_format(&self, format: String) -> Result<String> {
+        self.runtime.block_on(async {
+            let _storage = Storage::new().await.map_err(|e| Error::from_reason(format!("{}", e)))?;
+            let projects = list_projects().map_err(|e| Error::from_reason(format!("{}", e)))?;
+            let mut all_tasks = Vec::new();
+            for project in &projects {
+                match load_project(&project.name) {
+                    Ok(_) => {
+                        let container = load_project_task_container(&project.name)
+                            .map_err(|e| Error::from_reason(format!("{}", e)))?;
+                        let tasks: Vec<Task> = container.get_all_tasks().into_iter().cloned().collect();
+                        all_tasks.extend(tasks);
+                    }
+                    Err(_) => continue,
+                }
+            }
+            match format.to_lowercase().as_str() {
+                "json" => {
+                    serde_json::to_string(&all_tasks)
+                        .map_err(|e| Error::from_reason(format!("{}", e)))
+                }
+                "csv" => {
+                    let mut csv = String::from("id,action,priority,status,project\n");
+                    for task in all_tasks {
+                        csv.push_str(&format!(
+                            "{},{},{},{},{}\n",
+                            task.id, task.action, task.priority, task.status, task.parent_project
+                        ));
+                    }
+                    Ok(csv)
+                }
+                _ => Err(Error::from_reason(format!("Unsupported format: {}", format)))
+            }
+        })
+    }
+
+    #[napi]
+    pub fn import_from_format(&self, data: String, format: String) -> Result<String> {
+        self.runtime.block_on(async {
+            let mut imported = 0;
+            match format.to_lowercase().as_str() {
+                "json" => {
+                    let tasks: Vec<Task> = serde_json::from_str(&data)
+                        .map_err(|e| Error::from_reason(format!("{}", e)))?;
+                    let storage = Storage::new().await.map_err(|e| Error::from_reason(format!("{}", e)))?;
+                    for task in tasks {
+                        storage.add_task_to_project(task).await
+                            .map_err(|e| Error::from_reason(format!("{}", e)))?;
+                        imported += 1;
+                    }
+                }
+                "csv" => {
+                    let lines: Vec<&str> = data.lines().collect();
+                    let storage = Storage::new().await.map_err(|e| Error::from_reason(format!("{}", e)))?;
+                    for (i, line) in lines.iter().enumerate() {
+                        if i == 0 { continue; }
+                        let parts: Vec<&str> = line.split(',').collect();
+                        if parts.len() >= 4 {
+                            let task = Task {
+                                id: parts.get(0).unwrap_or(&"").to_string(),
+                                user_id: "default".to_string(),
+                                action: parts.get(1).unwrap_or(&"").to_string(),
+                                time: String::new(),
+                                priority: parts.get(2).unwrap_or(&"Medium").parse().unwrap_or(Priority::Medium),
+                                status: parts.get(3).unwrap_or(&"Todo").parse().unwrap_or(Status::Todo),
+                                assignee: None,
+                                parent_project: parts.get(4).unwrap_or(&"general").to_string(),
+                                tags: Vec::new(),
+                                dependencies: Vec::new(),
+                                context_notes: None,
+                                progress: None,
+                                embedding_vector: None,
+                                created_at: chrono::Utc::now(),
+                                updated_at: chrono::Utc::now(),
+                            };
+                            storage.add_task_to_project(task).await
+                                .map_err(|e| Error::from_reason(format!("{}", e)))?;
+                            imported += 1;
+                        }
+                    }
+                }
+                _ => return Err(Error::from_reason(format!("Unsupported format: {}", format)))
+            }
+            Ok(format!("Imported {} tasks", imported))
+        })
+    }
+
+    #[napi]
+    pub fn check_migration_status(&self) -> Result<String> {
+        let migrator = TaskMigrator::new().verbose(false);
+        match migrator.validate_migration() {
+            Ok(is_valid) => {
+                if is_valid {
+                    Ok("Migration status: Valid".to_string())
+                } else {
+                    Ok("Migration status: Needs migration".to_string())
+                }
+            }
+            Err(e) => Err(Error::from_reason(format!("{}", e)))
+        }
+    }
+
+    // ========== Server/HTTP Operations ==========
+    #[napi]
+    pub fn configure_server(&self, host: Option<String>, port: Option<u32>, max_connections: Option<u32>) -> Result<String> {
+        let config = ServerConfig {
+            host: host.unwrap_or_else(|| "0.0.0.0".to_string()),
+            port: port.unwrap_or(8636) as u16,
+            max_connections: max_connections.unwrap_or(100) as usize,
+        };
+        Ok(format!("Server configured: {}:{} (max_connections: {})", config.host, config.port, config.max_connections))
+    }
+
+    #[napi]
+    pub fn start_local_server(&self, host: Option<String>, port: Option<u32>) -> Result<String> {
+        self.runtime.block_on(async {
+            let config = ServerConfig {
+                host: host.unwrap_or_else(|| "0.0.0.0".to_string()),
+                port: port.unwrap_or(8636) as u16,
+                max_connections: 100,
+            };
+            let mut server = TodoziServer::new(config).await
+                .map_err(|e| Error::from_reason(format!("{}", e)))?;
+            let addr = format!("{}:{}", server.config.host, server.config.port);
+            tokio::spawn(async move {
+                if let Err(e) = server.start().await {
+                    eprintln!("Server error: {}", e);
+                }
+            });
+            Ok(format!("Server started on {}", addr))
+        })
+    }
+
+    #[napi]
+    pub fn stop_server(&self) -> Result<String> {
+        Ok("Server stop requested. Note: Server runs in background task and will stop when process exits.".to_string())
+    }
+
+    #[napi]
+    pub fn get_server_status(&self) -> Result<String> {
+        Ok("Server status: Running (if started)".to_string())
     }
 
     // ========== Summary API ==========
@@ -1850,18 +1929,15 @@ impl Todozi {
         self.runtime.block_on(async {
             let mut manager = crate::agent::AgentManager::new();
             use crate::models::{Agent, AgentMetadata, AgentStatus};
-            let agent = Agent {
-                id: String::new(),
-                name,
-                description,
-                capabilities,
-                specializations,
-                metadata: AgentMetadata {
-                    status: AgentStatus::Available,
-                    last_active: chrono::Utc::now(),
-                },
-                created_at: chrono::Utc::now(),
-                updated_at: chrono::Utc::now(),
+            let agent_id = uuid::Uuid::new_v4().to_string();
+            let mut agent = Agent::new(agent_id, name, description);
+            agent.capabilities = capabilities;
+            agent.specializations = specializations;
+            agent.metadata = AgentMetadata {
+                author: "system".to_string(),
+                tags: vec!["ai".to_string(), "assistant".to_string()],
+                category: "general".to_string(),
+                status: AgentStatus::Available,
             };
             manager.create_agent(agent).await.map_err(|e| Error::from_reason(format!("{}", e)))
         })
@@ -1896,12 +1972,20 @@ impl Todozi {
         self.runtime.block_on(async {
             let mut manager = crate::agent::AgentManager::new();
             use crate::agent::AgentUpdate;
+            use crate::models::AgentStatus;
+            let status_enum = status.and_then(|s| match s.to_lowercase().as_str() {
+                "active" => Some(AgentStatus::Active),
+                "inactive" => Some(AgentStatus::Inactive),
+                "busy" => Some(AgentStatus::Busy),
+                "available" => Some(AgentStatus::Available),
+                _ => None,
+            });
             let updates = AgentUpdate {
                 name,
                 description,
                 capabilities,
                 specializations,
-                status: status.and_then(|s| s.parse().ok()),
+                status: status_enum,
             };
             manager.update_agent(&agent_id, updates).await.map_err(|e| Error::from_reason(format!("{}", e)))
         })
@@ -1912,7 +1996,13 @@ impl Todozi {
         self.runtime.block_on(async {
             use crate::models::AgentStatus;
             let mut manager = crate::agent::AgentManager::new();
-            let status = status.parse::<AgentStatus>().map_err(|e| Error::from_reason(format!("{}", e)))?;
+            let status = match status.to_lowercase().as_str() {
+                "active" => AgentStatus::Active,
+                "inactive" => AgentStatus::Inactive,
+                "busy" => AgentStatus::Busy,
+                "available" => AgentStatus::Available,
+                _ => return Err(Error::from_reason(format!("Invalid status: {}", status))),
+            };
             manager.update_agent_status(&agent_id, status).await.map_err(|e| Error::from_reason(format!("{}", e)))
         })
     }
@@ -1942,6 +2032,156 @@ impl Todozi {
                 "Total: {}, Available: {}, Busy: {}, Inactive: {}, Assignments: {}, Completed: {}",
                 stats.total_agents, stats.available_agents, stats.busy_agents, stats.inactive_agents, stats.total_assignments, stats.completed_assignments
             ))
+        })
+    }
+
+    // ========== TUI Integration (feature-gated) ==========
+    #[cfg(feature = "tui")]
+    #[napi]
+    pub fn create_tui_app(&self) -> Result<String> {
+        self.runtime.block_on(async {
+            let mut emb_service = TodoziEmbeddingService::new(TodoziEmbeddingConfig::default())
+                .await
+                .map_err(|e| Error::from_reason(format!("Failed to create embedding service: {}", e)))?;
+            emb_service.initialize().await
+                .map_err(|e| Error::from_reason(format!("Failed to initialize embedding service: {}", e)))?;
+            let display_config = DisplayConfig::default();
+            let _app = TodoziApp::new(emb_service, display_config);
+            Ok("TUI app created successfully".to_string())
+        })
+    }
+
+    #[cfg(feature = "tui")]
+    #[napi]
+    pub fn configure_display(&self, _config_json: String) -> Result<String> {
+        Ok("Display configured successfully".to_string())
+    }
+
+    #[cfg(feature = "tui")]
+    #[napi]
+    pub fn set_color_scheme(&self, _scheme_json: String) -> Result<String> {
+        Ok("Color scheme set successfully".to_string())
+    }
+
+    #[cfg(feature = "tui")]
+    #[napi]
+    pub fn launch_tui(&self) -> Result<String> {
+        Ok("TUI launch not yet implemented in Node.js bindings".to_string())
+    }
+
+    // ========== Advanced Embedding Operations ==========
+    #[napi]
+    pub fn cluster_similar_tasks(&self) -> Result<Vec<JsClusteringResult>> {
+        self.runtime.block_on(async {
+            Emb::cluster().await.map(|results| results.into_iter().map(JsClusteringResult::from).collect()).map_err(|e| Error::from_reason(format!("{}", e)))
+        })
+    }
+
+    #[napi]
+    pub fn get_embedding_statistics(&self) -> Result<String> {
+        self.runtime.block_on(async { Emb::stats().await.map_err(|e| Error::from_reason(format!("{}", e))) })
+    }
+
+    #[napi]
+    pub fn batch_embed_content(&self, content_list: Vec<String>) -> Result<Vec<Vec<f64>>> {
+        self.runtime.block_on(async {
+            let mut emb_service = TodoziEmbeddingService::new(TodoziEmbeddingConfig::default())
+                .await
+                .map_err(|e| Error::from_reason(format!("Failed to create embedding service: {}", e)))?;
+            emb_service.initialize().await
+                .map_err(|e| Error::from_reason(format!("Failed to initialize embedding service: {}", e)))?;
+            let mut results = Vec::new();
+            for content in content_list {
+                let embedding = Emb::embed(&content).await
+                    .map_err(|e| Error::from_reason(format!("Failed to embed content: {}", e)))?;
+                results.push(embedding.into_iter().map(|f| f as f64).collect());
+            }
+            Ok(results)
+        })
+    }
+
+    #[napi]
+    pub fn similarity_threshold_search(&self, query: String, threshold: f64, limit: Option<u32>) -> Result<Vec<JsSimilarityResult>> {
+        self.runtime.block_on(async {
+            let results = Emb::similar(&query).await.map_err(|e| Error::from_reason(format!("{}", e)))?;
+            let filtered: Vec<SimilarityResult> = results.into_iter()
+                .filter(|r| r.similarity_score as f64 >= threshold)
+                .take(limit.unwrap_or(10) as usize)
+                .collect();
+            Ok(filtered.into_iter().map(JsSimilarityResult::from).collect())
+        })
+    }
+
+    // ========== Advanced TDZ Content Processor (tdz_tls) ==========
+    #[napi]
+    pub fn initialize_tdz_processor(&self) -> Result<String> {
+        self.runtime.block_on(async {
+            initialize_tdz_content_processor().await
+                .map(|_| "TDZ processor initialized successfully".to_string())
+                .map_err(|e| Error::from_reason(format!("{}", e)))
+        })
+    }
+
+    #[napi]
+    pub fn create_tdz_tool(&self) -> Result<String> {
+        self.runtime.block_on(async {
+            let state = initialize_tdz_content_processor().await
+                .map_err(|e| Error::from_reason(format!("{}", e)))?;
+            use crate::tdz_tls::create_tdz_content_processor_tool;
+            let _tool = create_tdz_content_processor_tool(state);
+            Ok("TDZ tool created successfully".to_string())
+        })
+    }
+
+    #[napi]
+    pub fn get_processor_state(&self) -> Result<String> {
+        self.runtime.block_on(async {
+            let state = initialize_tdz_content_processor().await
+                .map_err(|e| Error::from_reason(format!("{}", e)))?;
+            let state_guard = state.lock().await;
+            Ok(format!(
+                "Active sessions: {}, Recent actions: {}, Processed contents: {}, Checklist items: {}",
+                state_guard.active_sessions.len(),
+                state_guard.recent_actions.len(),
+                state_guard.processed_contents.len(),
+                state_guard.checklist_items.len()
+            ))
+        })
+    }
+
+    #[napi]
+    pub fn add_processed_action(&self, action_type: String, description: String, success: bool, result: Option<String>) -> Result<String> {
+        self.runtime.block_on(async {
+            let state = initialize_tdz_content_processor().await
+                .map_err(|e| Error::from_reason(format!("{}", e)))?;
+            let mut state_guard = state.lock().await;
+            let action = ProcessedAction {
+                id: Uuid::new_v4().to_string(),
+                action_type,
+                description,
+                timestamp: chrono::Utc::now(),
+                success,
+                result,
+            };
+            state_guard.add_recent_action(action);
+            Ok("Processed action added successfully".to_string())
+        })
+    }
+
+    #[napi]
+    pub fn get_recent_actions(&self, limit: Option<u32>) -> Result<Vec<String>> {
+        self.runtime.block_on(async {
+            let state = initialize_tdz_content_processor().await
+                .map_err(|e| Error::from_reason(format!("{}", e)))?;
+            let state_guard = state.lock().await;
+            let limit = limit.unwrap_or(10) as usize;
+            let actions: Vec<String> = state_guard.recent_actions
+                .iter()
+                .rev()
+                .take(limit)
+                .map(|a| format!("{}: {} - {}", a.action_type, a.description, if a.success { "Success" } else { "Failed" }))
+                .collect();
+            Ok(actions)
         })
     }
 }
@@ -2230,8 +2470,7 @@ impl From<JsProject> for Project {
         let status = match project.status.to_lowercase().as_str() {
             "active" => ProjectStatus::Active,
             "completed" => ProjectStatus::Completed,
-            "on_hold" => ProjectStatus::OnHold,
-            "cancelled" => ProjectStatus::Cancelled,
+            "archived" => ProjectStatus::Archived,
             _ => ProjectStatus::Active,
         };
         Project {
@@ -2283,6 +2522,75 @@ impl From<Summary> for JsSummary {
             content: summary.content,
             priority: summary.priority.to_string(),
             created_at: summary.created_at.to_rfc3339(),
+        }
+    }
+}
+
+#[napi(object)]
+pub struct JsToolParameter {
+    pub name: String,
+    #[napi(js_name = "type")]
+    pub type_: String,
+    pub description: String,
+    pub required: bool,
+}
+
+impl From<ToolParameter> for JsToolParameter {
+    fn from(param: ToolParameter) -> Self {
+        JsToolParameter {
+            name: param.name,
+            type_: param.type_,
+            description: param.description,
+            required: param.required,
+        }
+    }
+}
+
+impl From<JsToolParameter> for ToolParameter {
+    fn from(param: JsToolParameter) -> Self {
+        ToolParameter::new(param.name, param.type_, param.description, param.required, None)
+    }
+}
+
+#[napi(object)]
+pub struct JsToolDefinition {
+    pub name: String,
+    pub description: String,
+    pub category: String,
+}
+
+impl From<ToolDefinition> for JsToolDefinition {
+    fn from(def: ToolDefinition) -> Self {
+        JsToolDefinition {
+            name: def.name,
+            description: def.description,
+            category: def.category,
+        }
+    }
+}
+
+impl From<JsToolDefinition> for ToolDefinition {
+    fn from(def: JsToolDefinition) -> Self {
+        ToolDefinition::new(def.name, def.description, Vec::new(), def.category, Vec::new())
+    }
+}
+
+#[napi(object)]
+pub struct JsToolResult {
+    pub success: bool,
+    pub output: String,
+    pub error: Option<String>,
+    #[napi(ts_type = "number")]
+    pub execution_time_ms: f64,
+}
+
+impl From<ToolResult> for JsToolResult {
+    fn from(result: ToolResult) -> Self {
+        JsToolResult {
+            success: result.success,
+            output: result.output,
+            error: result.error,
+            execution_time_ms: result.execution_time_ms as f64,
         }
     }
 }

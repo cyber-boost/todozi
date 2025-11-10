@@ -1,16 +1,16 @@
 {
-  "name": "todozi",
+  "name": "todozi-javascript",
   "version": "0.1.1",
-  "description": "AI/Human task management system",
-  "main": "todozi.js",
+  "description": "AI/Human task collaboration system",
+  "type": "module",
+  "main": "todozi/main.js",
   "types": "index.d.ts",
   "keywords": [
     "todo",
     "task-management",
     "ai",
     "productivity",
-    "rust",
-    "napi"
+    "todozi"
   ],
   "author": "CyberBoost",
   "license": "MIT",
@@ -18,56 +18,72 @@
     "type": "git",
     "url": "https://github.com/cyber-boost/todozi.git"
   },
-  "napi": {
-    "name": "todozi",
-    "triples": {
-      "defaults": true,
-      "additional": [
-        "aarch64-apple-darwin",
-        "x86_64-apple-darwin",
-        "x86_64-unknown-linux-gnu",
-        "aarch64-unknown-linux-gnu",
-        "x86_64-pc-windows-msvc"
-      ]
-    }
-  },
   "engines": {
-    "node": ">= 10"
+    "node": ">=18.17.0"
   },
-  "devDependencies": {
-    "@napi-rs/cli": "^2.16.0"
-  },
-  "dependencies": {
-    "express": "^4.18.0",
-    "cors": "^2.8.5",
-    "uuid": "^9.0.0",
-    "commander": "^11.0.0",
-    "ollama": "^0.3.0"
-  },
-  "optionalDependencies": {
-    "todozi-win32-x64-msvc": "0.1.1",
-    "todozi-darwin-x64": "0.1.1",
-    "todozi-linux-x64-gnu": "0.1.1",
-    "todozi-darwin-arm64": "0.1.1",
-    "todozi-linux-arm64-gnu": "0.1.1"
-  },
+  "files": [
+    "chat/",
+    "docs/",
+    "examples/",
+    "json/",
+    "train/",
+    "todozi/",
+    "index.d.ts",
+    "server.js",
+    "tdz.js",
+    "README.md"
+  ],
   "scripts": {
-    "artifacts": "napi artifacts",
-    "build": "napi build --platform --release --features nodejs",
-    "build:debug": "napi build --platform --features nodejs",
-    "prepublishOnly": "napi prepublish -t npm",
-    "test": "node -e \"console.log('Todozi JavaScript tests coming soon...')\"",
-    "universal": "napi universal",
-    "version": "napi version",
+    "test": "jest --config=todozi/jest.config.js",
+    "test:watch": "jest --watch --config=todozi/jest.config.js",
+    "test:coverage": "jest --coverage --config=todozi/jest.config.js",
+    "test:verbose": "jest --verbose --config=todozi/jest.config.js",
+    "test:export": "jest --json --outputFile=test-results.json --config=todozi/jest.config.js 2>&1 | tee test-results.txt",
+    "test:export:verbose": "jest --json --verbose --outputFile=test-results.json --config=todozi/jest.config.js 2>&1 | tee test-results.txt",
+    "build": "tsc",
+    "build:watch": "tsc --watch",
+    "type-check": "tsc --noEmit",
+    "clean": "rm -rf dist",
     "start": "node server.js",
     "server": "node server.js",
-    "chat": "node chat.js",
-    "cli": "tdz",
+    "chat": "node chat/hi.js",
+    "cli": "node tdz.js",
     "dev": "node server.js",
     "install-cli": "npm link"
   },
   "bin": {
     "tdz": "./tdz.js",
+    "todozi": "./tdz.js",
     "todozi-server": "./server.js"
+  },
+  "devDependencies": {
+    "@types/cors": "^2.8.19",
+    "@types/date-fns": "^2.6.3",
+    "@types/express": "^5.0.5",
+    "@types/jest": "^29.5.11",
+    "@types/lodash": "^4.17.20",
+    "@types/luxon": "^3.7.1",
+    "@types/node": "^24.10.0",
+    "@xenova/transformers": "^2.17.2",
+    "jest": "^29.7.0",
+    "node-pandas": "^1.0.5",
+    "typescript": "^5.9.3"
+  },
+  "dependencies": {
+    "async-mutex": "^0.5.0",
+    "axios": "^1.7.7",
+    "blessed": "^0.1.81",
+    "chalk": "^5.6.2",
+    "commander": "^11.1.0",
+    "cors": "^2.8.5",
+    "date-fns": "^4.1.0",
+    "dotenv": "^16.4.5",
+    "express": "^4.19.2",
+    "express-validator": "^7.0.1",
+    "luxon": "^3.7.2",
+    "node-cache": "^5.1.2",
+    "ollama": "^0.5.8",
+    "uuid": "^9.0.1",
+    "winston": "^3.11.0"
   }
 }

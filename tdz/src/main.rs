@@ -294,6 +294,9 @@ async fn async_main() -> Result<()> {
         Commands::Strategy { content, file, output_format, human } => {
             handler.handle_strategy_command(content, file, output_format, human).await?
         }
+        Commands::Steps(steps_cmd) => {
+            handler.handle_steps_command(steps_cmd).await?
+        }
     }
     Ok(())
 }

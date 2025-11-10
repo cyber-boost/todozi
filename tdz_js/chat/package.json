@@ -1,0 +1,27 @@
+{
+    "name": "todozi-chat-server",
+    "version": "1.0.0",
+    "description": "Todozi Chat Server (Node.js) using Ollama and Todozi JavaScript SDK",
+    "main": "hi.js",
+    "type": "module",
+    "scripts": {
+      "start": "node hi.js",
+      "dev": "NODE_ENV=development node hi.js"
+    },
+    "engines": {
+      "node": ">=18.17.0"
+    },
+    "dependencies": {
+      "@todozi/tdz_js": "file:..",
+      "cors": "^2.8.5",
+      "dotenv": "^16.4.5",
+      "express": "^4.19.2",
+      "express-rate-limit": "^7.2.0",
+      "express-validator": "^7.0.1",
+      "helmet": "^7.0.0",
+      "node-cache": "^5.1.2",
+      "ollama": "^0.5.8",
+      "uuid": "^9.0.1",
+      "winston": "^3.13.0"
+    }
+  }

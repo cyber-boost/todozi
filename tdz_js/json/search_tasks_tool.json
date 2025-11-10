@@ -1,0 +1,87 @@
+{
+  "type": "function",
+  "function": {
+    "name": "search_tasks",
+    "description": "Search for tasks in the Todozi system with semantic AI capabilities. Use this when users want to find existing tasks, check status, or review work.",
+    "parameters": {
+      "type": "object",
+      "properties": {
+        "query": {
+          "type": "string",
+          "description": "Search query to match against task content. Can be keywords or natural language.",
+          "examples": [
+            "authentication bugs",
+            "API documentation",
+            "mobile app features",
+            "database optimization"
+          ]
+        },
+        "semantic": {
+          "type": "boolean",
+          "description": "Use AI semantic search instead of keyword matching. Better for natural language queries.",
+          "default": false,
+          "examples": [true, false]
+        },
+        "project": {
+          "type": "string",
+          "description": "Filter by project name to narrow search scope.",
+          "examples": ["website_redesign", "mobile_app", "api_development"]
+        },
+        "status": {
+          "type": "string",
+          "enum": ["todo", "in_progress", "blocked", "review", "done"],
+          "description": "Filter by task status.",
+          "examples": ["todo", "in_progress", "done", "blocked"]
+        },
+        "assignee": {
+          "type": "string",
+          "enum": ["ai", "human", "collaborative"],
+          "description": "Filter by assignee type.",
+          "examples": ["ai", "human", "collaborative"]
+        },
+        "limit": {
+          "type": "number",
+          "description": "Maximum number of results to return. Default is 10.",
+          "default": 10,
+          "examples": [5, 10, 20, 50]
+        }
+      },
+      "required": ["query"],
+      "examples": [
+        {
+          "description": "Semantic search for similar tasks",
+          "example": {
+            "query": "user login problems",
+            "semantic": true,
+            "limit": 5
+          }
+        },
+        {
+          "description": "Find all completed tasks in a project",
+          "example": {
+            "query": "security",
+            "project": "security_upgrade",
+            "status": "done",
+            "limit": 20
+          }
+        },
+        {
+          "description": "Quick keyword search",
+          "example": {
+            "query": "API",
+            "assignee": "ai",
+            "limit": 10
+          }
+        },
+        {
+          "description": "Find blocked tasks",
+          "example": {
+            "query": "",
+            "status": "blocked",
+            "limit": 15
+          }
+        }
+      ]
+    }
+  }
+}

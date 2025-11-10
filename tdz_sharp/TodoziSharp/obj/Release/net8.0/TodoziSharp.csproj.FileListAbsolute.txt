@@ -1,0 +1,12 @@
+/opt/todozi/tdz_sharp/TodoziSharp/obj/Release/net8.0/TodoziSharp.GeneratedMSBuildEditorConfig.editorconfig
+/opt/todozi/tdz_sharp/TodoziSharp/obj/Release/net8.0/TodoziSharp.AssemblyInfoInputs.cache
+/opt/todozi/tdz_sharp/TodoziSharp/obj/Release/net8.0/TodoziSharp.AssemblyInfo.cs
+/opt/todozi/tdz_sharp/TodoziSharp/obj/Release/net8.0/TodoziSharp.csproj.CoreCompileInputs.cache
+/opt/todozi/tdz_sharp/TodoziSharp/obj/Release/net8.0/TodoziSharp.sourcelink.json
+/opt/todozi/tdz_sharp/TodoziSharp/bin/Release/net8.0/TodoziSharp.deps.json
+/opt/todozi/tdz_sharp/TodoziSharp/bin/Release/net8.0/TodoziSharp.dll
+/opt/todozi/tdz_sharp/TodoziSharp/bin/Release/net8.0/TodoziSharp.pdb
+/opt/todozi/tdz_sharp/TodoziSharp/obj/Release/net8.0/TodoziSharp.dll
+/opt/todozi/tdz_sharp/TodoziSharp/obj/Release/net8.0/refint/TodoziSharp.dll
+/opt/todozi/tdz_sharp/TodoziSharp/obj/Release/net8.0/TodoziSharp.pdb
+/opt/todozi/tdz_sharp/TodoziSharp/obj/Release/net8.0/ref/TodoziSharp.dll

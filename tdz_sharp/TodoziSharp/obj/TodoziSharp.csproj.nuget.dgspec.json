@@ -1,0 +1,62 @@
+{
+  "format": 1,
+  "restore": {
+    "/opt/todozi/tdz_sharp/TodoziSharp/TodoziSharp.csproj": {}
+  },
+  "projects": {
+    "/opt/todozi/tdz_sharp/TodoziSharp/TodoziSharp.csproj": {
+      "version": "0.1.0",
+      "restore": {
+        "projectUniqueName": "/opt/todozi/tdz_sharp/TodoziSharp/TodoziSharp.csproj",
+        "projectName": "TodoziSharp",
+        "projectPath": "/opt/todozi/tdz_sharp/TodoziSharp/TodoziSharp.csproj",
+        "packagesPath": "/root/.nuget/packages/",
+        "outputPath": "/opt/todozi/tdz_sharp/TodoziSharp/obj/",
+        "projectStyle": "PackageReference",
+        "configFilePaths": [
+          "/root/.nuget/NuGet/NuGet.Config"
+        ],
+        "originalTargetFrameworks": [
+          "net8.0"
+        ],
+        "sources": {
+          "https://api.nuget.org/v3/index.json": {},
+          "https://nuget.pkg.github.com/cyber-boost/index.json": {}
+        },
+        "frameworks": {
+          "net8.0": {
+            "targetAlias": "net8.0",
+            "projectReferences": {}
+          }
+        },
+        "warningProperties": {
+          "warnAsError": [
+            "NU1605"
+          ]
+        }
+      },
+      "frameworks": {
+        "net8.0": {
+          "targetAlias": "net8.0",
+          "imports": [
+            "net461",
+            "net462",
+            "net47",
+            "net471",
+            "net472",
+            "net48",
+            "net481"
+          ],
+          "assetTargetFallback": true,
+          "warn": true,
+          "frameworkReferences": {
+            "Microsoft.NETCore.App": {
+              "privateAssets": "all"
+            }
+          },
+          "runtimeIdentifierGraphPath": "/usr/lib/dotnet/sdk/8.0.119/PortableRuntimeIdentifierGraph.json"
+        }
+      }
+    }
+  }
+}

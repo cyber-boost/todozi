@@ -1,0 +1,9 @@
+[requires]
+todozi/0.1.0
+
+[generators]
+CMakeToolchain
+CMakeDeps
+
+[options]
+todozi/*:build_examples=False

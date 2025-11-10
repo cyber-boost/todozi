@@ -51,6 +51,8 @@ pub enum TodoziError {
     ApiError { message: String },
     #[error("Candle error: {0}")]
     CandleError(String),
+    #[error("Feature not implemented: {feature}")]
+    NotImplemented { feature: String },
 }
 impl TodoziError {
     pub fn validation(message: impl Into<String>) -> Self {

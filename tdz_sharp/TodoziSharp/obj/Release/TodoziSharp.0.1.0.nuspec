@@ -1,0 +1,19 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<package xmlns="http://schemas.microsoft.com/packaging/2012/06/nuspec.xsd">
+  <metadata>
+    <id>TodoziSharp</id>
+    <version>0.1.0</version>
+    <authors>TonTon Bernie</authors>
+    <license type="expression">MIT</license>
+    <licenseUrl>https://licenses.nuget.org/MIT</licenseUrl>
+    <description>A .NET wrapper for the Todozi C library - A comprehensive task management system</description>
+    <tags>task-management productivity todo dotnet wrapper</tags>
+    <repository type="git" url="https://github.com/cyber-boost/todozi" commit="b337b73da01532d6cef14ae0a81da2642877c093" />
+    <dependencies>
+      <group targetFramework="net8.0" />
+    </dependencies>
+  </metadata>
+  <files>
+    <file src="/opt/todozi/tdz_sharp/TodoziSharp/bin/Release/net8.0/TodoziSharp.dll" target="lib/net8.0/TodoziSharp.dll" />
+  </files>
+</package>

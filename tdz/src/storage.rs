@@ -39,10 +39,11 @@ pub async fn init_storage() -> Result<()> {
     fs::create_dir_all(storage_dir.join("assignments"))?;
     fs::create_dir_all(storage_dir.join("feelings"))?;
     fs::create_dir_all(storage_dir.join("queue"))?;
-    fs::create_dir_all(storage_dir.join("api"))?;
-    fs::create_dir_all(storage_dir.join("models"))?;
-    fs::create_dir_all(storage_dir.join("responses"))?;
-    fs::create_dir_all(storage_dir.join("embed"))?;
+        fs::create_dir_all(storage_dir.join("api"))?;
+        fs::create_dir_all(storage_dir.join("models"))?;
+        fs::create_dir_all(storage_dir.join("responses"))?;
+        fs::create_dir_all(storage_dir.join("embed"))?;
+        fs::create_dir_all(storage_dir.join("steps"))?;
     let config_path = storage_dir.join("tdz.hlx");
     let is_new_config = !config_path.exists();
     if !config_path.exists() {
@@ -2543,4 +2544,27 @@ pub fn get_queue_session(session_id: &str) -> Result<crate::models::QueueSession
             message: format!("Session not found: {}", session_id),
         })
         .map(|session| (*session).clone())
+}
+pub fn get_steps_dir() -> Result<PathBuf> {
+    let storage_dir = get_storage_dir()?;
+    Ok(storage_dir.join("steps"))
+}
+pub fn load_task_steps(task_id: &str) -> Result<Option<serde_json::Value>> {
+    let steps_dir = get_steps_dir()?;
+    let file_path = steps_dir.join(format!("{}.json", task_id));
+    
+    if !file_path.exists() {
+        return Ok(None);
+    }
+    
+    let content = fs::read_to_string(&file_path)?;
+    let steps_data: serde_json::Value = serde_json::from_str(&content)?;
+    Ok(Some(steps_data))
+}
+pub fn save_task_steps(task_id: &str, steps_data: &serde_json::Value) -> Result<()> {
+    let steps_dir = get_steps_dir()?;
+    fs::create_dir_all(&steps_dir)?;
+    let file_path = steps_dir.join(format!("{}.json", task_id));
+    fs::write(&file_path, serde_json::to_string_pretty(steps_data)?)?;
+    Ok(())
 }

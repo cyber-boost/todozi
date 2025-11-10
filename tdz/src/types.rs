@@ -140,6 +140,20 @@ pub enum Commands {
         #[arg(long = "human")]
         human: bool,
     },
+    #[command(subcommand)]
+    Steps(StepsCommands),
+}
+#[derive(Subcommand)]
+pub enum StepsCommands {
+    Show { task_id: String },
+    Add { task_id: String, step: String },
+    Update {
+        task_id: String,
+        step_index: usize,
+        new_step: String,
+    },
+    Done { task_id: String },
+    Archive { task_id: String },
 }
 #[derive(Subcommand)]
 pub enum MemoryCommands {

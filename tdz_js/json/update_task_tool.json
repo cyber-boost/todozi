@@ -1,0 +1,85 @@
+{
+  "type": "function",
+  "function": {
+    "name": "update_task",
+    "description": "Update an existing task in the Todozi system. Use this to change status, progress, priority, or other task properties.",
+    "parameters": {
+      "type": "object",
+      "properties": {
+        "task_id": {
+          "type": "string",
+          "description": "ID of the task to update. Required - you must know the specific task ID.",
+          "examples": ["task_12345", "abc-123-def-456"]
+        },
+        "status": {
+          "type": "string",
+          "enum": ["todo", "in_progress", "blocked", "review", "done"],
+          "description": "New status for the task. Use 'done' to complete, 'in_progress' to start working.",
+          "examples": ["todo", "in_progress", "blocked", "review", "done"]
+        },
+        "progress": {
+          "type": "number",
+          "description": "Progress percentage (0-100). Use this to track completion progress.",
+          "minimum": 0,
+          "maximum": 100,
+          "examples": [25, 50, 75, 100]
+        },
+        "priority": {
+          "type": "string",
+          "enum": ["low", "medium", "high", "critical", "urgent"],
+          "description": "New priority level for the task.",
+          "examples": ["low", "medium", "high", "urgent", "critical"]
+        },
+        "assignee": {
+          "type": "string",
+          "enum": ["ai", "human", "collaborative"],
+          "description": "Change who is assigned to handle this task.",
+          "examples": ["ai", "human", "collaborative"]
+        },
+        "context": {
+          "type": "string",
+          "description": "Additional context, notes, or updated requirements for the task.",
+          "examples": [
+            "Actually, this needs to be done by Friday",
+            "Found additional requirements during investigation",
+            "Blocked by dependency on user management system"
+          ]
+        }
+      },
+      "required": ["task_id"],
+      "examples": [
+        {
+          "description": "Mark a task as completed",
+          "example": {
+            "task_id": "task_12345",
+            "status": "done"
+          }
+        },
+        {
+          "description": "Start working on a task",
+          "example": {
+            "task_id": "abc-123-def-456",
+            "status": "in_progress",
+            "progress": 25
+          }
+        },
+        {
+          "description": "Update task priority and add context",
+          "example": {
+            "task_id": "task_67890",
+            "priority": "urgent",
+            "context": "Client meeting moved up to tomorrow morning"
+          }
+        },
+        {
+          "description": "Mark task as blocked with explanation",
+          "example": {
+            "task_id": "xyz-789-abc-123",
+            "status": "blocked",
+            "context": "Waiting for API documentation from external vendor"
+          }
+        }
+      ]
+    }
+  }
+}

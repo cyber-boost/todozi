@@ -109,7 +109,7 @@ impl Tool for CreateTaskTool {
         };
         let task_id = match (assignee_str, priority_str) {
             ("ai", _) => {
-                match crate::Actions::ai(action).await {
+                match crate::Done::ai(action).await {
                     Ok(id) => id,
                     Err(e) => {
                         return ToolResult::error(
@@ -120,7 +120,7 @@ impl Tool for CreateTaskTool {
                 }
             }
             ("human", _) => {
-                match crate::Actions::human(action).await {
+                match crate::Done::human(action).await {
                     Ok(id) => id,
                     Err(e) => {
                         return ToolResult::error(
@@ -131,7 +131,7 @@ impl Tool for CreateTaskTool {
                 }
             }
             ("collaborative", _) => {
-                match crate::Actions::collab(action).await {
+                match crate::Done::collab(action).await {
                     Ok(id) => id,
                     Err(e) => {
                         return ToolResult::error(
@@ -142,7 +142,7 @@ impl Tool for CreateTaskTool {
                 }
             }
             (_, "urgent") => {
-                match crate::Tdz::urgent(action).await {
+                match crate::Done::urgent(action).await {
                     Ok(id) => id,
                     Err(e) => {
                         return ToolResult::error(
@@ -153,7 +153,7 @@ impl Tool for CreateTaskTool {
                 }
             }
             (_, "critical") => {
-                match crate::Tdz::urgent(action).await {
+                match crate::Done::urgent(action).await {
                     Ok(id) => id,
                     Err(e) => {
                         return ToolResult::error(
@@ -164,7 +164,7 @@ impl Tool for CreateTaskTool {
                 }
             }
             (_, "high") => {
-                match crate::Tdz::high(action).await {
+                match crate::Done::high(action).await {
                     Ok(id) => id,
                     Err(e) => {
                         return ToolResult::error(
@@ -175,7 +175,7 @@ impl Tool for CreateTaskTool {
                 }
             }
             (_, "low") => {
-                match crate::Tdz::low(action).await {
+                match crate::Done::low(action).await {
                     Ok(id) => id,
                     Err(e) => {
                         return ToolResult::error(
@@ -209,7 +209,7 @@ impl Tool for CreateTaskTool {
             for tag in tags_str.split(',') {
                 let tag = tag.trim();
                 if !tag.is_empty() {
-                    let _ = crate::Tags::add_to_task(&task_id, tag).await;
+                    let _ = crate::Done::add_to_task(&task_id, tag).await;
                 }
             }
         }
@@ -284,7 +284,7 @@ impl Tool for SearchTasksTool {
         }
         let semantic = kwargs.get("semantic").and_then(|v| v.as_bool()).unwrap_or(false);
         if semantic {
-            match crate::Find::deep(query).await {
+            match crate::Done::deep(query).await {
                 Ok(ai_results) => {
                     if ai_results.is_empty() {
                         return ToolResult::success(
@@ -296,9 +296,8 @@ impl Tool for SearchTasksTool {
                         .iter()
                         .map(|result| {
                             format!(
-                                "ID: {} | {} | Similarity: {:.2} | Type: {:?}", result
-                                .content_id, result.text_content, result.similarity_score,
-                                result.content_type
+                                "ID: {} | {} | Similarity: {:.2} | Type: {:?}",
+                                result.content_id, result.text_content, result.similarity_score, "task"
                             )
                         })
                         .collect::<Vec<_>>()
@@ -316,16 +315,16 @@ impl Tool for SearchTasksTool {
                 }
             }
         } else {
-            match crate::Find::fast(query).await {
+            match crate::Done::fast(query).await {
                 Ok(results) => {
-                    if results.is_empty() || results.contains("No keyword results") {
+                    if results.is_empty() {
                         ToolResult::success(
                             format!("🔍 No keyword results found for: {}", query),
                             150,
                         )
                     } else {
                         ToolResult::success(
-                            format!("🔍 Keyword Search Results:\n{}", results),
+                            format!("🔍 Keyword Search Results:\n{:?}", results),
                             150,
                         )
                     }
@@ -379,7 +378,7 @@ impl Tool for UpdateTaskTool {
         if let Some(status_str) = kwargs.get("status").and_then(|v| v.as_str()) {
             match status_str.to_lowercase().as_str() {
                 "completed" | "done" => {
-                    match crate::Actions::complete(task_id).await {
+                    match crate::Done::complete(task_id).await {
                         Ok(_) => {
                             return ToolResult::success(
                                 format!("✅ Task {} marked as completed", task_id),
@@ -395,7 +394,7 @@ impl Tool for UpdateTaskTool {
                     }
                 }
                 "in_progress" | "started" => {
-                    match crate::Actions::begin(task_id).await {
+                    match crate::Done::begin(task_id).await {
                         Ok(_) => {
                             return ToolResult::success(
                                 format!("🔄 Task {} marked as in progress", task_id),
@@ -560,7 +559,7 @@ impl Tool for CreateMemoryTool {
             .unwrap_or("medium");
         let memory_id = match importance.to_lowercase().as_str() {
             "high" | "critical" => {
-                match crate::Memories::important(moment, meaning, reason).await {
+                match crate::Done::important(moment, meaning, reason).await {
                     Ok(id) => id,
                     Err(e) => {
                         return ToolResult::error(
@@ -571,8 +570,8 @@ impl Tool for CreateMemoryTool {
                 }
             }
             _ => {
-                match crate::Memories::create(moment, meaning, reason).await {
-                    Ok(id) => id,
+                match crate::Done::create_memory(moment, meaning, reason).await {
+                    Ok(task) => task.id,
                     Err(e) => {
                         return ToolResult::error(
                             format!("Failed to create memory: {}", e),
@@ -634,7 +633,7 @@ impl Tool for CreateIdeaTool {
             .unwrap_or("medium");
         let idea_id = match importance.to_lowercase().as_str() {
             "breakthrough" | "high" => {
-                match crate::Ideas::breakthrough(idea_content).await {
+                match crate::Done::breakthrough(idea_content).await {
                     Ok(id) => id,
                     Err(e) => {
                         return ToolResult::error(
@@ -645,8 +644,8 @@ impl Tool for CreateIdeaTool {
                 }
             }
             _ => {
-                match crate::Ideas::create(idea_content).await {
-                    Ok(id) => id,
+                match crate::Done::create_idea(idea_content, None).await {
+                    Ok(task) => task.id,
                     Err(e) => {
                         return ToolResult::error(
                             format!("Failed to create idea: {}", e),
@@ -725,7 +724,7 @@ impl Tool for UnifiedSearchTool {
             .unwrap_or("tasks,memories,ideas,errors");
         let _limit = kwargs.get("limit").and_then(|v| v.as_u64()).unwrap_or(5) as usize;
         if semantic {
-            match crate::Find::deep(query).await {
+            match crate::Done::deep(query).await {
                 Ok(ai_results) => {
                     if ai_results.is_empty() {
                         return ToolResult::success(
@@ -737,8 +736,8 @@ impl Tool for UnifiedSearchTool {
                         .iter()
                         .map(|result| {
                             format!(
-                                "• {} | Type: {:?} | Similarity: {:.2}", result
-                                .text_content, result.content_type, result.similarity_score
+                                "• {} | Type: {:?} | Similarity: {:.2}",
+                                result.text_content, "task", result.similarity_score
                             )
                         })
                         .collect::<Vec<_>>()
@@ -759,10 +758,10 @@ impl Tool for UnifiedSearchTool {
                 }
             }
         } else {
-            match crate::Find::tdz_find(query).await {
+            match crate::Done::tdz_find(query).await {
                 Ok(unified_results) => {
                     if unified_results.is_empty()
-                        || unified_results.contains("No results found")
+                        || unified_results.is_empty()
                     {
                         ToolResult::success(
                             format!("🔍 No unified results found for: {}", query),
@@ -770,7 +769,7 @@ impl Tool for UnifiedSearchTool {
                         )
                     } else {
                         ToolResult::success(
-                            format!("🔍 Unified Search Results:\n{}", unified_results),
+                            format!("🔍 Unified Search Results:\n{:?}", unified_results),
                             300,
                         )
                     }
@@ -824,7 +823,7 @@ impl Tool for ProcessChatMessageTool {
             .get("user_id")
             .and_then(|v| v.as_str())
             .unwrap_or("ai_agent");
-        match crate::Tdz::chat(message).await {
+        match crate::Done::chat(message).await {
             Ok(content) => {
                 let mut results = Vec::new();
                 if !content.tasks.is_empty() {
@@ -833,8 +832,7 @@ impl Tool for ProcessChatMessageTool {
                         results
                             .push(
                                 format!(
-                                    "  • {} [{}]", task.action, task.assignee.as_ref().map(| a
-                                    | format!("{:?}", a)).unwrap_or("unassigned".to_string())
+                                    "  • {} [{}]", task.action, task.assignee.as_ref().map(|a| format!("{:?}", a)).unwrap_or("unassigned".to_string())
                                 ),
                             );
                     }
@@ -1403,7 +1401,7 @@ impl Tool for SimpleTodoziTool {
         let extra = kwargs.get("extra").and_then(|v| v.as_str()).unwrap_or("");
         match action.to_lowercase().as_str() {
             "task" => {
-                match crate::Easy::do_it(content).await {
+                match crate::Done::task(content).await {
                     Ok(task_id) => {
                         ToolResult::success(format!("✅ Task created: {}", task_id), 50)
                     }
@@ -1413,7 +1411,7 @@ impl Tool for SimpleTodoziTool {
                 }
             }
             "urgent" => {
-                match crate::Tdz::urgent(content).await {
+                match crate::Done::urgent(content).await {
                     Ok(task_id) => {
                         ToolResult::success(
                             format!("🚨 Urgent task created: {}", task_id),
@@ -1429,7 +1427,7 @@ impl Tool for SimpleTodoziTool {
                 }
             }
             "high" => {
-                match crate::Tdz::high(content).await {
+                match crate::Done::high(content).await {
                     Ok(task_id) => {
                         ToolResult::success(
                             format!("🟠 High priority task created: {}", task_id),
@@ -1445,7 +1443,7 @@ impl Tool for SimpleTodoziTool {
                 }
             }
             "low" => {
-                match crate::Tdz::low(content).await {
+                match crate::Done::low(content).await {
                     Ok(task_id) => {
                         ToolResult::success(
                             format!("🟢 Low priority task created: {}", task_id),
@@ -1461,7 +1459,7 @@ impl Tool for SimpleTodoziTool {
                 }
             }
             "ai" => {
-                match crate::Actions::ai(content).await {
+                match crate::Done::ai(content).await {
                     Ok(task_id) => {
                         ToolResult::success(
                             format!("🤖 AI task queued: {}", task_id),
@@ -1474,7 +1472,7 @@ impl Tool for SimpleTodoziTool {
                 }
             }
             "human" => {
-                match crate::Actions::human(content).await {
+                match crate::Done::human(content).await {
                     Ok(task_id) => {
                         ToolResult::success(
                             format!(
@@ -1492,7 +1490,7 @@ impl Tool for SimpleTodoziTool {
                 }
             }
             "collab" => {
-                match crate::Actions::collab(content).await {
+                match crate::Done::collab(content).await {
                     Ok(task_id) => {
                         ToolResult::success(
                             format!("🤝 Collaborative task created: {}", task_id),
@@ -1508,10 +1506,10 @@ impl Tool for SimpleTodoziTool {
                 }
             }
             "find" => {
-                match crate::Find::tdz_find(content).await {
+                match crate::Done::tdz_find(content).await {
                     Ok(results) => {
                         ToolResult::success(
-                            format!("🔍 Smart search results:\n{}", results),
+                            format!("🔍 Smart search results:\n{:?}", results),
                             50,
                         )
                     }
@@ -1519,14 +1517,13 @@ impl Tool for SimpleTodoziTool {
                 }
             }
             "ai_search" => {
-                match crate::Find::deep(content).await {
+                match crate::Done::deep(content).await {
                     Ok(results) => {
                         let formatted = results
                             .iter()
                             .map(|r| {
                                 format!(
-                                    "• {} (similarity: {:.2})", r.text_content, r
-                                    .similarity_score
+                                    "• {} [ID: {}]", r.text_content, r.content_id
                                 )
                             })
                             .collect::<Vec<_>>()
@@ -1540,10 +1537,10 @@ impl Tool for SimpleTodoziTool {
                 }
             }
             "fast_search" => {
-                match crate::Find::fast(content).await {
+                match crate::Done::fast(content).await {
                     Ok(results) => {
                         ToolResult::success(
-                            format!("⚡ Fast keyword search:\n{}", results),
+                            format!("⚡ Fast keyword search:\n{:?}", results),
                             50,
                         )
                     }
@@ -1551,10 +1548,10 @@ impl Tool for SimpleTodoziTool {
                 }
             }
             "smart_search" => {
-                match crate::Find::smart(content).await {
+                match crate::Done::smart(content).await {
                     Ok(results) => {
                         ToolResult::success(
-                            format!("🧠 Smart intent search:\n{}", results),
+                            format!("🧠 Smart intent search:\n{:?}", results),
                             50,
                         )
                     }
@@ -1564,12 +1561,12 @@ impl Tool for SimpleTodoziTool {
                 }
             }
             "remember" => {
-                match crate::Memories::create(content, extra, "Created via simple tool")
+                match crate::Done::create_memory(content, extra, "Created via simple tool")
                     .await
                 {
-                    Ok(memory_id) => {
+                    Ok(task) => {
                         ToolResult::success(
-                            format!("🧠 Memory saved: {}", memory_id),
+                            format!("🧠 Memory saved: {}", task.id),
                             50,
                         )
                     }
@@ -1579,7 +1576,7 @@ impl Tool for SimpleTodoziTool {
                 }
             }
             "important_memory" => {
-                match crate::Memories::important(
+                match crate::Done::important(
                         content,
                         extra,
                         "Important via simple tool",
@@ -1601,9 +1598,9 @@ impl Tool for SimpleTodoziTool {
                 }
             }
             "idea" => {
-                match crate::Ideas::create(content).await {
-                    Ok(idea_id) => {
-                        ToolResult::success(format!("💡 Idea saved: {}", idea_id), 50)
+                match crate::Done::create_idea(content, None).await {
+                    Ok(task) => {
+                        ToolResult::success(format!("💡 Idea saved: {}", task.id), 50)
                     }
                     Err(e) => {
                         ToolResult::error(format!("Failed to save idea: {}", e), 50)
@@ -1611,7 +1608,7 @@ impl Tool for SimpleTodoziTool {
                 }
             }
             "breakthrough_idea" => {
-                match crate::Ideas::breakthrough(content).await {
+                match crate::Done::breakthrough(content).await {
                     Ok(idea_id) => {
                         ToolResult::success(
                             format!("💡🚀 Breakthrough idea saved: {}", idea_id),
@@ -1627,7 +1624,7 @@ impl Tool for SimpleTodoziTool {
                 }
             }
             "complete" => {
-                match crate::Actions::complete(content).await {
+                match crate::Done::complete(content).await {
                     Ok(_) => {
                         ToolResult::success(
                             format!("✅ Task {} completed", content),
@@ -1640,7 +1637,7 @@ impl Tool for SimpleTodoziTool {
                 }
             }
             "start" => {
-                match crate::Actions::begin(content).await {
+                match crate::Done::begin(content).await {
                     Ok(_) => {
                         ToolResult::success(format!("🔄 Task {} started", content), 50)
                     }
@@ -1650,7 +1647,7 @@ impl Tool for SimpleTodoziTool {
                 }
             }
             "stats" => {
-                match crate::Stats::quick().await {
+                match crate::Done::quick().await {
                     Ok(stats) => {
                         ToolResult::success(format!("📊 Quick stats:\n{}", stats), 50)
                     }
@@ -1660,7 +1657,7 @@ impl Tool for SimpleTodoziTool {
                 }
             }
             "queue" => {
-                match crate::Queue::list().await {
+                match crate::Done::list_queue_items().await {
                     Ok(items) => {
                         let summary = format!("📋 Queue: {} total items", items.len());
                         ToolResult::success(summary, 50)
@@ -1671,7 +1668,7 @@ impl Tool for SimpleTodoziTool {
                 }
             }
             "chat" => {
-                match crate::Tdz::chat(content).await {
+                match crate::Done::chat(content).await {
                     Ok(chat_content) => {
                         let mut results = Vec::new();
                         if !chat_content.tasks.is_empty() {

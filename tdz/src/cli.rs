@@ -2514,4 +2514,137 @@ impl TodoziHandler {
         println!("{}", output);
         Ok(())
     }
+    pub async fn handle_steps_command(
+        &self,
+        command: crate::types::StepsCommands,
+    ) -> Result<()> {
+        use crate::types::StepsCommands;
+        use crate::storage::get_storage_dir;
+        use std::fs;
+        use std::path::PathBuf;
+        use serde_json;
+
+        let steps_dir = get_storage_dir()?.join("steps");
+        fs::create_dir_all(&steps_dir)?;
+
+        match command {
+            StepsCommands::Show { task_id } => {
+                let file_path = steps_dir.join(format!("{}.json", task_id));
+                if !file_path.exists() {
+                    println!("❌ No steps found for task: {}", task_id);
+                    return Ok(());
+                }
+
+                let content = fs::read_to_string(&file_path)?;
+                let steps_data: serde_json::Value = serde_json::from_str(&content)?;
+
+                println!("📋 Steps for Task: {}", task_id);
+                println!("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
+                println!("\n📝 Summary:");
+                println!("{}", steps_data["summary"].as_str().unwrap_or(""));
+                println!("\n📌 Steps:");
+                if let Some(steps) = steps_data["steps"].as_array() {
+                    for (i, step) in steps.iter().enumerate() {
+                        println!("  {}. {}", i + 1, step.as_str().unwrap_or(""));
+                    }
+                }
+                println!("\n📊 Status: {}", steps_data["status"].as_str().unwrap_or("active"));
+                println!(
+                    "📅 Created: {}",
+                    steps_data["created_at"].as_str().unwrap_or("")
+                );
+                println!(
+                    "🔄 Updated: {}",
+                    steps_data["updated_at"].as_str().unwrap_or("")
+                );
+            }
+            StepsCommands::Add { task_id, step } => {
+                let file_path = steps_dir.join(format!("{}.json", task_id));
+                let mut steps_data: serde_json::Value = if file_path.exists() {
+                    let content = fs::read_to_string(&file_path)?;
+                    serde_json::from_str(&content)?
+                } else {
+                    serde_json::json!({
+                        "task_id": task_id,
+                        "project_id": "general",
+                        "summary": "",
+                        "steps": [],
+                        "status": "active",
+                        "created_at": chrono::Utc::now().to_rfc3339(),
+                        "updated_at": chrono::Utc::now().to_rfc3339()
+                    })
+                };
+
+                if let Some(steps) = steps_data["steps"].as_array_mut() {
+                    steps.push(serde_json::Value::String(step.clone()));
+                }
+
+                steps_data["updated_at"] = serde_json::Value::String(chrono::Utc::now().to_rfc3339());
+
+                fs::write(&file_path, serde_json::to_string_pretty(&steps_data)?)?;
+                println!("✅ Added step to task: {}", task_id);
+            }
+            StepsCommands::Update {
+                task_id,
+                step_index,
+                new_step,
+            } => {
+                let file_path = steps_dir.join(format!("{}.json", task_id));
+                if !file_path.exists() {
+                    println!("❌ No steps found for task: {}", task_id);
+                    return Ok(());
+                }
+
+                let content = fs::read_to_string(&file_path)?;
+                let mut steps_data: serde_json::Value = serde_json::from_str(&content)?;
+
+                if let Some(steps) = steps_data["steps"].as_array_mut() {
+                    if step_index == 0 || step_index > steps.len() {
+                        println!("❌ Invalid step index: {}. Task has {} steps.", step_index, steps.len());
+                        return Ok(());
+                    }
+                    steps[step_index - 1] = serde_json::Value::String(new_step);
+                }
+
+                steps_data["updated_at"] = serde_json::Value::String(chrono::Utc::now().to_rfc3339());
+
+                fs::write(&file_path, serde_json::to_string_pretty(&steps_data)?)?;
+                println!("✅ Updated step {} for task: {}", step_index, task_id);
+            }
+            StepsCommands::Done { task_id } => {
+                let file_path = steps_dir.join(format!("{}.json", task_id));
+                if !file_path.exists() {
+                    println!("❌ No steps found for task: {}", task_id);
+                    return Ok(());
+                }
+
+                let content = fs::read_to_string(&file_path)?;
+                let mut steps_data: serde_json::Value = serde_json::from_str(&content)?;
+
+                steps_data["status"] = serde_json::Value::String("done".to_string());
+                steps_data["updated_at"] = serde_json::Value::String(chrono::Utc::now().to_rfc3339());
+
+                fs::write(&file_path, serde_json::to_string_pretty(&steps_data)?)?;
+                println!("✅ Marked steps as done for task: {}", task_id);
+            }
+            StepsCommands::Archive { task_id } => {
+                let file_path = steps_dir.join(format!("{}.json", task_id));
+                if !file_path.exists() {
+                    println!("❌ No steps found for task: {}", task_id);
+                    return Ok(());
+                }
+
+                let content = fs::read_to_string(&file_path)?;
+                let mut steps_data: serde_json::Value = serde_json::from_str(&content)?;
+
+                steps_data["status"] = serde_json::Value::String("archived".to_string());
+                steps_data["updated_at"] = serde_json::Value::String(chrono::Utc::now().to_rfc3339());
+
+                fs::write(&file_path, serde_json::to_string_pretty(&steps_data)?)?;
+                println!("✅ Archived steps for task: {}", task_id);
+            }
+        }
+
+        Ok(())
+    }
 }

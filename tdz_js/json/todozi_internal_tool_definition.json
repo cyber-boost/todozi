@@ -1,0 +1,36 @@
+{
+  "type": "function",
+  "function": {
+    "name": "todozi_tool",
+    "description": "Todozi coordination hub for AI-human collaboration.",
+    "parameters": {
+      "type": "object",
+      "properties": {
+        "action": {
+          "type": "string",
+          "description": "🚀 SIMPLE ACTIONS: task=create task, urgent=urgent task, find=search everything, remember=save memory, idea=save idea, complete=finish task, start=begin task, stats=get overview, ai=AI task, human=human task, collab=collaborative task, extract=AI extract tasks from text, expand=AI expand task into subtasks, plan=AI plan complex projects, strategy=AI strategic planning & enhancement",
+          "enum": [
+            "task", "urgent", "high", "low", "ai", "human", "collab",
+            "find", "ai_search", "fast_search", "smart_search",
+            "remember", "important_memory", "idea", "breakthrough_idea",
+            "complete", "start", "stats", "queue", "chat",
+            "extract", "expand", "plan", "strategy"
+          ]
+        },
+        "content": {
+          "type": "string",
+          "description": "📝 WHAT TO DO: The main content - task description, search query, memory text, idea text, or task ID to complete/start"
+        },
+        "extra": {
+          "type": "string",
+          "description": "💡 OPTIONAL EXTRAS: Additional context, meaning for memories, project name, or any extra details"
+        },
+        "project": {
+          "type": "string",
+          "description": "📁 PROJECT: Project name for organization (optional)"
+        }
+      },
+      "required": ["action", "content"]
+    }
+  }
+}

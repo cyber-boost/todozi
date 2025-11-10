@@ -1,6 +1,39 @@
 include README.md
+include tdz.py
+include pytest.ini
+include test.sh
+include requirements.txt
 recursive-include todozi *.py
 recursive-include todozi *.tcss
+recursive-include todozi *.json
+recursive-include todozi *.md
+recursive-include examples *.py
+recursive-include examples *.md
+recursive-include examples *.json
+recursive-include todozi *.txt
+recursive-include todozi *.html
+recursive-include chat *.py
+recursive-include chat *.html
+recursive-include chat *.md
+recursive-include chat *.txt
+recursive-include chat *.json
+recursive-include chat *.sh
+recursive-include tests *.py
+recursive-include tests *.md
+recursive-include tests *.txt
+recursive-include tests *.json
+recursive-include train *.py
+recursive-include train *.json
+recursive-include train *.md
+recursive-include train *.txt
+recursive-include train *.bin
+recursive-include train *.safetensors
+recursive-include train *.pth
+recursive-include train *.onnx
+recursive-include train *.pkl
+recursive-include train *.h5
+recursive-include train *.pb
+recursive-include train *.tflite
 exclude todozi/train/**
 exclude todozi/**/*.bin
 exclude todozi/**/*.safetensors
