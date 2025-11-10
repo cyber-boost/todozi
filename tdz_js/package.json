@@ -1,6 +1,6 @@
 {
-  "name": "todozi-javascript",
-  "version": "0.1.1",
+  "name": "todozi",
+  "version": "0.1.2",
   "description": "AI/Human task collaboration system",
   "type": "module",
   "main": "todozi/main.js",
@@ -31,6 +31,7 @@
     "index.d.ts",
     "server.js",
     "tdz.js",
+    "ts/",
     "README.md"
   ],
   "scripts": {

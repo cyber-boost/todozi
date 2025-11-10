@@ -1,0 +1,18788 @@
+# Todozi Agent Management System - Comprehensive Documentation
+
+## Table of Contents
+1. [Overview](#overview)
+2. [Architecture](#architecture)
+3. [Data Structures](#data-structures)
+4. [API Reference](#api-reference)
+5. [Usage Examples](#usage-examples)
+6. [Design Patterns](#design-patterns)
+7. [Performance Analysis](#performance-analysis)
+8. [Security Considerations](#security-considerations)
+9. [Testing Strategies](#testing-strategies)
+10. [Deployment Instructions](#deployment-instructions)
+11. [Troubleshooting Guide](#troubleshooting-guide)
+
+## Overview
+
+The Todozi Agent Management System is a comprehensive C library designed for managing intelligent agents, their capabilities, and task assignments. It provides a complete framework for agent lifecycle management, task allocation, and performance tracking.
+
+### Key Features
+- Agent lifecycle management (create, read, update, delete)
+- Intelligent task assignment based on agent capabilities
+- Real-time agent status tracking
+- Assignment management and completion tracking
+- Statistical analysis and reporting
+- Flexible agent querying and filtering
+
+## Architecture
+
+### System Architecture Diagram
+```
+┌─────────────────┐    ┌──────────────────┐    ┌────────────────────┐
+│   Application   │◄──►│ AgentManager     │◄──►│  Data Storage      │
+│     Layer       │    │   (Controller)   │    │   (External)       │
+└─────────────────┘    └──────────────────┘    └────────────────────┘
+                              │
+                              ▼
+┌─────────────────────────────────────────────────────────────────┐
+│                      Core Domain Objects                        │
+│  ┌────────────┐  ┌─────────────────┐  ┌────────────────────┐   │
+│  │   Agent    │  │ AgentAssignment │  │ AgentStatistics    │   │
+│  └────────────┘  └─────────────────┘  └────────────────────┘   │
+│  ┌────────────┐  ┌─────────────────┐                           │
+│  │AgentUpdate │  │  TodoziError    │                           │
+│  └────────────┘  └─────────────────┘                           │
+└─────────────────────────────────────────────────────────────────┘
+```
+
+### Component Relationships
+```
+AgentManager (1) ──────── (0..*) Agent
+AgentManager (1) ──────── (0..*) AgentAssignment
+Agent (1) ─────────────── (0..*) AgentAssignment
+AgentUpdate ──────────────► Agent (update operation)
+```
+
+## Data Structures
+
+### Enumerations
+
+#### AgentStatus
+```c
+typedef enum {
+    AGENT_STATUS_AVAILABLE,    // Agent is ready for assignments
+    AGENT_STATUS_BUSY,         // Agent is currently working
+    AGENT_STATUS_INACTIVE      // Agent is not available
+} AgentStatus;
+```
+
+#### AssignmentStatus
+```c
+typedef enum {
+    ASSIGNMENT_STATUS_ASSIGNED,   // Task is assigned but not completed
+    ASSIGNMENT_STATUS_COMPLETED   // Task has been completed
+} AssignmentStatus;
+```
+
+#### TodoziErrorType
+```c
+typedef enum {
+    TODOZI_ERROR_VALIDATION,  // Input validation errors
+    TODOZI_ERROR_STORAGE      // Data storage/persistence errors
+} TodoziErrorType;
+```
+
+### Core Structures
+
+#### Agent
+Represents an intelligent agent with capabilities and specializations.
+
+```c
+struct Agent {
+    char* id;                    // Unique identifier (UUID)
+    char* name;                  // Human-readable name
+    char* description;           // Detailed description
+    char** capabilities;         // Array of capability strings
+    int capabilities_count;      // Number of capabilities
+    char** specializations;      // Array of specialization strings
+    int specializations_count;   // Number of specializations
+    struct {
+        AgentStatus status;      // Current status
+    } metadata;
+    time_t created_at;          // Creation timestamp
+    time_t updated_at;          // Last update timestamp
+};
+```
+
+#### AgentAssignment
+Represents a task assignment to an agent.
+
+```c
+struct AgentAssignment {
+    char* agent_id;             // Reference to assigned agent
+    char* task_id;              // Task identifier
+    char* project_id;           // Project identifier
+    time_t assigned_at;         // Assignment timestamp
+    AssignmentStatus status;    // Current assignment status
+};
+```
+
+#### AgentManager
+Main controller class managing all agents and assignments.
+
+```c
+struct AgentManager {
+    struct Agent** agents;              // Array of agent pointers
+    int agents_count;                   // Number of agents
+    struct AgentAssignment* agent_assignments; // Array of assignments
+    int agent_assignments_count;        // Number of assignments
+};
+```
+
+#### AgentUpdate
+Builder pattern structure for updating agent properties.
+
+```c
+struct AgentUpdate {
+    char* name;                    // New name (optional)
+    char* description;             // New description (optional)
+    char** capabilities;           // New capabilities array (optional)
+    int capabilities_count;        // Number of new capabilities
+    char** specializations;        // New specializations array (optional)
+    int specializations_count;     // Number of new specializations
+    AgentStatus* status;           // New status (optional)
+};
+```
+
+#### AgentStatistics
+Statistical data about agents and assignments.
+
+```c
+struct AgentStatistics {
+    int total_agents;           // Total number of agents
+    int available_agents;       // Agents with AVAILABLE status
+    int busy_agents;            // Agents with BUSY status
+    int inactive_agents;        // Agents with INACTIVE status
+    int total_assignments;      // Total assignments
+    int completed_assignments;  // Completed assignments
+};
+```
+
+#### TodoziError
+Error reporting structure.
+
+```c
+typedef struct {
+    char* message;              // Error description
+    TodoziErrorType type;       // Error category
+} TodoziError;
+```
+
+## API Reference
+
+### AgentManager Functions
+
+#### agent_manager_new()
+Creates a new AgentManager instance.
+
+**Signature:**
+```c
+struct AgentManager* agent_manager_new();
+```
+
+**Parameters:** None
+
+**Returns:**
+- `struct AgentManager*` - Pointer to newly created manager
+- `NULL` - If memory allocation fails
+
+**Memory Management:** Caller must free with `agent_manager_free()`
+
+#### agent_manager_free()
+Releases all resources associated with an AgentManager.
+
+**Signature:**
+```c
+void agent_manager_free(struct AgentManager* manager);
+```
+
+**Parameters:**
+- `manager` - Pointer to AgentManager to free
+
+**Returns:** None
+
+**Side Effects:** Frees all managed agents and assignments
+
+#### agent_manager_create_agent()
+Adds a new agent to the system.
+
+**Signature:**
+```c
+char* agent_manager_create_agent(struct AgentManager* manager, struct Agent* agent);
+```
+
+**Parameters:**
+- `manager` - AgentManager instance
+- `agent` - Pre-configured Agent structure (ID will be generated)
+
+**Returns:**
+- `char*` - Copy of generated agent ID
+- `NULL` - If creation fails
+
+**Error Conditions:**
+- Invalid manager or agent pointer
+- Memory allocation failure
+- UUID generation failure
+
+#### agent_manager_get_agent()
+Retrieves an agent by ID.
+
+**Signature:**
+```c
+struct Agent* agent_manager_get_agent(const struct AgentManager* manager, const char* agent_id);
+```
+
+**Parameters:**
+- `manager` - AgentManager instance
+- `agent_id` - UUID of agent to retrieve
+
+**Returns:**
+- `struct Agent*` - Pointer to agent (do not free)
+- `NULL` - If agent not found or invalid parameters
+
+#### agent_manager_update_agent()
+Updates agent properties using an AgentUpdate structure.
+
+**Signature:**
+```c
+int agent_manager_update_agent(struct AgentManager* manager, const char* agent_id, struct AgentUpdate* updates);
+```
+
+**Parameters:**
+- `manager` - AgentManager instance
+- `agent_id` - UUID of agent to update
+- `updates` - AgentUpdate structure with new values
+
+**Returns:**
+- `0` - Success
+- `-1` - Failure (agent not found or invalid parameters)
+
+#### agent_manager_assign_task_to_agent()
+Assigns a task to an available agent.
+
+**Signature:**
+```c
+char* agent_manager_assign_task_to_agent(struct AgentManager* manager, char* task_id, const char* agent_id, char* project_id);
+```
+
+**Parameters:**
+- `manager` - AgentManager instance
+- `task_id` - Task identifier
+- `agent_id` - Agent UUID
+- `project_id` - Project identifier
+
+**Returns:**
+- `char*` - Copy of task_id on success
+- `NULL` - If assignment fails
+
+**Preconditions:** Agent must be available (AGENT_STATUS_AVAILABLE)
+
+### AgentUpdate Builder Functions
+
+#### agent_update_new()
+Creates a new AgentUpdate builder.
+
+**Signature:**
+```c
+struct AgentUpdate* agent_update_new();
+```
+
+**Returns:** New AgentUpdate instance or NULL on failure
+
+#### agent_update_name()
+Sets the name update.
+
+**Signature:**
+```c
+struct AgentUpdate* agent_update_name(struct AgentUpdate* update, char* name);
+```
+
+**Parameters:**
+- `update` - AgentUpdate instance
+- `name` - New name (will be copied)
+
+**Returns:** Same AgentUpdate instance for chaining
+
+### Helper Functions
+
+#### string_array_contains()
+Checks if a string array contains a specific value.
+
+**Signature:**
+```c
+int string_array_contains(char** array, int count, const char* value);
+```
+
+**Parameters:**
+- `array` - String array to search
+- `count` - Number of elements in array
+- `value` - Value to search for
+
+**Returns:** 1 if found, 0 otherwise
+
+#### generate_uuid()
+Generates a UUID string.
+
+**Signature:**
+```c
+static char* generate_uuid();
+```
+
+**Returns:** Newly allocated UUID string
+
+## Usage Examples
+
+### Basic Agent Management
+
+```c
+#include "todozi_agents.h"
+
+// Create agent manager
+struct AgentManager* manager = agent_manager_new();
+if (!manager) {
+    printf("Failed to create agent manager\n");
+    return -1;
+}
+
+// Create a new agent
+struct Agent* new_agent = malloc(sizeof(struct Agent));
+new_agent->name = strdup("Analysis Agent");
+new_agent->description = strdup("Specialized in data analysis");
+new_agent->capabilities = malloc(2 * sizeof(char*));
+new_agent->capabilities[0] = strdup("data_processing");
+new_agent->capabilities[1] = strdup("statistical_analysis");
+new_agent->capabilities_count = 2;
+new_agent->specializations = malloc(1 * sizeof(char*));
+new_agent->specializations[0] = strdup("analytics");
+new_agent->specializations_count = 1;
+new_agent->metadata.status = AGENT_STATUS_AVAILABLE;
+
+char* agent_id = agent_manager_create_agent(manager, new_agent);
+if (!agent_id) {
+    printf("Failed to create agent\n");
+    agent_manager_free(manager);
+    return -1;
+}
+
+printf("Created agent with ID: %s\n", agent_id);
+free(agent_id);
+```
+
+### Agent Updates with Builder Pattern
+
+```c
+// Update agent using builder pattern
+struct AgentUpdate* update = agent_update_new();
+agent_update_name(update, "Enhanced Analysis Agent")
+          ->agent_update_description(update, "Updated with ML capabilities")
+          ->agent_update_status(update, AGENT_STATUS_BUSY);
+
+// Add new capabilities
+char** new_capabilities = malloc(3 * sizeof(char*));
+new_capabilities[0] = strdup("data_processing");
+new_capabilities[1] = strdup("statistical_analysis");
+new_capabilities[2] = strdup("machine_learning");
+agent_update_capabilities(update, new_capabilities, 3);
+
+int result = agent_manager_update_agent(manager, agent_id, update);
+if (result == 0) {
+    printf("Agent updated successfully\n");
+} else {
+    printf("Failed to update agent\n");
+}
+
+agent_update_free(update);
+```
+
+### Task Assignment and Completion
+
+```c
+// Assign a task to an agent
+char* task_id = "task_123";
+char* project_id = "project_alpha";
+char* assigned_task = agent_manager_assign_task_to_agent(manager, task_id, agent_id, project_id);
+
+if (assigned_task) {
+    printf("Task %s assigned to agent %s\n", assigned_task, agent_id);
+    free(assigned_task);
+    
+    // Complete the assignment
+    if (agent_manager_complete_agent_assignment(manager, task_id) == 0) {
+        printf("Task completed successfully\n");
+    }
+}
+```
+
+### Querying and Statistics
+
+```c
+// Get available agents
+int available_count;
+struct Agent** available_agents = agent_manager_get_available_agents(manager, &available_count);
+printf("Found %d available agents\n", available_count);
+
+// Get statistics
+struct AgentStatistics* stats = agent_manager_get_agent_statistics(manager);
+if (stats) {
+    printf("Total agents: %d\n", stats->total_agents);
+    printf("Available agents: %d\n", stats->available_agents);
+    printf("Completion rate: %.2f%%\n", agent_statistics_completion_rate(stats));
+    agent_statistics_free(stats);
+}
+
+// Cleanup
+agent_manager_free(manager);
+```
+
+## Design Patterns
+
+### 1. Manager Pattern
+**AgentManager** acts as a central controller managing all agent-related operations, providing a single point of access.
+
+### 2. Builder Pattern
+**AgentUpdate** uses builder pattern for flexible agent updates with method chaining:
+```c
+agent_update_new()
+    ->agent_update_name(update, "New Name")
+    ->agent_update_status(update, AGENT_STATUS_BUSY);
+```
+
+### 3. Repository Pattern
+AgentManager encapsulates data access, though persistence is delegated to external functions (`save_agent`).
+
+### 4. Factory Pattern
+`agent_manager_new()` acts as a factory for creating AgentManager instances.
+
+## Performance Analysis
+
+### Time Complexity
+| Operation | Best Case | Worst Case | Average Case |
+|-----------|-----------|------------|--------------|
+| Create Agent | O(1) | O(n) | O(1) |
+| Get Agent by ID | O(1) | O(n) | O(n/2) |
+| Update Agent | O(1) | O(n) | O(n/2) |
+| Delete Agent | O(1) | O(n) | O(n) |
+| Find by Specialization | O(n) | O(n) | O(n) |
+| Task Assignment | O(n) | O(n) | O(n) |
+
+### Space Complexity
+- **AgentManager**: O(n + m) where n = agents, m = assignments
+- **Individual Operations**: Generally O(1) auxiliary space
+
+### Memory Management
+- All strings are copied internally
+- Arrays are dynamically resized using realloc
+- Comprehensive cleanup functions provided
+
+### Optimization Opportunities
+1. **Indexing**: Add hash tables for O(1) agent lookups by ID
+2. **Caching**: Cache filtered agent lists for common queries
+3. **Batch Operations**: Add batch update/creation methods
+
+## Security Considerations
+
+### Input Validation
+```c
+// Current validation is basic - recommendations:
+int validate_agent_input(const struct Agent* agent) {
+    if (!agent || !agent->name) return 0;
+    if (strlen(agent->name) > MAX_NAME_LENGTH) return 0;
+    // Add more validation rules
+    return 1;
+}
+```
+
+### Memory Safety
+- **Risk**: Potential buffer overflows in string copying
+- **Mitigation**: Use `strncpy` instead of `strcpy`
+- **Recommendation**: Add maximum length checks for all string fields
+
+### UUID Security
+- Current implementation uses `uuid_generate()` which may not be cryptographically secure
+- **Recommendation**: Use `uuid_generate_random()` for better security
+
+### Data Persistence
+- External storage functions (`save_agent`) should implement proper encryption
+- **Recommendation**: Add data validation before persistence
+
+## Testing Strategies
+
+### Unit Testing Framework
+```c
+// Example test structure
+void test_agent_creation() {
+    struct AgentManager* manager = agent_manager_new();
+    assert(manager != NULL);
+    
+    struct Agent* agent = create_test_agent();
+    char* id = agent_manager_create_agent(manager, agent);
+    assert(id != NULL);
+    
+    struct Agent* retrieved = agent_manager_get_agent(manager, id);
+    assert(retrieved != NULL);
+    assert(strcmp(retrieved->name, "Test Agent") == 0);
+    
+    free(id);
+    agent_manager_free(manager);
+}
+```
+
+### Test Categories
+
+#### 1. Functional Tests
+- Agent lifecycle (CRUD operations)
+- Assignment management
+- Query operations
+- Status transitions
+
+#### 2. Boundary Tests
+- Empty manager operations
+- Maximum capacity testing
+- Invalid input handling
+
+#### 3. Performance Tests
+- Scalability with large datasets
+- Memory usage profiling
+- Concurrent access testing
+
+#### 4. Integration Tests
+- With persistence layer
+- With application business logic
+
+### Mocking Strategy
+```c
+// Mock persistence layer for unit tests
+int mock_save_agent(struct Agent* agent) {
+    // Track calls for verification
+    mock_save_call_count++;
+    return 0;
+}
+```
+
+## Deployment Instructions
+
+### Build Requirements
+```makefile
+# Compiler flags
+CFLAGS = -Wall -Wextra -Werror -std=c99 -D_POSIX_C_SOURCE=200112L
+LIBS = -luuid
+
+# Build target
+libtodozi_agents.a: todozi_agents.o
+    ar rcs libtodozi_agents.a todozi_agents.o
+
+todozi_agents.o: todozi_agents.c todozi_agents.h
+    gcc $(CFLAGS) -c todozi_agents.c -o todozi_agents.o
+```
+
+### Platform Requirements
+- **OS**: Linux/Unix systems with POSIX compliance
+- **Libraries**: libuuid development package
+- **Compiler**: C99 compliant compiler (GCC 4.8+ recommended)
+
+### Installation Steps
+
+1. **Install Dependencies**
+```bash
+# Ubuntu/Debian
+sudo apt-get install libuuid1 libuuid-dev
+
+# CentOS/RHEL
+sudo yum install libuuid libuuid-devel
+```
+
+2. **Build Library**
+```bash
+gcc -c -fPIC todozi_agents.c -o todozi_agents.o
+gcc -shared -o libtodozi_agents.so todozi_agents.o -luuid
+```
+
+3. **Install Headers**
+```bash
+sudo cp todozi_agents.h /usr/local/include/
+sudo cp libtodozi_agents.so /usr/local/lib/
+sudo ldconfig
+```
+
+### Integration with Applications
+
+```c
+// Compile application with library
+gcc my_app.c -ltodozi_agents -o my_app
+
+// Runtime linking
+export LD_LIBRARY_PATH=/usr/local/lib:$LD_LIBRARY_PATH
+./my_app
+```
+
+## Troubleshooting Guide
+
+### Common Issues
+
+#### 1. Memory Leaks
+**Symptoms**: Increasing memory usage over time
+**Diagnosis**: Use valgrind or address sanitizer
+```bash
+valgrind --leak-check=full ./test_program
+```
+**Solution**: Ensure all `_free()` functions are called appropriately
+
+#### 2. UUID Generation Failure
+**Symptoms**: `agent_manager_create_agent` returns NULL
+**Diagnosis**: Check if libuuid is properly installed
+**Solution**: Verify library installation and linking
+
+#### 3. Segmentation Faults
+**Symptoms**: Program crashes on agent operations
+**Diagnosis**: Check for null pointer dereferences
+**Solution**: Add null checks in application code
+
+### Debugging Techniques
+
+#### Logging Support
+```c
+// Add debug logging
+#ifdef DEBUG
+#define AGENT_DEBUG(fmt, ...) printf("AGENT_DEBUG: " fmt, ##__VA_ARGS__)
+#else
+#define AGENT_DEBUG(fmt, ...)
+#endif
+```
+
+#### Error Tracking
+```c
+// Enhanced error reporting
+typedef struct {
+    const char* function;
+    int line;
+    const char* message;
+} AgentError;
+
+AgentError last_error = {0};
+
+#define AGENT_SET_ERROR(msg) \
+    do { \
+        last_error.function = __func__; \
+        last_error.line = __LINE__; \
+        last_error.message = msg; \
+    } while(0)
+```
+
+### Performance Monitoring
+
+#### Metrics Collection
+```c
+// Add performance tracking
+struct AgentPerformance {
+    size_t total_memory_used;
+    int agent_operations;
+    int assignment_operations;
+    time_t start_time;
+};
+
+void agent_performance_report(const struct AgentPerformance* perf) {
+    printf("Memory used: %zu bytes\n", perf->total_memory_used);
+    printf("Operations: %d agent, %d assignment\n", 
+           perf->agent_operations, perf->assignment_operations);
+}
+```
+
+This comprehensive documentation provides complete coverage of the Todozi Agent Management System, enabling developers to effectively use, extend, and maintain the codebase. The system demonstrates good software engineering practices with clear separation of concerns, comprehensive error handling, and flexible architecture.# Todozi API Key Management System - Comprehensive Documentation
+
+## Table of Contents
+1. [Overview](#overview)
+2. [Architecture](#architecture)
+3. [Error Handling](#error-handling)
+4. [Data Structures](#data-structures)
+5. [API Functions](#api-functions)
+6. [Helper Functions](#helper-functions)
+7. [Design Patterns](#design-patterns)
+8. [Performance Analysis](#performance-analysis)
+9. [Security Considerations](#security-considerations)
+10. [Testing Strategies](#testing-strategies)
+11. [Deployment Instructions](#deployment-instructions)
+12. [Troubleshooting Guide](#troubleshooting-guide)
+13. [Usage Examples](#usage-examples)
+
+## Overview
+
+The Todozi API Key Management System is a comprehensive C library for managing API keys with features for creation, validation, storage, and lifecycle management. It provides secure random key generation, file-based persistence, and authentication mechanisms.
+
+### Key Features
+- Secure API key generation using UUIDs and cryptographically secure random strings
+- File-based persistence in user's home directory
+- Activation/deactivation lifecycle management
+- Administrative and standard key differentiation
+- Comprehensive error handling with Result pattern
+
+## Architecture
+
+### System Architecture Diagram
+```
++-------------------+     +-------------------+     +-------------------+
+|   Application     |     |  API Key Manager  |     |   File System     |
+|   Layer           |---->|   (This Library)  |---->|   (~/.todozi/)    |
++-------------------+     +-------------------+     +-------------------+
+                              |          |
+                              v          v
+                    +----------------+  +----------------+
+                    |  APIKeyCollection |  |  Result Pattern  |
+                    +----------------+  +----------------+
+                              |
+                              v
+                    +----------------+
+                    |  APIKey Vector  |
+                    +----------------+
+                              |
+                              v
+                    +----------------+
+                    | Individual APIKeys |
+                    +----------------+
+```
+
+### Component Relationships
+```
+Application → API Functions → APIKeyCollection → ApiKeyVector → ApiKey
+                            ↓
+                Error Handling (Result Pattern)
+                            ↓
+                File I/O Operations
+```
+
+## Error Handling
+
+### Error Types Enumeration
+```c
+typedef enum {
+    TODOZI_ERROR_NONE,      // No error occurred
+    TODOZI_ERROR_IO,        // File I/O operations failed
+    TODOZI_ERROR_VALIDATION,// Input validation or key not found
+    TODOZI_ERROR_JSON       // JSON serialization/deserialization (reserved)
+} TodoziErrorType;
+```
+
+### Result Pattern Implementation
+The library uses a Result pattern for comprehensive error handling:
+
+**Structure:**
+```c
+struct Result {
+    void* data;             // Success data payload
+    TodoziError* error;     // Error information
+};
+
+typedef struct {
+    TodoziErrorType type;   // Error category
+    char* message;          // Human-readable message
+} TodoziError;
+```
+
+**Key Functions:**
+- `result_ok(void* data)`: Creates successful result
+- `result_error(TodoziErrorType type, const char* message)`: Creates error result
+- `result_is_ok(const struct Result* result)`: Checks if result is successful
+- `result_free(struct Result* result)`: Properly deallocates result
+
+## Data Structures
+
+### ApiKey Structure
+```c
+struct ApiKey {
+    char* user_id;          // Unique user identifier (UUID)
+    char* public_key;       // 32-character public identifier
+    char* private_key;      // 64-character secret key
+    bool is_active;         // Activation status
+    bool admin;             // Administrative privileges
+};
+```
+
+### ApiKeyVector Structure
+```c
+typedef struct {
+    struct ApiKey** keys;   // Dynamic array of ApiKey pointers
+    size_t size;           // Current number of elements
+    size_t capacity;       // Current capacity of the array
+} ApiKeyVector;
+```
+
+### ApiKeyCollection Structure
+```c
+struct ApiKeyCollection {
+    ApiKeyVector keys;     // Collection of all API keys
+};
+```
+
+## API Functions
+
+### Core Management Functions
+
+#### `create_api_key()`
+**Purpose:** Creates a new API key with auto-generated UUID
+**Parameters:** None
+**Returns:** `Result*` containing new `ApiKey*` or error
+**Complexity:** O(n) due to file operations
+```c
+struct Result* create_api_key(void);
+```
+
+#### `create_api_key_with_user_id(const char* user_id)`
+**Purpose:** Creates API key with specific user ID
+**Parameters:** 
+- `user_id`: Custom user identifier string
+**Returns:** `Result*` containing new `ApiKey*` or error
+**Error Conditions:** NULL user_id, memory allocation failure
+```c
+struct Result* create_api_key_with_user_id(const char* user_id);
+```
+
+#### `get_api_key(const char* user_id)`
+**Purpose:** Retrieves API key by user ID
+**Parameters:** 
+- `user_id`: User identifier to search for
+**Returns:** `Result*` containing cloned `ApiKey*` or error
+**Error Conditions:** Key not found, NULL user_id
+```c
+struct Result* get_api_key(const char* user_id);
+```
+
+#### `get_api_key_by_public(const char* public_key)`
+**Purpose:** Retrieves API key by public key
+**Parameters:** 
+- `public_key`: Public key identifier
+**Returns:** `Result*` containing cloned `ApiKey*` or error
+```c
+struct Result* get_api_key_by_public(const char* public_key);
+```
+
+### Listing Functions
+
+#### `list_api_keys()`
+**Purpose:** Retrieves all API keys in collection
+**Parameters:** None
+**Returns:** `Result*` containing `ApiKeyVector*` of all keys
+```c
+struct Result* list_api_keys(void);
+```
+
+#### `list_active_api_keys()`
+**Purpose:** Retrieves only active API keys
+**Parameters:** None
+**Returns:** `Result*` containing `ApiKeyVector*` of active keys
+```c
+struct Result* list_active_api_keys(void);
+```
+
+### Authentication Functions
+
+#### `check_api_key_auth(const char* public_key, const char* private_key)`
+**Purpose:** Validates API key credentials and returns authentication result
+**Parameters:**
+- `public_key`: Public key identifier
+- `private_key`: Private key for validation (can be NULL for public-only check)
+**Returns:** `Result*` containing authentication result structure
+**Authentication Result Structure:**
+```c
+typedef struct {
+    char* user_id;  // Authenticated user ID
+    bool is_admin;  // Administrative privileges
+} AuthResult;
+```
+```c
+struct Result* check_api_key_auth(const char* public_key, const char* private_key);
+```
+
+### Lifecycle Management Functions
+
+#### `deactivate_api_key(const char* user_id)`
+**Purpose:** Deactivates specified API key
+**Parameters:** 
+- `user_id`: User identifier of key to deactivate
+**Returns:** `Result*` with NULL data on success, error on failure
+```c
+struct Result* deactivate_api_key(const char* user_id);
+```
+
+#### `activate_api_key(const char* user_id)`
+**Purpose:** Activates specified API key
+**Parameters:** 
+- `user_id`: User identifier of key to activate
+**Returns:** `Result*` with NULL data on success, error on failure
+```c
+struct Result* activate_api_key(const char* user_id);
+```
+
+#### `remove_api_key(const char* user_id)`
+**Purpose:** Permanently removes API key from collection
+**Parameters:** 
+- `user_id`: User identifier of key to remove
+**Returns:** `Result*` containing removed `ApiKey*` or error
+```c
+struct Result* remove_api_key(const char* user_id);
+```
+
+### Persistence Functions
+
+#### `save_api_key_collection(const struct ApiKeyCollection* collection)`
+**Purpose:** Saves API key collection to persistent storage
+**Parameters:** 
+- `collection`: ApiKeyCollection to save
+**Returns:** `Result*` indicating success or error
+**Storage Location:** `~/.todozi/api/api_keys.json`
+```c
+struct Result* save_api_key_collection(const struct ApiKeyCollection* collection);
+```
+
+#### `load_api_key_collection()`
+**Purpose:** Loads API key collection from persistent storage
+**Parameters:** None
+**Returns:** `Result*` containing loaded `ApiKeyCollection*` or error
+```c
+struct Result* load_api_key_collection(void);
+```
+
+## Helper Functions
+
+### String Generation Functions
+
+#### `generate_uuid()`
+**Purpose:** Generates version 4 UUID using libuuid
+**Returns:** String containing UUID (caller must free)
+**Security:** Uses cryptographically secure random generation
+```c
+static char* generate_uuid(void);
+```
+
+#### `generate_random_string(size_t length)`
+**Purpose:** Generates cryptographically secure random strings
+**Parameters:** 
+- `length`: Desired string length
+**Algorithm:** Uses `/dev/urandom` with fallback to time-based seeding
+**Character Set:** Alphanumeric characters (a-z, A-Z, 0-9)
+```c
+char* generate_random_string(size_t length);
+```
+
+### File System Functions
+
+#### `file_exists(const char* path)`
+**Purpose:** Checks if file exists at specified path
+**Implementation:** Uses `access()` system call
+```c
+bool file_exists(const char* path);
+```
+
+#### `read_file(const char* path)`
+**Purpose:** Reads entire file content into memory
+**Returns:** NULL-terminated string (caller must free)
+**Error Handling:** Returns NULL on any file operation failure
+```c
+char* read_file(const char* path);
+```
+
+#### `write_file(const char* path, const char* content)`
+**Purpose:** Writes content to file with proper error checking
+**Implementation:** Uses binary write mode with flush verification
+```c
+bool write_file(const char* path, const char* content);
+```
+
+#### `create_directory(const char* path)`
+**Purpose:** Creates directory with proper permissions (0755)
+**Error Handling:** Returns true if directory exists or created successfully
+```c
+static bool create_directory(const char* path);
+```
+
+### Path Management Functions
+
+#### `get_storage_dir()`
+**Purpose:** Determines storage directory path (`~/.todozi`)
+**Dependencies:** Requires `HOME` environment variable
+```c
+static struct Result* get_storage_dir(void);
+```
+
+#### `join_paths(const char* path1, const char* path2)`
+**Purpose:** Joins two paths with proper separator handling
+**Smart Handling:** Avoids duplicate slashes in joined paths
+```c
+static char* join_paths(const char* path1, const char* path2);
+```
+
+### Vector Operations
+
+#### `api_key_vector_new()`
+**Purpose:** Creates new dynamic vector for API key storage
+**Initial Capacity:** Zero, expands as needed
+```c
+ApiKeyVector* api_key_vector_new(void);
+```
+
+#### `api_key_vector_push(ApiKeyVector* vector, struct ApiKey* key)`
+**Purpose:** Adds API key to vector with automatic capacity expansion
+**Expansion Strategy:** Doubles capacity when full, starting from 8
+```c
+void api_key_vector_push(ApiKeyVector* vector, struct ApiKey* key);
+```
+
+#### `api_key_vector_free(ApiKeyVector* vector)`
+**Purpose:** Properly deallocates vector and all contained API keys
+**Memory Management:** Recursively frees all API key components
+```c
+void api_key_vector_free(ApiKeyVector* vector);
+```
+
+### API Key Operations
+
+#### `api_key_new()`
+**Purpose:** Creates new API key with auto-generated identifiers
+**Key Sizes:** User ID (UUID), Public Key (32 chars), Private Key (64 chars)
+```c
+struct ApiKey* api_key_new(void);
+```
+
+#### `api_key_clone(const struct ApiKey* key)`
+**Purpose:** Creates deep copy of API key
+**Implementation:** Duplicates all string components
+```c
+struct ApiKey* api_key_clone(const struct ApiKey* key);
+```
+
+#### `api_key_matches(const struct ApiKey* key, const char* public_key, const char* private_key)`
+**Purpose:** Validates key credentials match
+**Flexibility:** Can validate with or without private key
+```c
+bool api_key_matches(const struct ApiKey* key, const char* public_key, const char* private_key);
+```
+
+## Design Patterns
+
+### 1. Result Pattern
+**Implementation:** Comprehensive error handling through unified return type
+**Benefits:** 
+- Consistent error reporting across all functions
+- Clear separation of success and error paths
+- Memory-safe error message handling
+
+### 2. Repository Pattern
+**Implementation:** `ApiKeyCollection` acts as repository for API keys
+**Benefits:**
+- Clean separation between data access and business logic
+- Centralized persistence operations
+
+### 3. Builder Pattern (Partial)
+**Implementation:** Multiple constructors for `ApiKey` with different parameter sets
+**Benefits:** Flexible object creation while maintaining validation
+
+### 4. Iterator Pattern
+**Implementation:** Vector operations provide iteration capability
+**Benefits:** Clean abstraction for collection traversal
+
+## Performance Analysis
+
+### Time Complexity
+| Operation | Best Case | Worst Case | Average Case |
+|-----------|-----------|------------|--------------|
+| Key Creation | O(1) | O(1) | O(1) |
+| Key Lookup (by user_id) | O(1) | O(n) | O(n) |
+| Key Lookup (by public_key) | O(1) | O(n) | O(n) |
+| Collection Save/Load | O(n) | O(n) | O(n) |
+| Vector Operations | O(1) | O(n) for expansion | O(1) amortized |
+
+### Space Complexity
+| Component | Space Usage |
+|-----------|------------|
+| Individual ApiKey | O(1) fixed size + string lengths |
+| ApiKeyVector | O(n) for n keys |
+| File Storage | O(n) proportional to key count |
+
+### Memory Management
+- **Allocations:** Careful tracking of all malloc/calloc calls
+- **Deallocations:** Comprehensive free operations in cleanup functions
+- **String Handling:** Proper strdup() usage with matching free() calls
+
+### Optimization Opportunities
+1. **Indexing:** Implement hash tables for O(1) lookups by user_id and public_key
+2. **Caching:** Cache loaded collection to avoid repeated file I/O
+3. **Batching:** Batch multiple operations before file persistence
+
+## Security Considerations
+
+### Cryptography
+- **UUID Generation:** Uses cryptographically secure `uuid_generate_random()`
+- **Random Strings:** Primary source is `/dev/urandom` with secure fallback
+- **Key Lengths:** Public keys (32 chars), Private keys (64 chars) provide sufficient entropy
+
+### Storage Security
+- **File Permissions:** Directories created with 0755 permissions
+- **Storage Location:** User's home directory provides basic access control
+- **Data Format:** Planned JSON serialization allows for potential encryption
+
+### Authentication Security
+- **Key Validation:** Comprehensive matching with both public and private components
+- **Admin Privileges:** Separate validation for administrative operations
+- **Active Status:** Inactive keys are rejected during authentication
+
+### Potential Vulnerabilities
+1. **Memory Exposure:** Private keys stored in plain memory
+2. **File Interception:** Storage file potentially accessible to other users
+3. **Timing Attacks:** String comparison may be vulnerable to timing analysis
+
+### Mitigation Strategies
+- Implement memory encryption for sensitive data
+- Add file encryption for persistent storage
+- Use constant-time string comparison functions
+
+## Testing Strategies
+
+### Unit Testing Framework
+```c
+// Example test structure
+void test_api_key_creation() {
+    struct Result* result = create_api_key();
+    assert(result_is_ok(result));
+    
+    struct ApiKey* key = (struct ApiKey*)result->data;
+    assert(key != NULL);
+    assert(strlen(key->user_id) == 36); // UUID length
+    assert(strlen(key->public_key) == 32);
+    assert(strlen(key->private_key) == 64);
+    
+    result_free(result);
+}
+```
+
+### Test Categories
+
+#### 1. Functional Tests
+- API key creation and validation
+- Authentication flows
+- Lifecycle management (activate/deactivate/remove)
+- Error condition handling
+
+#### 2. Integration Tests
+- File persistence operations
+- End-to-end workflow testing
+- Memory leak detection
+
+#### 3. Security Tests
+- Random number generation quality
+- Authentication bypass attempts
+- Boundary condition testing
+
+#### 4. Performance Tests
+- Large collection handling
+- Concurrent access scenarios
+- Memory usage profiling
+
+### Mocking Strategy
+```c
+// File system mocking for isolated testing
+#ifdef TESTING
+bool mock_file_exists = true;
+char* mock_file_content = NULL;
+
+bool file_exists(const char* path) {
+    return mock_file_exists;
+}
+#endif
+```
+
+## Deployment Instructions
+
+### Prerequisites
+```bash
+# Required libraries
+sudo apt-get install libuuid1 libuuid-dev  # Ubuntu/Debian
+sudo yum install libuuid libuuid-devel      # CentOS/RHEL
+```
+
+### Compilation
+```bash
+# Basic compilation
+gcc -o todozi_api main.c -luuid
+
+# With debugging
+gcc -g -o todozi_api main.c -luuid
+
+# With optimization
+gcc -O2 -o todozi_api main.c -luuid
+```
+
+### Installation
+```bash
+# Create installation directory
+sudo mkdir -p /usr/local/include/todozi
+sudo mkdir -p /usr/local/lib
+
+# Copy headers
+sudo cp todozi_api.h /usr/local/include/todozi/
+
+# Compile as shared library
+gcc -shared -fPIC -o libtodozi.so todozi_api.c -luuid
+sudo cp libtodozi.so /usr/local/lib/
+
+# Update library cache
+sudo ldconfig
+```
+
+### Integration with Applications
+```c
+#include <todozi/todozi_api.h>
+
+// Link with: -ltodozi -luuid
+```
+
+## Troubleshooting Guide
+
+### Common Issues
+
+#### 1. Compilation Errors
+**Problem:** "uuid_generate_random undefined reference"
+**Solution:** Ensure libuuid development packages are installed and linked with `-luuid`
+
+#### 2. Runtime Errors
+**Problem:** "HOME environment variable not set"
+**Solution:** Set HOME environment variable or run in proper user context
+
+#### 3. Permission Errors
+**Problem:** Cannot create `~/.todozi` directory
+**Solution:** Check home directory permissions or specify alternate storage location
+
+#### 4. Memory Issues
+**Problem:** Memory leaks detected
+**Solution:** Ensure all `Result` and `ApiKey` structures are properly freed using provided functions
+
+### Debugging Techniques
+
+#### Memory Debugging
+```bash
+# Use valgrind for memory leak detection
+valgrind --leak-check=full ./todozi_app
+```
+
+#### Logging Support
+```c
+// Add debug logging
+#ifdef DEBUG
+#define LOG(msg) printf("DEBUG: %s\n", msg)
+#else
+#define LOG(msg)
+#endif
+```
+
+### Recovery Procedures
+
+#### Corrupted Storage File
+1. Backup existing `~/.todozi/api/api_keys.json`
+2. Remove corrupted file
+3. System will create new empty collection on next access
+
+#### Lost API Keys
+1. Use `list_api_keys()` to audit current keys
+2. Regenerate missing keys using `create_api_key_with_user_id()`
+3. Distribute new keys to affected users
+
+## Usage Examples
+
+### Basic API Key Management
+```c
+#include "todozi_api.h"
+
+int main() {
+    // Create a new API key
+    struct Result* create_result = create_api_key();
+    if (!result_is_ok(create_result)) {
+        printf("Error: %s\n", create_result->error->message);
+        result_free(create_result);
+        return 1;
+    }
+    
+    struct ApiKey* new_key = (struct ApiKey*)create_result->data;
+    printf("Created API Key:\n");
+    printf("User ID: %s\n", new_key->user_id);
+    printf("Public Key: %s\n", new_key->public_key);
+    printf("Private Key: %s\n", new_key->private_key);
+    
+    result_free(create_result);
+    
+    // Authenticate with the key
+    struct Result* auth_result = check_api_key_auth(new_key->public_key, new_key->private_key);
+    if (result_is_ok(auth_result)) {
+        // Cast to the correct type - in actual implementation this would be properly typed
+        printf("Authentication successful\n");
+    }
+    
+    result_free(auth_result);
+    return 0;
+}
+```
+
+### Advanced Collection Management
+```c
+// List all active API keys
+struct Result* list_result = list_active_api_keys();
+if (result_is_ok(list_result)) {
+    ApiKeyVector* active_keys = (ApiKeyVector*)list_result->data;
+    
+    for (size_t i = 0; i < api_key_vector_size(active_keys); i++) {
+        struct ApiKey* key = api_key_vector_get(active_keys, i);
+        printf("Active Key: %s (Public: %s)\n", key->user_id, key->public_key);
+    }
+    
+    api_key_vector_free(active_keys);
+}
+result_free(list_result);
+```
+
+### Error Handling Best Practices
+```c
+struct Result* result = some_api_function();
+if (!result_is_ok(result)) {
+    // Handle error appropriately
+    switch (result->error->type) {
+        case TODOZI_ERROR_IO:
+            printf("I/O Error: %s\n", result->error->message);
+            break;
+        case TODOZI_ERROR_VALIDATION:
+            printf("Validation Error: %s\n", result->error->message);
+            break;
+        default:
+            printf("Unknown Error: %s\n", result->error->message);
+    }
+    
+    // Consider recovery strategies based on error type
+    if (result->error->type == TODOZI_ERROR_IO) {
+        // Attempt recovery or use default values
+    }
+}
+
+// Always free the result
+result_free(result);
+```
+
+This comprehensive documentation provides complete coverage of the Todozi API Key Management System, including architectural details, implementation specifics, security considerations, and practical usage examples. The system demonstrates robust error handling, secure key generation, and flexible API key lifecycle management suitable for production applications.# Comprehensive Documentation: Tool Framework System
+
+## Overview
+
+This C-based tool framework provides a comprehensive system for defining, registering, and executing various tools with parameter validation, error handling, and JSON serialization capabilities. The system is designed to be extensible and supports multiple resource locking mechanisms for safe concurrent operations.
+
+## Table of Contents
+
+1. [Architecture Overview](#architecture-overview)
+2. [Data Structures](#data-structures)
+3. [Core Components](#core-components)
+4. [API Reference](#api-reference)
+5. [Design Patterns](#design-patterns)
+6. [Usage Examples](#usage-examples)
+7. [Performance Analysis](#performance-analysis)
+8. [Security Considerations](#security-considerations)
+9. [Testing Strategies](#testing-strategies)
+10. [Deployment Instructions](#deployment-instructions)
+11. [Troubleshooting Guide](#troubleshooting-guide)
+
+## Architecture Overview
+
+### System Architecture Diagram
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│                    Tool Framework System                    │
+├─────────────────────────────────────────────────────────────┤
+│  ┌─────────────┐    ┌─────────────┐    ┌─────────────┐     │
+│  │ ToolRegistry│    │    Tool     │    │   HashMap   │     │
+│  │             │    │             │    │             │     │
+│  │ ┌─────────┐ │    │ ┌─────────┐ │    │ ┌─────────┐ │     │
+│  │ │ tools   │◄├────┼─│ data    │ │    │ │ buckets │ │     │
+│  │ │ HashMap │ │    │ │ void*   │ │    │ │ Entry*  │ │     │
+│  │ └─────────┘ │    │ └─────────┘ │    │ └─────────┘ │     │
+│  └─────────────┘    │ ┌─────────┐ │    │             │     │
+│                     │ │ def_fn  │ │    │             │     │
+│  ┌─────────────┐    │ │ exec_fn │ │    └─────────────┘     │
+│  │ToolDefinition│   │ │ ...     │ │                        │
+│  │             │   │ └─────────┘ │    ┌─────────────┐     │
+│  │ ┌─────────┐ │   └─────────────┘    │  JsonValue  │     │
+│  │ │ params  │ │                      │             │     │
+│  │ │ToolParam│ │                      │ ┌─────────┐ │     │
+│  │ │ array   │ │                      │ │ type    │ │     │
+│  │ └─────────┘ │                      │ │ union   │ │     │
+│  └─────────────┘                      │ │ refcount│ │     │
+│                                       │ └─────────┘ │     │
+└─────────────────────────────────────────────────────────────┘
+```
+
+### Component Relationships
+
+```
+ToolRegistry (1) ──contains─── (0..*) Tool
+Tool (1) ──has─── (1) ToolDefinition
+ToolDefinition (1) ──contains─── (0..*) ToolParameter
+Tool (1) ──produces─── (0..*) ToolResult
+ToolResult (1) ──may contain─── (0..1) ToolError
+HashMap (1) ──stores─── (0..*) Key-Value Pairs
+JsonValue (1) ──represents─── (1) JSON Data Type
+```
+
+## Data Structures
+
+### Enum Definitions
+
+#### ResourceLock Enum
+```c
+typedef enum {
+    RESOURCE_LOCK_FILESYSTEM_WRITE,
+    RESOURCE_LOCK_FILESYSTEM_READ,
+    RESOURCE_LOCK_GIT,
+    RESOURCE_LOCK_MEMORY,
+    RESOURCE_LOCK_SHELL,
+    RESOURCE_LOCK_NETWORK
+} ResourceLock;
+```
+
+**Purpose**: Defines system resources that tools may need to lock for exclusive access.
+
+**Values**:
+- `RESOURCE_LOCK_FILESYSTEM_WRITE`: Write operations on filesystem
+- `RESOURCE_LOCK_FILESYSTEM_READ`: Read operations on filesystem  
+- `RESOURCE_LOCK_GIT`: Git repository operations
+- `RESOURCE_LOCK_MEMORY`: Memory-intensive operations
+- `RESOURCE_LOCK_SHELL`: Shell command execution
+- `RESOURCE_LOCK_NETWORK`: Network operations
+
+#### ErrorType Enum
+```c
+typedef enum {
+    ERROR_TYPE_VALIDATION_ERROR,
+    ERROR_TYPE_PERMISSION_ERROR,
+    ERROR_TYPE_FILE_NOT_FOUND,
+    ERROR_TYPE_TIMEOUT_ERROR,
+    ERROR_TYPE_RESOURCE_ERROR,
+    ERROR_TYPE_NETWORK_ERROR,
+    ERROR_TYPE_SECURITY_ERROR,
+    ERROR_TYPE_INTERNAL_ERROR
+} ErrorType;
+```
+
+**Purpose**: Categorizes different types of errors that can occur during tool execution.
+
+### Core Structures
+
+#### HashMapEntry
+```c
+typedef struct HashMapEntry {
+    char* key;                      // String key
+    void* value;                    // Associated value
+    struct HashMapEntry* next;      // Next entry in bucket (for collision resolution)
+    void (*destroy_value)(void*);   // Value destructor function pointer
+} HashMapEntry;
+```
+
+**Fields**:
+- `key`: Null-terminated string used as lookup key
+- `value`: Pointer to stored data
+- `next`: Pointer to next entry in collision chain
+- `destroy_value`: Optional destructor function for custom cleanup
+
+#### HashMap
+```c
+typedef struct {
+    HashMapEntry** buckets;     // Array of bucket pointers
+    size_t size;               // Number of entries in map
+    size_t capacity;           // Total number of buckets
+} HashMap;
+```
+
+**Fields**:
+- `buckets`: Array of linked list heads for hash buckets
+- `size`: Current number of key-value pairs
+- `capacity`: Total capacity of the hash table
+
+#### JsonValue
+```c
+typedef enum {
+    JSON_NULL,
+    JSON_BOOL,
+    JSON_NUMBER,
+    JSON_STRING,
+    JSON_ARRAY,
+    JSON_OBJECT
+} JsonType;
+
+typedef struct JsonValue {
+    JsonType type;              // Type of JSON value
+    int refcount;              // Reference counting for memory management
+    union {
+        bool bool_value;       // Boolean value
+        double number_value;   // Numeric value
+        char* string_value;    // String value
+        struct {
+            struct JsonValue** values;  // Array elements
+            size_t count;               // Array length
+        } array_value;
+        HashMap* object_value;  // Object properties
+    };
+} JsonValue;
+```
+
+**Purpose**: Represents JSON data types with reference counting for memory management.
+
+#### ToolParameter
+```c
+struct ToolParameter {
+    char* name;            // Parameter name
+    char* type_;           // Expected data type
+    char* description;     // Human-readable description
+    bool required;         // Whether parameter is required
+    JsonValue* default_value; // Default value if not provided
+    regex_t* pattern;      // Compiled regex pattern for validation
+};
+```
+
+**Purpose**: Defines a parameter that a tool accepts.
+
+#### ToolDefinition
+```c
+struct ToolDefinition {
+    char* name;                    // Tool name
+    char* description;             // Tool description
+    ToolParameter* parameters;     // Array of parameters
+    size_t parameters_count;       // Number of parameters
+    char* category;                // Tool category
+    ResourceLock* resource_locks;  // Required resource locks
+    size_t resource_locks_count;   // Number of resource locks
+};
+```
+
+**Purpose**: Complete definition of a tool's interface and requirements.
+
+#### ToolResult
+```c
+struct ToolResult {
+    bool success;               // Execution success status
+    char* output;              // Output data (if successful)
+    char* error;               // Error message (if failed)
+    uint64_t execution_time_ms; // Execution duration
+    HashMap* metadata;         // Additional metadata
+    HashMap* recovery_context; // Context for error recovery
+};
+```
+
+**Purpose**: Contains the result of tool execution.
+
+#### ToolError
+```c
+struct ToolError {
+    char* message;      // Error message
+    ErrorType error_type; // Error category
+    HashMap* details;   // Additional error details
+};
+```
+
+**Purpose**: Detailed error information.
+
+#### Tool (Interface)
+```c
+struct Tool {
+    ToolDefinitionFn definition_fn;           // Returns tool definition
+    ToolExecuteFn execute_fn;                 // Executes the tool
+    ToolNameFn name_fn;                       // Returns tool name
+    ToolValidateParametersFn validate_parameters_fn; // Validates parameters
+    void* data;                               // Implementation-specific data
+};
+```
+
+**Purpose**: Interface that all tools must implement.
+
+#### ToolRegistry
+```c
+struct ToolRegistry {
+    HashMap* tools;  // Map of tool names to Tool instances
+};
+```
+
+**Purpose**: Central registry for managing all available tools.
+
+## Core Components
+
+### HashMap Implementation
+
+#### hashmap_create()
+```c
+HashMap* hashmap_create(size_t capacity);
+```
+**Purpose**: Creates a new hash map with specified capacity.
+
+**Parameters**:
+- `capacity`: Initial number of buckets (should be prime for better distribution)
+
+**Returns**: Pointer to newly allocated HashMap, or NULL on failure.
+
+**Time Complexity**: O(1)
+
+**Memory Usage**: O(capacity)
+
+#### hashmap_destroy()
+```c
+void hashmap_destroy(HashMap* map);
+```
+**Purpose**: Completely destroys a hash map and all its entries.
+
+**Parameters**:
+- `map`: HashMap to destroy
+
+**Time Complexity**: O(n) where n is number of entries
+
+**Memory Cleanup**: Frees all keys, values (using destructor if provided), and internal structures
+
+#### hashmap_put()
+```c
+void hashmap_put(HashMap* map, const char* key, void* value);
+void hashmap_put_with_destructor(HashMap* map, const char* key, void* value, 
+                                void (*destroy_value)(void*));
+```
+
+**Purpose**: Inserts or updates a key-value pair in the hash map.
+
+**Parameters**:
+- `map`: Target hash map
+- `key`: String key (duplicated internally)
+- `value`: Pointer to value
+- `destroy_value`: Optional destructor function for value cleanup
+
+**Time Complexity**: 
+- Average: O(1)
+- Worst-case: O(n) with many collisions
+
+#### hashmap_get()
+```c
+void* hashmap_get(HashMap* map, const char* key);
+```
+**Purpose**: Retrieves a value by key.
+
+**Parameters**:
+- `map`: Source hash map
+- `key`: Lookup key
+
+**Returns**: Value pointer or NULL if not found
+
+**Time Complexity**: 
+- Average: O(1)
+- Worst-case: O(n) with many collisions
+
+### JSON Value Implementation
+
+#### json_value_create_*()
+```c
+JsonValue* json_value_create_null();
+JsonValue* json_value_create_bool(bool value);
+JsonValue* json_value_create_number(double value);
+JsonValue* json_value_create_string(const char* value);
+JsonValue* json_value_create_array(JsonValue** values, size_t count);
+JsonValue* json_value_create_object(HashMap* object);
+```
+
+**Purpose**: Factory functions for creating different JSON value types.
+
+**Memory Management**: Uses reference counting for automatic cleanup.
+
+#### json_value_destroy()
+```c
+void json_value_destroy(JsonValue* value);
+```
+**Purpose**: Decrements reference count and frees memory when count reaches zero.
+
+**Reference Counting**: Prevents double-free and enables sharing.
+
+#### json_value_to_string()
+```c
+char* json_value_to_string(JsonValue* value);
+```
+**Purpose**: Serializes JSON value to string representation.
+
+**Returns**: Newly allocated string that must be freed by caller.
+
+### Tool Management System
+
+#### ToolRegistry Functions
+
+##### tool_registry_new()
+```c
+ToolRegistry* tool_registry_new();
+```
+**Purpose**: Creates a new tool registry instance.
+
+**Returns**: New ToolRegistry instance or NULL on failure.
+
+##### tool_registry_register()
+```c
+void tool_registry_register(ToolRegistry* registry, Tool* tool);
+```
+**Purpose**: Registers a tool in the registry.
+
+**Parameters**:
+- `registry`: Target registry
+- `tool`: Tool to register
+
+**Side Effects**: Tool name must be unique; existing tool with same name will be replaced.
+
+##### tool_registry_execute_tool()
+```c
+ToolResult* tool_registry_execute_tool(ToolRegistry* registry, const char* tool_name, HashMap* kwargs);
+```
+**Purpose**: Executes a registered tool with provided parameters.
+
+**Parameters**:
+- `registry`: Source registry
+- `tool_name`: Name of tool to execute
+- `kwargs`: Key-value pairs of parameters
+
+**Returns**: ToolResult containing execution outcome
+
+**Error Handling**:
+- Returns error result if tool not found
+- Validates parameters before execution
+
+## API Reference
+
+### Complete Function List
+
+#### HashMap API
+```c
+HashMap* hashmap_create(size_t capacity);
+void hashmap_destroy(HashMap* map);
+void hashmap_put(HashMap* map, const char* key, void* value);
+void hashmap_put_with_destructor(HashMap* map, const char* key, void* value, 
+                                void (*destroy_value)(void*));
+void* hashmap_get(HashMap* map, const char* key);
+bool hashmap_contains(HashMap* map, const char* key);
+void hashmap_remove(HashMap* map, const char* key);
+size_t hashmap_size(HashMap* map);
+```
+
+#### JSON API
+```c
+JsonValue* json_value_create_null();
+JsonValue* json_value_create_bool(bool value);
+JsonValue* json_value_create_number(double value);
+JsonValue* json_value_create_string(const char* value);
+JsonValue* json_value_create_array(JsonValue** values, size_t count);
+JsonValue* json_value_create_object(HashMap* object);
+JsonValue* json_value_clone(JsonValue* value);
+void json_value_destroy(JsonValue* value);
+char* json_value_to_string(JsonValue* value);
+```
+
+#### Tool Parameter API
+```c
+ToolParameter* tool_parameter_new(const char* name, const char* type_, 
+                                 const char* description, bool required, 
+                                 JsonValue* default_value);
+void tool_parameter_destroy(ToolParameter* param);
+```
+
+#### Tool Definition API
+```c
+ToolDefinition* tool_definition_new(const char* name, const char* description,
+                                   ToolParameter* parameters, size_t parameters_count,
+                                   const char* category, ResourceLock* resource_locks,
+                                   size_t resource_locks_count);
+void tool_definition_destroy(ToolDefinition* def);
+JsonValue* tool_definition_to_ollama_format(ToolDefinition* def);
+```
+
+#### Tool Result API
+```c
+ToolResult* tool_result_new(bool success, const char* output, const char* error,
+                           uint64_t execution_time_ms, HashMap* metadata,
+                           HashMap* recovery_context);
+ToolResult* tool_result_success(const char* output, uint64_t execution_time_ms);
+ToolResult* tool_result_error(const char* error, uint64_t execution_time_ms);
+void tool_result_destroy(ToolResult* result);
+char* tool_result_to_string(ToolResult* result);
+```
+
+#### Error Handling API
+```c
+ToolError* tool_error_new(const char* message, ErrorType error_type, HashMap* details);
+void tool_error_destroy(ToolError* error);
+char* tool_error_to_string(ToolError* error);
+ToolResult* handle_error(const char* context, int err_code, const char* err_msg);
+ToolResult* validate_required_params(HashMap* kwargs, char** required_params, 
+                                   size_t required_count);
+ToolResult* validate_string_param(JsonValue* value, const char* param_name, 
+                                 size_t min_length, size_t max_length, const char* pattern);
+```
+
+#### Tool Registry API
+```c
+ToolRegistry* tool_registry_new();
+void tool_registry_destroy(ToolRegistry* registry);
+void tool_registry_register(ToolRegistry* registry, Tool* tool);
+void tool_registry_register_core_tools(ToolRegistry* registry);
+Tool* tool_registry_get_tool(ToolRegistry* registry, const char* name);
+Tool** tool_registry_get_all_tools(ToolRegistry* registry, size_t* count);
+JsonValue** tool_registry_get_tool_definitions(ToolRegistry* registry, size_t* count);
+ToolResult* tool_registry_execute_tool(ToolRegistry* registry, const char* tool_name, 
+                                      HashMap* kwargs);
+size_t tool_registry_tool_count(ToolRegistry* registry);
+bool tool_registry_has_tool(ToolRegistry* registry, const char* name);
+bool tool_registry_unregister(ToolRegistry* registry, const char* name);
+void tool_registry_clear(ToolRegistry* registry);
+```
+
+## Design Patterns
+
+### 1. Strategy Pattern
+**Implementation**: Tool interface with function pointers
+```c
+struct Tool {
+    ToolDefinitionFn definition_fn;
+    ToolExecuteFn execute_fn;
+    // ... other function pointers
+};
+```
+**Purpose**: Allows different tool implementations to be interchangeable.
+
+### 2. Factory Pattern
+**Implementation**: Various `create_*` functions (`tool_parameter_new`, `json_value_create_*`, etc.)
+**Purpose**: Centralized object creation with proper initialization.
+
+### 3. Composite Pattern
+**Implementation**: JSON value system with nested arrays and objects
+**Purpose**: Represents complex hierarchical data structures.
+
+### 4. Flyweight Pattern
+**Implementation**: Reference counting in JsonValue
+**Purpose**: Reduces memory usage by sharing common values.
+
+### 5. Registry Pattern
+**Implementation**: ToolRegistry managing tool instances
+**Purpose**: Centralized management and lookup of tools.
+
+## Usage Examples
+
+### Basic Example: Creating and Using a Simple Tool
+
+```c
+#include "tool_framework.h"
+#include <time.h>
+
+// Simple tool implementation
+static ToolDefinition* file_read_definition(Tool* self) {
+    ToolParameter params[] = {
+        *create_tool_parameter("filename", "string", "File to read", true),
+        *create_tool_parameter("encoding", "string", "File encoding", false)
+    };
+    
+    ResourceLock locks[] = {RESOURCE_LOCK_FILESYSTEM_READ};
+    
+    return create_tool_definition_with_locks(
+        "file_read", 
+        "Reads contents of a file",
+        "file_operations",
+        params, 2,
+        locks, 1
+    );
+}
+
+static char* file_read_name(Tool* self) {
+    return string_duplicate("file_read");
+}
+
+static bool file_read_validate(Tool* self, HashMap* kwargs) {
+    return tool_validate_parameters(self, kwargs);
+}
+
+static ToolResult* file_read_execute(Tool* self, HashMap* kwargs) {
+    uint64_t start_time = get_current_time_ms();
+    
+    // Parameter extraction
+    JsonValue* filename_val = hashmap_get(kwargs, "filename");
+    if (!filename_val || filename_val->type != JSON_STRING) {
+        return create_error_result("Filename parameter required and must be string", 
+                                 0, ERROR_TYPE_VALIDATION_ERROR, NULL);
+    }
+    
+    // Simulate file reading
+    char* content = simulate_file_read(filename_val->string_value);
+    uint64_t end_time = get_current_time_ms();
+    
+    if (content) {
+        ToolResult* result = tool_result_success(content, end_time - start_time);
+        free(content);
+        return result;
+    } else {
+        return create_error_result("File not found or cannot be read", 
+                                 end_time - start_time, 
+                                 ERROR_TYPE_FILE_NOT_FOUND, NULL);
+    }
+}
+
+// Tool instance creation
+Tool* create_file_read_tool() {
+    Tool* tool = malloc(sizeof(Tool));
+    tool->definition_fn = file_read_definition;
+    tool->execute_fn = file_read_execute;
+    tool->name_fn = file_read_name;
+    tool->validate_parameters_fn = file_read_validate;
+    tool->data = NULL; // No extra data needed
+    
+    return tool;
+}
+
+// Usage example
+int main() {
+    // Create registry
+    ToolRegistry* registry = tool_registry_new();
+    
+    // Register tool
+    Tool* file_tool = create_file_read_tool();
+    tool_registry_register(registry, file_tool);
+    
+    // Prepare parameters
+    HashMap* params = hashmap_create(8);
+    JsonValue* filename = json_value_create_string("example.txt");
+    hashmap_put(params, "filename", filename);
+    
+    // Execute tool
+    ToolResult* result = tool_registry_execute_tool(registry, "file_read", params);
+    
+    // Process result
+    if (result->success) {
+        printf("File content: %s\n", result->output);
+    } else {
+        printf("Error: %s\n", result->error);
+    }
+    
+    // Cleanup
+    tool_result_destroy(result);
+    hashmap_destroy(params);
+    tool_registry_destroy(registry);
+    
+    return 0;
+}
+```
+
+### Advanced Example: Tool with Complex Validation
+
+```c
+// Tool with regex validation and default values
+ToolParameter* create_email_parameter() {
+    JsonValue* default_email = json_value_create_string("user@example.com");
+    ToolParameter* param = create_tool_parameter_with_default(
+        "email", "string", "Email address", false, default_email
+    );
+    
+    // Compile email regex pattern
+    param->pattern = malloc(sizeof(regex_t));
+    regcomp(param->pattern, "^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,}$", 
+           REG_EXTENDED);
+    
+    return param;
+}
+
+// Validation function with custom rules
+ToolResult* validate_user_input(Tool* tool, HashMap* kwargs) {
+    ToolDefinition* def = tool->definition_fn(tool);
+    
+    // Check required parameters
+    char* required[] = {"username", "email"};
+    ToolResult* validation_result = validate_required_params(kwargs, required, 2);
+    if (validation_result) return validation_result;
+    
+    // Validate email format
+    JsonValue* email_val = hashmap_get(kwargs, "email");
+    validation_result = validate_string_param(email_val, "email", 5, 254, 
+                                            "^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,}$");
+    if (validation_result) return validation_result;
+    
+    // Validate username length
+    JsonValue* username_val = hashmap_get(kwargs, "username");
+    validation_result = validate_string_param(username_val, "username", 3, 50, NULL);
+    
+    return validation_result; // NULL if validation passed
+}
+```
+
+### JSON Serialization Example
+
+```c
+// Creating complex JSON structures
+void create_nested_json_example() {
+    // Create inner object
+    HashMap* address = hashmap_create(4);
+    JsonValue* street = json_value_create_string("123 Main St");
+    JsonValue* city = json_value_create_string("Springfield");
+    
+    hashmap_put(address, "street", street);
+    hashmap_put(address, "city", city);
+    
+    JsonValue* address_obj = json_value_create_object(address);
+    
+    // Create array
+    JsonValue* hobbies[] = {
+        json_value_create_string("reading"),
+        json_value_create_string("coding"),
+        json_value_create_string("gaming")
+    };
+    JsonValue* hobbies_array = json_value_create_array(hobbies, 3);
+    
+    // Create main object
+    HashMap* person = hashmap_create(8);
+    JsonValue* name = json_value_create_string("John Doe");
+    JsonValue* age = json_value_create_number(30);
+    
+    hashmap_put(person, "name", name);
+    hashmap_put(person, "age", age);
+    hashmap_put(person, "address", address_obj);
+    hashmap_put(person, "hobbies", hobbies_array);
+    
+    JsonValue* person_obj = json_value_create_object(person);
+    
+    // Serialize to string
+    char* json_str = json_value_to_string(person_obj);
+    printf("JSON: %s\n", json_str);
+    
+    // Cleanup
+    free(json_str);
+    json_value_destroy(person_obj);
+}
+```
+
+## Performance Analysis
+
+### Time Complexity Analysis
+
+| Operation | Average Case | Worst Case | Notes |
+|-----------|--------------|------------|-------|
+| HashMap Put/Get | O(1) | O(n) | Depends on hash distribution |
+| Tool Registration | O(1) | O(1) | Constant time |
+| Tool Execution | O(p) | O(p) | p = number of parameters |
+| JSON Serialization | O(n) | O(n) | n = size of JSON tree |
+| Parameter Validation | O(p) | O(p) | p = number of parameters |
+
+### Memory Usage Analysis
+
+| Component | Memory Footprint | Notes |
+|-----------|------------------|-------|
+| HashMap Entry | ~32-64 bytes | Depends on key length |
+| JsonValue | 16-48 bytes | Varies by type |
+| ToolDefinition | ~100-500 bytes | Depends on parameter count |
+| ToolRegistry | ~1-10 KB | Scales with tool count |
+
+### Optimization Recommendations
+
+1. **HashMap Sizing**: Use prime numbers for capacity to reduce collisions
+2. **JSON Sharing**: Use `json_value_clone()` for shared values
+3. **String Management**: Pool common strings to reduce duplication
+4. **Tool Caching**: Cache tool definitions for frequently used tools
+
+## Security Considerations
+
+### Input Validation
+- **Parameter Type Checking**: All parameters are validated against expected types
+- **String Length Limits**: Prevents buffer overflow attacks
+- **Regex Validation**: Validates input patterns where applicable
+- **Resource Locking**: Prevents concurrent access to sensitive resources
+
+### Memory Safety
+- **Bounds Checking**: Array operations include bounds verification
+- **Null Pointer Checks**: All functions handle NULL inputs gracefully
+- **Memory Leak Prevention**: Comprehensive cleanup functions provided
+
+### Access Control
+- **Resource Lock Enum**: Defines access levels for different operations
+- **Permission Error Handling**: Specific error type for permission issues
+- **Input Sanitization**: Parameters are validated before processing
+
+### Security Best Practices
+
+1. **Always validate tool parameters** before execution
+2. **Use resource locks** for operations involving external resources
+3. **Implement proper error handling** to avoid information leakage
+4. **Regularly audit tool definitions** for security implications
+
+## Testing Strategies
+
+### Unit Testing Framework
+
+```c
+// Example test structure
+typedef struct TestCase {
+    const char* name;
+    bool (*test_function)();
+    const char* description;
+} TestCase;
+
+bool test_hashmap_operations() {
+    HashMap* map = hashmap_create(16);
+    
+    // Test basic operations
+    hashmap_put(map, "key1", "value1");
+    void* value = hashmap_get(map, "key1");
+    bool success = (value != NULL && strcmp(value, "value1") == 0);
+    
+    hashmap_destroy(map);
+    return success;
+}
+
+bool test_tool_validation() {
+    Tool* tool = create_test_tool();
+    HashMap* params = hashmap_create(8);
+    
+    // Test missing required parameter
+    ToolResult* result = tool->validate_parameters_fn(tool, params);
+    bool success = (result != NULL && !result->success);
+    
+    if (result) tool_result_destroy(result);
+    hashmap_destroy(params);
+    // Cleanup tool...
+    
+    return success;
+}
+```
+
+### Integration Testing
+
+```c
+// End-to-end tool execution test
+bool test_tool_execution_flow() {
+    ToolRegistry* registry = tool_registry_new();
+    tool_registry_register_core_tools(registry);
+    
+    HashMap* params = hashmap_create(8);
+    // Setup parameters...
+    
+    ToolResult* result = tool_registry_execute_tool(registry, "file_operation", params);
+    
+    bool success = (result != NULL && 
+                   ((result->success && result->output != NULL) ||
+                    (!result->success && result->error != NULL)));
+    
+    // Cleanup...
+    return success;
+}
+```
+
+### Performance Testing
+
+```c
+// Benchmark tool execution
+void benchmark_tool_execution() {
+    const int iterations = 1000;
+    uint64_t total_time = 0;
+    
+    for (int i = 0; i < iterations; i++) {
+        uint64_t start = get_current_time_ms();
+        
+        // Execute tool...
+        
+        uint64_t end = get_current_time_ms();
+        total_time += (end - start);
+    }
+    
+    printf("Average execution time: %lu ms\n", total_time / iterations);
+}
+```
+
+## Deployment Instructions
+
+### Build Configuration
+
+```makefile
+# Makefile example
+CC = gcc
+CFLAGS = -Wall -Wextra -std=c99 -D_POSIX_C_SOURCE=200809L
+LDFLAGS = -lregex
+
+SOURCES = tool_framework.c
+HEADERS = tool_framework.h
+OBJECTS = $(SOURCES:.c=.o)
+
+TARGET = libtoolframework.a
+
+$(TARGET): $(OBJECTS)
+	$(AR) rcs $@ $(OBJECTS)
+
+%.o: %.c $(HEADERS)
+	$(CC) $(CFLAGS) -c $< -o $@
+
+clean:
+	rm -f $(OBJECTS) $(TARGET)
+
+.PHONY: clean
+```
+
+### Platform Requirements
+
+- **Compiler**: C99 compliant (GCC, Clang, MSVC)
+- **Libraries**: POSIX regex support
+- **Platform**: Linux, macOS, Windows (with POSIX compatibility)
+- **Memory**: Minimum 1MB RAM, recommended 4MB+
+
+### Integration Steps
+
+1. **Include the header file** in your project
+2. **Link against the library** during compilation
+3. **Initialize tool registry** at application startup
+4. **Register tools** according to your requirements
+5. **Execute tools** through the registry interface
+
+### Configuration Options
+
+```c
+// Compile-time configuration
+#define TOOL_FRAMEWORK_MAX_PARAMETERS 64
+#define TOOL_FRAMEWORK_MAX_TOOLS 256
+#define TOOL_FRAMEWORK_HASHMAP_PRIME_SIZE 101
+
+// Runtime configuration
+typedef struct FrameworkConfig {
+    size_t max_concurrent_tools;
+    bool enable_logging;
+    const char* log_file_path;
+} FrameworkConfig;
+```
+
+## Troubleshooting Guide
+
+### Common Issues and Solutions
+
+#### Issue 1: Memory Leaks
+**Symptoms**: Increasing memory usage over time
+**Solution**: 
+```c
+// Enable memory debugging
+#define DEBUG_MEMORY 1
+
+#ifdef DEBUG_MEMORY
+void* debug_malloc(size_t size, const char* file, int line) {
+    void* ptr = malloc(size);
+    printf("Allocated %zu bytes at %s:%d\n", size, file, line);
+    return ptr;
+}
+#define malloc(size) debug_malloc(size, __FILE__, __LINE__)
+#endif
+```
+
+#### Issue 2: Tool Registration Failures
+**Symptoms**: Tools not found during execution
+**Solution**: Check tool name uniqueness and registration order
+
+#### Issue 3: Parameter Validation Failures
+**Symptoms**: Validation errors even with correct parameters
+**Solution**: Verify parameter types and required flags in tool definition
+
+### Debugging Techniques
+
+#### Logging Framework Integration
+```c
+typedef enum {
+    LOG_LEVEL_ERROR,
+    LOG_LEVEL_WARNING,
+    LOG_LEVEL_INFO,
+    LOG_LEVEL_DEBUG
+} LogLevel;
+
+void tool_framework_log(LogLevel level, const char* format, ...) {
+    va_list args;
+    va_start(args, format);
+    
+    const char* level_str[] = {"ERROR", "WARNING", "INFO", "DEBUG"};
+    printf("[%s] ", level_str[level]);
+    vprintf(format, args);
+    printf("\n");
+    
+    va_end(args);
+}
+```
+
+#### Error Recovery Strategies
+```c
+ToolResult* execute_tool_with_recovery(ToolRegistry* registry, 
+                                      const char* tool_name, 
+                                      HashMap* kwargs,
+                                      int max_retries) {
+    for (int attempt = 0; attempt < max_retries; attempt++) {
+        ToolResult* result = tool_registry_execute_tool(registry, tool_name, kwargs);
+        
+        if (result->success) {
+            return result;
+        }
+        
+        // Analyze error and decide if retry is possible
+        if (can_retry_based_on_error(result)) {
+            tool_framework_log(LOG_LEVEL_WARNING, 
+                             "Tool execution failed, retrying... (attempt %d/%d)",
+                             attempt + 1, max_retries);
+            tool_result_destroy(result);
+            sleep(1 << attempt); // Exponential backoff
+            continue;
+        }
+        
+        return result; // Unrecoverable error
+    }
+    
+    return create_error_result("Max retries exceeded", 0, 
+                             ERROR_TYPE_RESOURCE_ERROR, NULL);
+}
+```
+
+### Performance Tuning
+
+#### Memory Pool Optimization
+```c
+typedef struct MemoryPool {
+    void** blocks;
+    size_t block_size;
+    size_t capacity;
+    size_t used;
+} MemoryPool;
+
+MemoryPool* create_memory_pool(size_t block_size, size_t capacity) {
+    MemoryPool* pool = malloc(sizeof(MemoryPool));
+    pool->blocks = malloc(capacity * sizeof(void*));
+    pool->block_size = block_size;
+    pool->capacity = capacity;
+    pool->used = 0;
+    
+    for (size_t i = 0; i < capacity; i++) {
+        pool->blocks[i] = malloc(block_size);
+    }
+    
+    return pool;
+}
+
+void* pool_allocate(MemoryPool* pool) {
+    if (pool->used >= pool->capacity) {
+        return NULL; // Pool exhausted
+    }
+    
+    return pool->blocks[pool->used++];
+}
+```
+
+This comprehensive documentation covers all aspects of the tool framework system, providing developers with complete information for understanding, using, and extending the framework. The documentation follows best practices for clarity, completeness, and practical utility.# Comprehensive Documentation: Code Generation Graph System
+
+## Table of Contents
+1. [Overview](#overview)
+2. [Architecture](#architecture)
+3. [Data Structures](#data-structures)
+4. [API Reference](#api-reference)
+5. [Usage Examples](#usage-examples)
+6. [Design Patterns](#design-patterns)
+7. [Performance Analysis](#performance-analysis)
+8. [Security Considerations](#security-considerations)
+9. [Testing Strategy](#testing-strategy)
+10. [Deployment Instructions](#deployment-instructions)
+11. [Troubleshooting Guide](#troubleshooting-guide)
+
+## Overview
+
+This C library provides a comprehensive code generation graph system for managing software development projects through a dependency-based approach. The system organizes code development into manageable chunks with explicit dependencies, tracking progress and maintaining context throughout the development lifecycle.
+
+### Key Features
+- **Hierarchical Chunking**: Five levels of code granularity (Project → Module → Class → Method → Block)
+- **Dependency Management**: Graph-based dependency tracking with cycle detection
+- **State Tracking**: Comprehensive project state and context window management
+- **Dynamic Data Structures**: Custom string, array, and map implementations
+- **Progress Monitoring**: Real-time tracking of completion status and metrics
+
+## Architecture
+
+### System Architecture Diagram
+```
+┌─────────────────────────────────────────────────────────────┐
+│                    CodeGenerationGraph                      │
+├─────────────────┬─────────────────┬─────────────────────────┤
+│   ChunkMap      │  ProjectState   │    ContextWindow        │
+│     (hash)      │                 │                         │
+└─────────────────┴─────────────────┴─────────────────────────┘
+         │               │                   │
+         ▼               ▼                   ▼
+┌─────────────────┐ ┌──────────────┐ ┌─────────────────┐
+│    CodeChunk    │ │ StringArray  │ │ StringArray     │
+│   (per chunk)   │ │   (deps)     │ │   (imports)     │
+└─────────────────┘ └──────────────┘ └─────────────────┘
+```
+
+### Data Flow
+```
+Project Planning → Chunk Creation → Dependency Resolution → 
+Code Generation → Validation → Project Completion
+```
+
+## Data Structures
+
+### Enumerations
+
+#### `ChunkingLevel`
+```c
+typedef enum ChunkingLevel {
+    CHUNKING_LEVEL_PROJECT,    // High-level project planning
+    CHUNKING_LEVEL_MODULE,     // Major system components
+    CHUNKING_LEVEL_CLASS,      // Class definitions
+    CHUNKING_LEVEL_METHOD,     // Individual methods
+    CHUNKING_LEVEL_BLOCK,      // Small code blocks
+    CHUNKING_LEVEL_INVALID     // Invalid level marker
+} ChunkingLevel;
+```
+
+**Properties:**
+- **PROJECT**: 100 token limit, architectural planning
+- **MODULE**: 500 token limit, system components
+- **CLASS**: 1000 token limit, class implementations
+- **METHOD**: 300 token limit, function logic
+- **BLOCK**: 100 token limit, error handling/details
+
+#### `ChunkStatus`
+```c
+typedef enum ChunkStatus {
+    CHUNK_STATUS_PENDING,      // Not yet started
+    CHUNK_STATUS_IN_PROGRESS,  // Currently being worked on
+    CHUNK_STATUS_COMPLETED,    // Code written but not validated
+    CHUNK_STATUS_VALIDATED,    // Code tested and verified
+    CHUNK_STATUS_FAILED        // Generation failed
+} ChunkStatus;
+```
+
+### Core Structures
+
+#### `String` - Dynamic String Implementation
+```c
+typedef struct {
+    char* data;        // String content
+    size_t length;     // Current length
+    size_t capacity;   // Allocated capacity
+} String;
+```
+
+**Methods:**
+- `string_new()`: Creates empty string with default capacity (16)
+- `string_new_with_capacity(size_t)`: Creates string with specified capacity
+- `string_free(String*)`: Releases all memory
+- `string_append(String*, const char*)`: Appends C string
+- `string_appendf(String*, const char*, ...)`: Formatted append
+- `string_vappend(String*, const char*, va_list)`: va_list version
+
+#### `StringArray` - Dynamic String Array
+```c
+typedef struct {
+    char** data;       // Array of string pointers
+    size_t length;     // Number of elements
+    size_t capacity;   // Allocated capacity
+} StringArray;
+```
+
+**Methods:**
+- `string_array_new()`: Creates array with default capacity (8)
+- `string_array_free(StringArray*)`: Releases all memory
+- `string_array_push(StringArray*, const char*)`: Adds string
+- `string_array_contains(StringArray*, const char*)`: Checks membership
+
+#### `StringMap` - Simple Key-Value Store
+```c
+typedef struct {
+    StringPair* data;  // Array of key-value pairs
+    size_t length;     // Number of pairs
+    size_t capacity;   // Allocated capacity
+} StringMap;
+
+typedef struct {
+    char* key;         // Map key
+    char* value;       // Map value
+} StringPair;
+```
+
+**Methods:**
+- `string_map_new()`: Creates map with default capacity (8)
+- `string_map_free(StringMap*)`: Releases all memory
+- `string_map_insert(StringMap*, const char*, const char*)`: Adds/updates entry
+- `string_map_get(StringMap*, const char*)`: Retrieves value
+
+#### `ProjectState` - Project Tracking
+```c
+struct ProjectState {
+    size_t total_lines;              // Lines written so far
+    size_t max_lines;                // Project line limit
+    char* current_module;            // Current working module
+    StringArray* dependencies;       // Project dependencies
+    StringArray* completed_modules;  // Finished modules
+    StringArray* pending_modules;    // Modules to be done
+    StringMap* global_variables;     // Global configuration
+    time_t created_at;               // Creation timestamp
+    time_t updated_at;               // Last update timestamp
+};
+```
+
+**Methods:**
+- `project_state_new(size_t)`: Creates new project state
+- `project_state_free(ProjectState*)`: Releases memory
+- `project_state_to_string(ProjectState*)`: Serializes to string
+- `project_state_add_completed_module(ProjectState*, const char*)`: Marks module complete
+- `project_state_add_pending_module(ProjectState*, const char*)`: Adds pending module
+- `project_state_set_global_variable(ProjectState*, const char*, const char*)`: Sets global var
+- `project_state_increment_lines(ProjectState*, size_t)`: Updates line count
+
+#### `ContextWindow` - Development Context
+```c
+struct ContextWindow {
+    char* previous_class;            // Recently completed class
+    char* current_class;             // Current working class
+    char* next_planned;              // Next planned class
+    StringArray* global_vars_in_scope; // Available globals
+    StringArray* imports_used;       // Import statements
+    StringMap* function_signatures;  // Function definitions
+    StringArray* error_patterns_seen; // Error handling patterns
+    time_t created_at;               // Creation timestamp
+    time_t updated_at;               // Last update timestamp
+};
+```
+
+**Methods:**
+- `context_window_new()`: Creates new context window
+- `context_window_free(ContextWindow*)`: Releases memory
+- `context_window_to_string(ContextWindow*)`: Serializes to string
+- `context_window_add_import(ContextWindow*, const char*)`: Adds import
+- `context_window_add_function_signature(ContextWindow*, const char*, const char*)`: Adds function
+- `context_window_add_error_pattern(ContextWindow*, const char*)`: Records error pattern
+- `context_window_set_current_class(ContextWindow*, const char*)`: Updates current class
+
+#### `CodeChunk` - Code Unit
+```c
+struct CodeChunk {
+    char* chunk_id;                  // Unique identifier
+    ChunkStatus status;              // Current status
+    StringArray* dependencies;       // Required chunks
+    char* code;                      // Generated code
+    char* tests;                     // Associated tests
+    bool validated;                  // Validation flag
+    ChunkingLevel level;             // Granularity level
+    size_t estimated_tokens;         // Token count estimate
+    time_t created_at;               // Creation timestamp
+    time_t updated_at;               // Last update timestamp
+};
+```
+
+**Methods:**
+- `code_chunk_new(const char*, ChunkingLevel)`: Creates new chunk
+- `code_chunk_free(CodeChunk*)`: Releases memory
+- `code_chunk_add_dependency(CodeChunk*, const char*)`: Adds dependency
+- `code_chunk_set_code(CodeChunk*, const char*)`: Sets code content
+- `code_chunk_set_tests(CodeChunk*, const char*)`: Sets test content
+- Status update methods: `mark_completed`, `mark_validated`, `mark_failed`, `mark_in_progress`
+
+#### `CodeGenerationGraph` - Main System
+```c
+struct CodeGenerationGraph {
+    ChunkMap* chunks;                // All code chunks
+    ProjectState* project_state;     // Project metadata
+    ContextWindow* context_window;   // Development context
+};
+```
+
+**Methods:**
+- `code_generation_graph_new(size_t)`: Creates new graph
+- `code_generation_graph_free(CodeGenerationGraph*)`: Releases memory
+- `code_generation_graph_add_chunk(CodeGenerationGraph*, const char*, ChunkingLevel, StringArray*)`: Adds chunk
+- `code_generation_graph_get_ready_chunks(CodeGenerationGraph*)`: Gets executable chunks
+- `code_generation_graph_get_chunk(CodeGenerationGraph*, const char*)`: Retrieves chunk
+- `code_generation_graph_update_chunk_code(CodeGenerationGraph*, const char*, const char*)`: Updates code
+- `code_generation_graph_update_chunk_tests(CodeGenerationGraph*, const char*, const char*)`: Updates tests
+- Status management methods for chunks
+- `code_generation_graph_get_project_summary(CodeGenerationGraph*)`: Gets project report
+- `code_generation_graph_get_next_chunk_to_work_on(CodeGenerationGraph*)`: Gets next chunk
+- `code_generation_graph_get_dependency_chain(CodeGenerationGraph*, const char*)`: Gets dependency chain
+
+## API Reference
+
+### Memory Management Macros
+
+#### `CHECK_ALLOC(p)`
+```c
+#define CHECK_ALLOC(p) do { \
+    if ((p) == NULL) { \
+        fprintf(stderr, "Out of memory\n"); \
+        abort(); \
+    } \
+} while (0)
+```
+**Purpose**: Validates memory allocation success
+**Parameters**: `p` - Pointer to check
+**Behavior**: Aborts program on allocation failure
+
+### Helper Functions
+
+#### `dup_str(const char* s)`
+```c
+static char *dup_str(const char *s) {
+    if (!s) return NULL;
+    char *r = malloc(strlen(s) + 1);
+    CHECK_ALLOC(r);
+    strcpy(r, s);
+    return r;
+}
+```
+**Purpose**: Safe string duplication
+**Parameters**: `s` - String to duplicate
+**Returns**: New allocated string or NULL
+**Memory**: Caller must free returned string
+
+### Chunking Level Utilities
+
+#### `chunking_level_max_tokens(ChunkingLevel level)`
+```c
+size_t chunking_level_max_tokens(ChunkingLevel level) {
+    switch (level) {
+        case CHUNKING_LEVEL_PROJECT: return 100;
+        case CHUNKING_LEVEL_MODULE: return 500;
+        case CHUNKING_LEVEL_CLASS: return 1000;
+        case CHUNKING_LEVEL_METHOD: return 300;
+        case CHUNKING_LEVEL_BLOCK: return 100;
+        default: return 0;
+    }
+}
+```
+**Purpose**: Gets maximum tokens for chunk level
+**Parameters**: `level` - Chunking level
+**Returns**: Token limit
+
+#### `chunking_level_description(ChunkingLevel level)`
+```c
+const char* chunking_level_description(ChunkingLevel level) {
+    switch (level) {
+        case CHUNKING_LEVEL_PROJECT: return "High-level project planning and architecture";
+        case CHUNKING_LEVEL_MODULE: return "Major system components and interfaces";
+        case CHUNKING_LEVEL_CLASS: return "Class definitions and major functions";
+        case CHUNKING_LEVEL_METHOD: return "Individual methods and helper functions";
+        case CHUNKING_LEVEL_BLOCK: return "Small code blocks and error handling";
+        default: return "";
+    }
+}
+```
+**Purpose**: Gets human-readable description
+**Parameters**: `level` - Chunking level
+**Returns**: Description string
+
+#### `chunking_level_to_string(ChunkingLevel level)`
+```c
+const char* chunking_level_to_string(ChunkingLevel level) {
+    if (level >= 0 && level < CHUNKING_LEVEL_INVALID) {
+        return CHUNKING_LEVEL_NAMES[level];
+    }
+    return "";
+}
+```
+**Purpose**: Converts enum to string
+**Parameters**: `level` - Chunking level
+**Returns**: String representation
+
+#### `chunking_level_from_string(const char* str, ChunkingLevel *out_level)`
+```c
+bool chunking_level_from_string(const char* str, ChunkingLevel *out_level) {
+    if (!str || !out_level) return false;
+    
+    for (int i = 0; i < CHUNKING_LEVEL_INVALID; i++) {
+        if (strcmp(str, CHUNKING_LEVEL_NAMES[i]) == 0) {
+            *out_level = (ChunkingLevel)i;
+            return true;
+        }
+    }
+    return false;
+}
+```
+**Purpose**: Converts string to enum
+**Parameters**: 
+- `str` - String to convert
+- `out_level` - Output parameter for result
+**Returns**: true if conversion successful
+
+## Usage Examples
+
+### Basic Project Setup
+```c
+#include "code_generation_graph.h"
+
+int main() {
+    // Create project with 5000 line limit
+    CodeGenerationGraph* graph = code_generation_graph_new(5000);
+    
+    // Set global project variables
+    project_state_set_global_variable(graph->project_state, "language", "python");
+    project_state_set_global_variable(graph->project_state, "framework", "django");
+    
+    // Create project-level chunk
+    StringArray* project_deps = string_array_new();
+    code_generation_graph_add_chunk(graph, "project_plan", CHUNKING_LEVEL_PROJECT, project_deps);
+    string_array_free(project_deps);
+    
+    // Create module chunks with dependencies
+    StringArray* module_deps = string_array_new();
+    string_array_push(module_deps, "project_plan");
+    
+    code_generation_graph_add_chunk(graph, "database_module", CHUNKING_LEVEL_MODULE, module_deps);
+    code_generation_graph_add_chunk(graph, "web_module", CHUNKING_LEVEL_MODULE, module_deps);
+    
+    string_array_free(module_deps);
+    
+    // Cleanup
+    code_generation_graph_free(graph);
+    return 0;
+}
+```
+
+### Complete Development Workflow
+```c
+void development_workflow() {
+    CodeGenerationGraph* graph = code_generation_graph_new(10000);
+    
+    // Add chunks with proper dependencies
+    StringArray* no_deps = string_array_new();
+    StringArray* db_deps = string_array_new();
+    string_array_push(db_deps, "project_setup");
+    
+    code_generation_graph_add_chunk(graph, "project_setup", CHUNKING_LEVEL_PROJECT, no_deps);
+    code_generation_graph_add_chunk(graph, "database_connector", CHUNKING_LEVEL_MODULE, db_deps);
+    
+    // Work on ready chunks
+    StringArray* ready_chunks = code_generation_graph_get_ready_chunks(graph);
+    for (size_t i = 0; i < ready_chunks->length; i++) {
+        const char* chunk_id = ready_chunks->data[i];
+        
+        // Mark as in progress
+        code_generation_graph_mark_chunk_in_progress(graph, chunk_id);
+        
+        // Generate code
+        code_generation_graph_update_chunk_code(graph, chunk_id, 
+            "def connect_db():\n    return Database()");
+        
+        // Mark completed
+        code_generation_graph_mark_chunk_completed(graph, chunk_id);
+    }
+    
+    // Get project summary
+    char* summary = code_generation_graph_get_project_summary(graph);
+    printf("Project Status:\n%s\n", summary);
+    free(summary);
+    
+    string_array_free(no_deps);
+    string_array_free(db_deps);
+    string_array_free(ready_chunks);
+    code_generation_graph_free(graph);
+}
+```
+
+### Parsing Chunk Definitions
+```c
+void parse_chunk_example() {
+    const char* chunk_def = 
+        "<chunk>"
+        "user_auth;class;User authentication system;login_service,user_model"
+        "class UserAuth:\n    def authenticate(self, user, pass):\n        return True"
+        "</chunk>";
+    
+    CodeChunk* chunk = parse_chunking_format(chunk_def);
+    if (chunk) {
+        printf("Parsed chunk: %s\n", chunk->chunk_id);
+        printf("Level: %s\n", chunking_level_to_string(chunk->level));
+        code_chunk_free(chunk);
+    }
+}
+```
+
+## Design Patterns
+
+### 1. Composite Pattern
+The chunk hierarchy (Project → Module → Class → Method → Block) follows the composite pattern, allowing uniform treatment of code units at different granularity levels.
+
+### 2. Observer Pattern
+The timestamp updates (`created_at`, `updated_at`) provide a simple observer mechanism for tracking state changes.
+
+### 3. Builder Pattern
+The progressive chunk building with dependency resolution implements a builder pattern for complex object creation.
+
+### 4. Strategy Pattern
+Different chunking levels represent different strategies for code organization and token limits.
+
+### 5. Factory Pattern
+The various `_new()` functions act as factories for creating different data structures.
+
+## Performance Analysis
+
+### Time Complexity
+| Operation | Complexity | Notes |
+|-----------|------------|-------|
+| String append | O(n) amortized | Doubling strategy |
+| Array push | O(1) amortized | Doubling strategy |
+| Map insert | O(n) | Linear search (simplified) |
+| Map lookup | O(n) | Linear search (simplified) |
+| Dependency resolution | O(V+E) | Graph traversal |
+| Ready chunks check | O(n²) | Checks all dependencies |
+
+### Space Complexity
+| Structure | Space | Notes |
+|-----------|-------|-------|
+| String | O(n) | Dynamic allocation |
+| StringArray | O(n) | Pointer array |
+| StringMap | O(n) | Pair array |
+| CodeGenerationGraph | O(V+E) | Graph structure |
+
+### Optimization Opportunities
+1. **Replace linear search maps** with hash tables for O(1) operations
+2. **Implement caching** for frequently accessed chunks
+3. **Add batch operations** for bulk updates
+4. **Use more efficient** string concatenation algorithms
+
+## Security Considerations
+
+### Memory Safety
+- **All allocations checked** with `CHECK_ALLOC` macro
+- **String operations** use bounded copying
+- **Pointer validation** before dereferencing
+- **Memory cleanup** in all free functions
+
+### Input Validation
+- **Parameter null checks** in all public functions
+- **Bounds checking** for array operations
+- **String length validation** during parsing
+
+### Data Integrity
+- **Immutable chunk IDs** once created
+- **Timestamp tracking** for audit trail
+- **Dependency cycle detection** prevents deadlocks
+
+### Recommendations
+1. **Add input sanitization** for external chunk definitions
+2. **Implement size limits** to prevent resource exhaustion
+3. **Add encryption** for sensitive project data
+4. **Include audit logging** for security events
+
+## Testing Strategy
+
+### Unit Tests
+
+#### Memory Management Tests
+```c
+void test_memory_management() {
+    // Test allocation failure handling
+    // Test proper cleanup in error paths
+    // Test memory leak detection
+}
+```
+
+#### Data Structure Tests
+```c
+void test_string_operations() {
+    String* str = string_new();
+    assert(string_append(str, "test"));
+    assert(str->length == 4);
+    string_free(str);
+}
+
+void test_dependency_chain() {
+    // Test cycle detection
+    // Test dependency resolution
+    // Test ready chunk calculation
+}
+```
+
+#### Integration Tests
+```c
+void test_complete_workflow() {
+    // Test full project lifecycle
+    // Test error recovery
+    // Test performance under load
+}
+```
+
+### Test Categories
+1. **Unit Tests**: Individual function testing
+2. **Integration Tests**: Multi-component testing
+3. **Performance Tests**: Load and stress testing
+4. **Security Tests**: Input validation and boundary testing
+
+### Testing Framework Recommendations
+- Use **Google Test** for C++ wrapper
+- Implement **valgrind** for memory leak detection
+- Use **gcov** for code coverage analysis
+- Implement **fuzz testing** for input validation
+
+## Deployment Instructions
+
+### Build Requirements
+- **C Compiler**: GCC 4.8+ or Clang 3.4+
+- **Standard Library**: C99 compatible
+- **Build System**: Make or CMake
+
+### Compilation
+```bash
+# Basic compilation
+gcc -std=c99 -Wall -Wextra -pedantic code_generation_graph.c -o code_graph
+
+# With debugging
+gcc -std=c99 -g -O0 code_generation_graph.c -o code_graph_debug
+
+# With optimizations
+gcc -std=c99 -O2 -DNDEBUG code_generation_graph.c -o code_graph_release
+```
+
+### CMake Configuration
+```cmake
+cmake_minimum_required(VERSION 3.10)
+project(CodeGenerationGraph)
+
+set(CMAKE_C_STANDARD 99)
+set(CMAKE_C_FLAGS "-Wall -Wextra -pedantic")
+
+add_library(code_generation_graph STATIC code_generation_graph.c)
+add_executable(demo main.c)
+target_link_libraries(demo code_generation_graph)
+```
+
+### Integration Steps
+1. **Include header** in your project
+2. **Link against library** or include source
+3. **Initialize graph** at project start
+4. **Add chunks** according to project structure
+5. **Process chunks** in dependency order
+6. **Clean up** resources when done
+
+## Troubleshooting Guide
+
+### Common Issues
+
+#### Memory Leaks
+**Symptoms**: Increasing memory usage, eventual crash
+**Solution**: 
+```c
+// Ensure all allocations are freed
+CodeGenerationGraph* graph = code_generation_graph_new(1000);
+// ... use graph ...
+code_generation_graph_free(graph); // Don't forget this!
+```
+
+#### Dependency Deadlocks
+**Symptoms**: No ready chunks, circular dependencies
+**Solution**:
+```c
+// Check for cycles during chunk addition
+StringArray* deps = string_array_new();
+string_array_push(deps, "chunk_b");
+code_generation_graph_add_chunk(graph, "chunk_a", CHUNKING_LEVEL_MODULE, deps);
+
+// Later: don't create circular dependency
+string_array_push(deps, "chunk_a"); // This creates a cycle!
+```
+
+#### Performance Issues
+**Symptoms**: Slow dependency resolution with many chunks
+**Solution**:
+- Use more efficient data structures
+- Implement caching for ready chunks
+- Batch operations when possible
+
+### Error Codes and Messages
+
+| Error | Cause | Solution |
+|-------|-------|----------|
+| "Out of memory" | Allocation failure | Reduce chunk size, check memory limits |
+| NULL returns | Invalid parameters | Add parameter validation |
+| Infinite loops | Circular dependencies | Use dependency chain validation |
+
+### Debugging Techniques
+
+#### Memory Debugging
+```c
+// Use valgrind for memory checking
+valgrind --leak-check=full ./code_graph
+
+// Add debug logging
+#ifdef DEBUG
+#define DBG_PRINT(...) printf(__VA_ARGS__)
+#else
+#define DBG_PRINT(...)
+#endif
+```
+
+#### Dependency Visualization
+```c
+// Print dependency graph for debugging
+void print_dependency_graph(CodeGenerationGraph* graph) {
+    for (size_t i = 0; i < graph->chunks->length; i++) {
+        CodeChunk* chunk = graph->chunks->data[i].value;
+        printf("%s depends on: ", chunk->chunk_id);
+        for (size_t j = 0; j < chunk->dependencies->length; j++) {
+            printf("%s ", chunk->dependencies->data[j]);
+        }
+        printf("\n");
+    }
+}
+```
+
+### Recovery Strategies
+
+#### Graceful Failure
+```c
+CodeGenerationGraph* graph = code_generation_graph_new(1000);
+if (!graph) {
+    // Log error and exit gracefully
+    fprintf(stderr, "Failed to initialize project graph\n");
+    exit(EXIT_FAILURE);
+}
+```
+
+#### Data Persistence
+```c
+// Save project state periodically
+void save_project_state(CodeGenerationGraph* graph, const char* filename) {
+    char* summary = code_generation_graph_get_project_summary(graph);
+    if (summary) {
+        FILE* f = fopen(filename, "w");
+        if (f) {
+            fputs(summary, f);
+            fclose(f);
+        }
+        free(summary);
+    }
+}
+```
+
+This documentation provides comprehensive coverage of the code generation graph system. The implementation offers a robust foundation for managing complex software projects through dependency-based code generation with proper memory management and error handling.# Comprehensive Documentation: Todozi Enhanced C Implementation
+
+## Table of Contents
+1. [Overview & Architecture](#overview--architecture)
+2. [Data Structures & Design Patterns](#data-structures--design-patterns)
+3. [Function Documentation](#function-documentation)
+4. [Usage Examples](#usage-examples)
+5. [Performance Analysis](#performance-analysis)
+6. [Security Considerations](#security-considerations)
+7. [Testing Strategy](#testing-strategy)
+8. [Deployment Instructions](#deployment-instructions)
+9. [Troubleshooting Guide](#troubleshooting-guide)
+
+## Overview & Architecture
+
+Todozi is a comprehensive task management system with enhanced features including AI integration, memory tracking, and multi-agent collaboration. The C implementation provides a robust foundation for cross-platform task management.
+
+### System Architecture Diagram
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│                    Todozi Enhanced System                   │
+├─────────────────────────────────────────────────────────────┤
+│  ┌─────────────┐  ┌─────────────┐  ┌─────────────────────┐  │
+│  │  Handler    │  │   Storage   │  │    Queue System     │  │
+│  │  Layer      │◄─┤   Layer     │  │   (Task Planning)   │  │
+│  └─────────────┘  └─────────────┘  └─────────────────────┘  │
+├─────────────────────────────────────────────────────────────┤
+│  ┌─────────────┐  ┌─────────────┐  ┌─────────────────────┐  │
+│  │ Memory      │  │  Agent      │  │  Training Data      │  │
+│  │ Management  │  │  System     │  │   Management        │  │
+│  └─────────────┘  └─────────────┘  └─────────────────────┘  │
+├─────────────────────────────────────────────────────────────┤
+│  ┌─────────────┐  ┌─────────────┐  ┌─────────────────────┐  │
+│  │ Error       │  │  Embedding  │  │   Chat Processing   │  │
+│  │ Tracking    │  │   System    │  │    System           │  │
+│  └─────────────┘  └─────────────┘  └─────────────────────┘  │
+└─────────────────────────────────────────────────────────────┘
+```
+
+### Core Components
+
+- **TodoziHandler**: Main control structure managing all operations
+- **Storage**: Data persistence layer with platform-specific path handling
+- **Task**: Complete task representation with metadata
+- **QueueItem**: Task queue management for planning and execution
+- **Command Handler**: Unified command processing interface
+
+## Data Structures & Design Patterns
+
+### Core Data Structures
+
+#### TodoziHandler Structure
+```c
+struct TodoziHandler {
+    Storage* storage;  // Reference to data storage system
+};
+```
+
+#### Storage Structure
+```c
+struct Storage {
+    char* data_path;  // Platform-independent data directory path
+};
+```
+
+#### Task Structure
+```c
+struct Task {
+    char* id;                 // Unique task identifier
+    char* action;             // Task description/action
+    char* time_estimate;      // Estimated completion time
+    Priority priority;        // Task priority level
+    char* project;            // Associated project
+    Status status;            // Current task status
+    Assignee assignee;        // Responsible party
+    char** tags;              // Categorization tags
+    int tag_count;            // Number of tags
+    char** dependencies;      // Task dependencies
+    int dep_count;            // Number of dependencies
+    char* context_notes;      // Additional context information
+    int progress;             // Completion percentage (0-100)
+    time_t created_at;        // Creation timestamp
+    time_t updated_at;        // Last modification timestamp
+};
+```
+
+#### QueueItem Structure
+```c
+struct QueueItem {
+    char* id;                // Queue item identifier
+    char* task_name;         // Task name for queue
+    char* task_description;  // Detailed task description
+    Priority priority;       // Priority level
+    char* project_id;        // Associated project ID
+    QueueStatus status;      // Queue status (backlog/active/complete)
+    time_t created_at;       // Creation timestamp
+};
+```
+
+### Enum Definitions
+
+#### Task Priority Levels
+```c
+typedef enum {
+    PRIORITY_LOW,       // Low priority tasks
+    PRIORITY_MEDIUM,    // Medium priority (default)
+    PRIORITY_HIGH,      // High priority
+    PRIORITY_CRITICAL,  // Critical priority
+    PRIORITY_URGENT     // Urgent priority (highest)
+} Priority;
+```
+
+#### Task Status States
+```c
+typedef enum {
+    STATUS_TODO,        // Task not started
+    STATUS_IN_PROGRESS, // Task in progress
+    STATUS_BLOCKED,     // Task blocked by dependencies
+    STATUS_REVIEW,      // Task under review
+    STATUS_DONE,        // Task completed
+    STATUS_CANCELLED,   // Task cancelled
+    STATUS_DEFERRED     // Task deferred to later
+} Status;
+```
+
+#### Assignee Types
+```c
+typedef enum {
+    ASSIGNEE_AI,           // AI-controlled agent
+    ASSIGNEE_HUMAN,        // Human user
+    ASSIGNEE_COLLABORATIVE // Collaborative assignment
+} Assignee;
+```
+
+### Design Patterns Used
+
+1. **Facade Pattern**: `TodoziHandler` provides simplified interface to complex subsystem
+2. **Repository Pattern**: `Storage` abstracts data persistence details
+3. **Command Pattern**: Individual command handlers for each operation
+4. **Factory Pattern**: Creation functions for objects like `queue_item_new()`
+5. **Strategy Pattern**: Different implementations for platform-specific operations
+
+## Function Documentation
+
+### Core Handler Functions
+
+#### `todozi_handler_new()`
+```c
+/**
+ * Creates a new TodoziHandler instance
+ * 
+ * @param storage Pointer to Storage structure (must not be NULL)
+ * @return Pointer to new TodoziHandler, NULL on failure
+ * @note Caller retains ownership of storage object
+ */
+static TodoziHandler* todozi_handler_new(Storage* storage);
+```
+
+#### `todozi_handler_free()`
+```c
+/**
+ * Releases TodoziHandler resources
+ * 
+ * @param handler Pointer to TodoziHandler to free
+ * @note Does NOT free associated Storage object
+ */
+static void todozi_handler_free(TodoziHandler* handler);
+```
+
+### Storage Management Functions
+
+#### `storage_new()`
+```c
+/**
+ * Creates and initializes Storage system
+ * 
+ * @return Pointer to new Storage instance, NULL on failure
+ * @note Creates data directory if it doesn't exist
+ * @note Automatically expands ~ in path for cross-platform compatibility
+ */
+static Storage* storage_new(void);
+```
+
+#### `expand_path()`
+```c
+/**
+ * Expands tilde (~) in paths to home directory (cross-platform)
+ * 
+ * @param path Original path string
+ * @return Expanded path string (caller must free), NULL on error
+ * @note Supports ~/path format on all platforms
+ * @note Windows: Uses USERPROFILE environment variable
+ * @note Unix-like: Uses HOME environment or getpwuid()
+ */
+static char* expand_path(const char* path);
+```
+
+### Task Management Functions
+
+#### `todozi_handler_complete_task()`
+```c
+/**
+ * Marks a task as completed
+ * 
+ * @param handler TodoziHandler instance
+ * @param id Task identifier string
+ * @return TODOZI_SUCCESS on success, error code on failure
+ * @note Validates input parameters before processing
+ */
+TodoziResult todozi_handler_complete_task(TodoziHandler* handler, const char* id);
+```
+
+#### `handle_add_task()`
+```c
+/**
+ * Creates a new task with comprehensive metadata
+ * 
+ * @param handler TodoziHandler instance
+ * @param action Task action/description (required)
+ * @param time Time estimate string (required)
+ * @param priority Priority level string (required)
+ * @param project Project name (required)
+ * @param status Status string (required)
+ * @param assignee Assignee type string
+ * @param tags Comma-separated tag string
+ * @param dependencies Comma-separated dependency IDs
+ * @param context Additional context notes
+ * @param progress Completion percentage (0-100, -1 for default)
+ * @return TODOZI_SUCCESS on success, error code on failure
+ */
+TodoziResult handle_add_task(TodoziHandler* handler, const char* action,
+                            const char* time, const char* priority,
+                            const char* project, const char* status,
+                            const char* assignee, const char* tags,
+                            const char* dependencies, const char* context,
+                            int progress);
+```
+
+### Queue Management Functions
+
+#### `queue_item_new()`
+```c
+/**
+ * Creates a new queue item for task planning
+ * 
+ * @param task_name Name of the task (required)
+ * @param task_description Detailed task description
+ * @param priority Priority level
+ * @param project_id Associated project identifier
+ * @return Pointer to new QueueItem, NULL on failure
+ * @note Automatically generates unique ID and timestamp
+ */
+QueueItem* queue_item_new(const char* task_name, const char* task_description,
+                         Priority priority, const char* project_id);
+```
+
+#### `handle_queue_plan()`
+```c
+/**
+ * Plans a new task in the execution queue
+ * 
+ * @param task_name Task name (required)
+ * @param task_description Task description
+ * @param priority_str Priority string ("low", "medium", "high", etc.)
+ * @param project_id Project identifier
+ * @return TODOZI_SUCCESS on success, error code on failure
+ * @note Converts string priority to enum value
+ */
+TodoziResult handle_queue_plan(const char* task_name, const char* task_description,
+                              const char* priority_str, const char* project_id);
+```
+
+### Memory Management Functions
+
+#### `handle_memory_create()`
+```c
+/**
+ * Creates a new memory record with emotional context
+ * 
+ * @param moment The memory moment/event
+ * @param meaning Meaning/interpretation of the moment
+ * @param reason Reason for remembering
+ * @param importance Importance level
+ * @param term Memory duration term
+ * @param memory_type Type of memory (standard/secret/human/etc.)
+ * @param tags Categorization tags
+ * @return TODOZI_SUCCESS on success
+ */
+TodoziResult handle_memory_create(const char* moment, const char* meaning,
+                                 const char* reason, const char* importance,
+                                 const char* term, const char* memory_type,
+                                 const char* tags);
+```
+
+### Command Handling Functions
+
+#### `handle_command()`
+```c
+/**
+ * Main command dispatcher for all Todozi operations
+ * 
+ * @param handler TodoziHandler instance
+ * @param command Main command category (e.g., "task", "memory", "agent")
+ * @param subcommand Specific operation within category
+ * @param args Array of argument strings
+ * @param arg_count Number of arguments provided
+ * @return TODOZI_SUCCESS on success, error code on failure
+ * @note Routes to appropriate handler based on command parameters
+ */
+TodoziResult handle_command(TodoziHandler* handler, const char* command,
+                           const char* subcommand, const char** args, int arg_count);
+```
+
+## Usage Examples
+
+### Basic Task Management
+
+```c
+// Initialize the system
+Storage* storage = storage_new();
+TodoziHandler* handler = todozi_handler_new(storage);
+
+// Create a new task
+const char* args[] = {
+    "--action", "Implement feature X",
+    "--time", "2 hours",
+    "--priority", "high",
+    "--project", "development",
+    "--status", "todo"
+};
+handle_command(handler, "add", "task", args, 10);
+
+// List all tasks
+handle_command(handler, "list", "tasks", NULL, 0);
+
+// Complete a task
+const char* complete_args[] = {"task-123"};
+handle_command(handler, "complete", "task", complete_args, 1);
+
+// Clean up
+todozi_handler_free(handler);
+storage_free(storage);
+```
+
+### Memory Creation with Emotional Context
+
+```c
+const char* memory_args[] = {
+    "--moment", "Successful deployment",
+    "--meaning", "System is live and stable",
+    "--reason", "Important milestone",
+    "--importance", "high",
+    "--emotion", "proud",
+    "--tags", "deployment,milestone"
+};
+handle_command(handler, "memory", "create-emotional", memory_args, 12);
+```
+
+### Agent System Integration
+
+```c
+const char* agent_args[] = {
+    "--id", "code-reviewer",
+    "--name", "Code Review Agent",
+    "--description", "Automated code review assistant",
+    "--category", "development",
+    "--model-provider", "openai",
+    "--model-name", "gpt-4",
+    "--temperature", "0.7"
+};
+handle_command(handler, "agent", "create", agent_args, 14);
+```
+
+### Queue Management
+
+```c
+const char* queue_args[] = {
+    "--task-name", "Refactor database module",
+    "--task-description", "Improve performance and maintainability",
+    "--priority", "medium",
+    "--project-id", "backend-improvements"
+};
+handle_command(handler, "queue", "plan", queue_args, 8);
+```
+
+## Performance Analysis
+
+### Time Complexity
+
+| Operation | Best Case | Average Case | Worst Case |
+|-----------|-----------|--------------|------------|
+| Task Creation | O(1) | O(1) | O(n)* |
+| Task Search | O(1) | O(log n) | O(n) |
+| Memory Operations | O(1) | O(1) | O(1) |
+| Queue Operations | O(1) | O(1) | O(log n) |
+| Command Routing | O(1) | O(1) | O(k) |
+
+*Note: Worst case for task creation occurs during dependency validation*
+
+### Memory Usage Analysis
+
+- **Base System**: ~2MB for core structures
+- **Per Task**: ~1KB (varies with metadata complexity)
+- **Per Memory**: ~500 bytes
+- **Queue Items**: ~800 bytes each
+- **Agent Definitions**: ~2KB each
+
+### Optimization Strategies
+
+1. **Lazy Loading**: Data loaded on-demand rather than at startup
+2. **Memory Pooling**: Reuse of common string buffers
+3. **Indexed Searching**: Efficient lookup structures for large datasets
+4. **Batch Operations**: Reduced I/O overhead for multiple operations
+
+## Security Considerations
+
+### Data Protection
+
+1. **Path Expansion Security**
+   - Validates home directory paths
+   - Prevents directory traversal attacks
+   - Secure platform-specific path handling
+
+2. **Memory Management**
+   - Proper buffer allocation and deallocation
+   - Null-termination validation
+   - Boundary checks for all string operations
+
+3. **Input Validation**
+   - Comprehensive parameter validation
+   - Injection attack prevention
+   - Enumeration value verification
+
+### API Security (When Server Enabled)
+
+1. **Authentication**: Public/private key pairs for API access
+2. **Authorization**: Role-based access control
+3. **Rate Limiting**: Request throttling per user/key
+4. **Data Sanitization**: Input validation and output encoding
+
+### Best Practices
+
+```c
+// Secure string handling example
+char* secure_strdup(const char* src) {
+    if (!src) return NULL;
+    size_t len = strlen(src);
+    char* dest = malloc(len + 1);
+    if (dest) {
+        strncpy(dest, src, len);
+        dest[len] = '\0';
+    }
+    return dest;
+}
+
+// Parameter validation pattern
+TodoziResult validate_parameters(TodoziHandler* handler, const char* id) {
+    if (!handler || !id || strlen(id) == 0) {
+        return TODOZI_ERROR_VALIDATION;
+    }
+    // Additional validation logic
+    return TODOZI_SUCCESS;
+}
+```
+
+## Testing Strategy
+
+### Unit Testing Framework
+
+```c
+// Example test structure
+typedef struct {
+    const char* test_name;
+    TodoziResult (*test_function)(void);
+    int expected_result;
+} TestCase;
+
+// Test用例示例
+TodoziResult test_storage_creation(void) {
+    Storage* storage = storage_new();
+    if (!storage) return TODOZI_ERROR_IO;
+    
+    int result = (storage->data_path != NULL) ? TODOZI_SUCCESS : TODOZI_ERROR_VALIDATION;
+    storage_free(storage);
+    return result;
+}
+
+TodoziResult test_task_validation(void) {
+    TodoziHandler* handler = todozi_handler_new(storage_new());
+    TodoziResult result = handle_add_task(handler, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, -1);
+    todozi_handler_free(handler);
+    return (result == TODOZI_ERROR_VALIDATION) ? TODOZI_SUCCESS : TODOZI_ERROR_VALIDATION;
+}
+```
+
+### Test Categories
+
+1. **Unit Tests**: Individual function validation
+2. **Integration Tests**: Multi-component interaction testing
+3. **Performance Tests**: Load and stress testing
+4. **Security Tests**: Vulnerability and boundary testing
+5. **Platform Tests**: Cross-platform compatibility verification
+
+### Automated Testing Pipeline
+
+```
+Code Changes → Unit Tests → Integration Tests → Performance Tests → Security Scan → Deployment
+```
+
+## Deployment Instructions
+
+### Platform-Specific Build Instructions
+
+#### Linux/macOS
+```bash
+# Install dependencies (if needed)
+sudo apt-get install build-essential  # Ubuntu/Debian
+
+# Compile the application
+gcc -o todozi todozi.c -D_POSIX_C_SOURCE=200809L
+```
+
+#### Windows
+```cmd
+# Using Visual Studio Developer Command Prompt
+cl todozi.c advapi32.lib shell32.lib
+```
+
+#### Cross-Platform CMake (Recommended)
+```cmake
+cmake_minimum_required(VERSION 3.10)
+project(Todozi)
+
+if(WIN32)
+    add_definitions(-D_WIN32)
+    find_library(ADVAPI32_LIB advapi32)
+    find_library(SHELL32_LIB shell32)
+    set(PLATFORM_LIBS ${ADVAPI32_LIB} ${SHELL32_LIB})
+else()
+    add_definitions(-D_POSIX_C_SOURCE=200809L)
+endif()
+
+add_executable(todozi todozi.c)
+target_link_libraries(todozi ${PLATFORM_LIBS})
+```
+
+### Installation Steps
+
+1. **Clone/Download Source Code**
+2. **Compile for Target Platform**
+3. **Set Execute Permissions** (Unix-like systems)
+4. **Configure Data Directory** (Optional)
+5. **Verify Installation**
+
+### Configuration Management
+
+```c
+// Environment-based configuration
+const char* get_data_path() {
+    const char* env_path = getenv("TODOZI_DATA_PATH");
+    if (env_path) return expand_path(env_path);
+    return expand_path("~/.todozi");  // Default
+}
+```
+
+## Troubleshooting Guide
+
+### Common Issues and Solutions
+
+#### Issue: "Data directory creation failed"
+**Solution**: Check directory permissions and ensure home directory accessibility
+```c
+// Debug data path creation
+Storage* debug_storage_new(void) {
+    Storage* storage = malloc(sizeof(Storage));
+    storage->data_path = expand_path("~/.todozi");
+    printf("Data path: %s\n", storage->data_path);
+    // Additional debugging...
+}
+```
+
+#### Issue: "Command not recognized"
+**Solution**: Verify command spelling and available subcommands
+```c
+// Enhanced command validation
+TodoziResult validate_command(const char* command, const char* subcommand) {
+    const char* valid_commands[] = {"api", "queue", "server", "project", "add", 
+                                   "list", "show", "update", "search", "stats", 
+                                   "backup", "memory", "idea", "agent", "error", 
+                                   "train", "emb", "chat", "search-all", "extract", 
+                                   "strategy", "steps", NULL};
+    
+    for (int i = 0; valid_commands[i]; i++) {
+        if (strcmp(command, valid_commands[i]) == 0) {
+            return TODOZI_SUCCESS;
+        }
+    }
+    return TODOZI_ERROR_VALIDATION;
+}
+```
+
+#### Issue: "Memory allocation failed"
+**Solution**: Implement memory pressure handling
+```c
+// Robust memory allocation wrapper
+void* safe_malloc(size_t size) {
+    void* ptr = malloc(size);
+    if (!ptr) {
+        fprintf(stderr, "Memory allocation failed for size: %zu\n", size);
+        exit(EXIT_FAILURE);
+    }
+    return ptr;
+}
+```
+
+### Debugging Techniques
+
+1. **Verbose Logging**: Enable detailed operation logging
+2. **Memory Diagnostics**: Track allocations and deallocations
+3. **Performance Profiling**: Identify bottlenecks
+4. **Error Code Analysis**: Comprehensive error code documentation
+
+### Recovery Procedures
+
+1. **Data Corruption**: Implement backup/restore mechanisms
+2. **Configuration Issues**: Reset to default settings
+3. **Memory Leaks**: Regular cleanup and validation routines
+4. **Platform Incompatibility**: Fallback implementations
+
+## API Reference Summary
+
+### Core Error Codes
+- `TODOZI_SUCCESS`: Operation completed successfully
+- `TODOZI_ERROR_VALIDATION`: Input validation failed
+- `TODOZI_ERROR_IO`: File/system operation error
+- `TODOZI_ERROR_PARSE`: Data parsing/formatting error
+
+### Key Data Structures
+- `TodoziHandler`: Main system controller
+- `Storage`: Data persistence layer  
+- `Task`: Complete task representation
+- `QueueItem`: Task queue management
+
+### Essential Functions
+- `handle_command()`: Main command router
+- `storage_new()/storage_free()`: Storage lifecycle management
+- Component-specific handlers for tasks, memory, agents, etc.
+
+This comprehensive documentation provides complete coverage of the Todozi C implementation, including architectural overview, detailed function specifications, usage examples, performance characteristics, security considerations, testing strategies, deployment instructions, and troubleshooting guidance.# Todozi Embedding Service - Comprehensive Documentation
+
+## Table of Contents
+1. [Overview](#overview)
+2. [Architecture](#architecture)
+3. [Data Structures](#data-structures)
+4. [API Reference](#api-reference)
+5. [Usage Examples](#usage-examples)
+6. [Design Patterns](#design-patterns)
+7. [Performance Analysis](#performance-analysis)
+8. [Security Considerations](#security-considerations)
+9. [Testing Strategy](#testing-strategy)
+10. [Deployment Instructions](#deployment-instructions)
+11. [Troubleshooting Guide](#troubleshooting-guide)
+
+## Overview
+
+The Todozi Embedding Service is a C library for managing text embeddings, supporting semantic search, similarity matching, and content clustering. It provides a comprehensive suite of utilities including string handling, vector operations, hash maps, and LRU caching.
+
+### Key Features
+- Text embedding generation and management
+- Semantic similarity computation (cosine similarity, Euclidean distance)
+- Content clustering capabilities
+- Configurable caching with TTL support
+- Multiple embedding model support
+- Memory-efficient data structures
+
+## Architecture
+
+### System Architecture Diagram
+```
+┌─────────────────────────────────────────────────────────────┐
+│                    Application Layer                         │
+├─────────────────────────────────────────────────────────────┤
+│  TodoziEmbeddingTool ─── TodoziEmbeddingService             │
+├─────────────────────────────────────────────────────────────┤
+│                   Service Layer                              │
+├─────────────────────────────────────────────────────────────┤
+│  CacheManager ─── EmbeddingModel ─── SimilarityEngine       │
+├─────────────────────────────────────────────────────────────┤
+│                  Utility Layer                               │
+├─────────────────────────────────────────────────────────────┤
+│  String ─── Vector ─── HashMap ─── LRUCache                 │
+├─────────────────────────────────────────────────────────────┤
+│                 Memory Management                            │
+└─────────────────────────────────────────────────────────────┘
+```
+
+### Component Relationships
+```
+main() → TodoziEmbeddingTool → TodoziEmbeddingService
+                                ↓
+            EmbeddingModel ↔ CacheManager ↔ SimilarityEngine
+                                ↓
+                    String/Vector/HashMap Utilities
+```
+
+## Data Structures
+
+### String Structure
+```c
+struct String {
+    char* data;        // String data
+    size_t len;        // Current length
+    size_t capacity;   // Allocated capacity
+};
+```
+
+### Vector Structure
+```c
+struct Vec {
+    void** data;       // Array of pointers
+    size_t size;       // Number of elements
+    size_t capacity;   // Allocated capacity
+};
+```
+
+### HashMap Structure
+```c
+struct HashMap {
+    size_t size;                  // Number of entries
+    size_t capacity;              // Number of buckets
+    struct HashMapEntry** buckets; // Array of linked lists
+};
+```
+
+### Configuration Structure
+```c
+struct TodoziEmbeddingConfig {
+    struct String model_name;           // Model identifier
+    size_t dimensions;                  // Embedding dimensions
+    float similarity_threshold;         // Similarity cutoff
+    size_t max_results;                 // Maximum search results
+    size_t cache_ttl_seconds;          // Cache time-to-live
+    bool enable_clustering;             // Clustering flag
+    float clustering_threshold;         // Clustering similarity
+};
+```
+
+## API Reference
+
+### Utility Functions - String
+
+#### `string_new`
+```c
+struct String string_new(const char* str)
+```
+Creates a new String from a C string.
+
+**Parameters:**
+- `str`: Source C string (can be NULL)
+
+**Returns:**
+- `struct String`: New string structure
+
+**Error Handling:**
+- Returns empty string if allocation fails
+- Handles NULL input gracefully
+
+#### `string_append`
+```c
+int string_append(struct String* s, const char* str)
+```
+Appends a string to an existing String.
+
+**Parameters:**
+- `s`: Target String pointer
+- `str`: Source C string to append
+
+**Returns:**
+- `int`: EMB_SUCCESS or error code
+
+**Error Codes:**
+- `EMB_ERROR_NULL_POINTER`: Invalid input
+- `EMB_ERROR_MEMORY`: Allocation failure
+
+### Utility Functions - Vector
+
+#### `vec_new`
+```c
+struct Vec vec_new(void)
+```
+Creates a new vector with default capacity.
+
+**Returns:**
+- `struct Vec`: New vector structure
+
+#### `vec_push`
+```c
+void vec_push(struct Vec* v, void* item)
+```
+Adds an item to the vector.
+
+**Parameters:**
+- `v`: Vector pointer
+- `item`: Item to add
+
+**Memory Management:**
+- Automatically resizes when capacity exceeded
+- Uses doubling strategy for growth
+
+### HashMap Functions
+
+#### `hashmap_new`
+```c
+struct HashMap* hashmap_new(void)
+```
+Creates a new hash map with default capacity.
+
+**Returns:**
+- `struct HashMap*`: New hash map pointer
+
+**Collision Resolution:**
+- Uses separate chaining with linked lists
+
+#### `hashmap_insert`
+```c
+int hashmap_insert(struct HashMap* map, const char* key, void* value)
+```
+Inserts a key-value pair into the hash map.
+
+**Parameters:**
+- `map`: Target hash map
+- `key`: String key
+- `value`: Associated value
+
+**Returns:**
+- `int`: EMB_SUCCESS or error code
+
+**Hash Function:**
+- Uses DJB2 algorithm: `hash * 33 + c`
+
+### Service Functions
+
+#### `service_new`
+```c
+struct TodoziEmbeddingService* service_new(struct TodoziEmbeddingConfig config)
+```
+Creates a new embedding service instance.
+
+**Parameters:**
+- `config`: Service configuration
+
+**Returns:**
+- `struct TodoziEmbeddingService*`: New service instance
+
+**Memory Allocation:**
+- Allocates service structure and all subcomponents
+- Returns NULL on allocation failure
+
+#### `service_find_similar_tasks`
+```c
+struct Vec service_find_similar_tasks(struct TodoziEmbeddingService* service, const char* task_description, size_t limit)
+```
+Finds tasks similar to the given description.
+
+**Parameters:**
+- `service`: Service instance
+- `task_description`: Query text
+- `limit`: Maximum results
+
+**Returns:**
+- `struct Vec`: Vector of similar tasks
+
+## Usage Examples
+
+### Basic Setup and Configuration
+```c
+#include "emb.h"
+
+int main() {
+    // Create default configuration
+    struct TodoziEmbeddingConfig config = config_default();
+    
+    // Customize configuration
+    config.similarity_threshold = 0.8f;
+    config.max_results = 100;
+    
+    // Create tool instance
+    struct TodoziEmbeddingTool* tool = tool_new(config);
+    
+    if (tool_initialize(tool) == EMB_SUCCESS) {
+        printf("Service initialized successfully\n");
+    }
+    
+    // Cleanup
+    tool_free(tool);
+    config_free(&config);
+    return 0;
+}
+```
+
+### String Operations
+```c
+// Create strings
+struct String str1 = string_new("Hello");
+struct String str2 = string_new_with_capacity(50);
+
+// Append strings
+string_append(&str1, " World!");
+string_append(&str2, "Dynamic string");
+
+// Cleanup
+string_free(&str1);
+string_free(&str2);
+```
+
+### HashMap Usage
+```c
+struct HashMap* map = hashmap_new();
+
+// Insert values
+int value1 = 42;
+char* value2 = "test";
+hashmap_insert(map, "number", &value1);
+hashmap_insert(map, "text", value2);
+
+// Retrieve values
+int* retrieved = (int*)hashmap_get(map, "number");
+printf("Value: %d\n", *retrieved);
+
+// Cleanup
+hashmap_free(map);
+```
+
+### Similarity Computation
+```c
+float vec1[] = {1.0f, 2.0f, 3.0f};
+float vec2[] = {1.0f, 2.0f, 3.0f};
+float vec3[] = {4.0f, 5.0f, 6.0f};
+
+float sim1 = cosine_similarity(vec1, vec2, 3); // 1.0
+float sim2 = cosine_similarity(vec1, vec3, 3); // ~0.974
+float dist = euclidean_distance(vec1, vec3, 3); // ~5.196
+```
+
+## Design Patterns
+
+### 1. Facade Pattern
+- `TodoziEmbeddingTool` provides a simplified interface to complex subsystem
+- Hides implementation details of service, cache, and model management
+
+### 2. Builder Pattern
+- `config_default()` provides sensible defaults
+- Configuration can be customized before service creation
+
+### 3. Strategy Pattern
+- Multiple similarity functions (cosine, Euclidean, dot product)
+- Different clustering algorithms can be implemented
+
+### 4. Observer Pattern
+- Cache expiration checking
+- Statistics collection
+
+### 5. Factory Pattern
+- `embedding_model_load()` creates appropriate model instances
+- `service_new()` creates complete service hierarchy
+
+## Performance Analysis
+
+### Time Complexity
+| Operation | Complexity | Notes |
+|-----------|------------|-------|
+| String append | O(n) amortized | Doubling strategy |
+| Vector push | O(1) amortized | Resize on capacity |
+| HashMap insert | O(1) average | Hash collision handling |
+| HashMap get | O(1) average | Direct bucket access |
+| Cosine similarity | O(n) | Vector dimension dependent |
+
+### Memory Usage
+- **String**: Grows exponentially (doubling strategy)
+- **Vector**: Pre-allocates capacity, grows as needed
+- **HashMap**: Fixed bucket count, dynamic entry allocation
+- **Cache**: LRU eviction with memory limits
+
+### Optimization Strategies
+1. **Memory Pooling**: Reuse allocated blocks for frequent operations
+2. **Cache Warming**: Pre-load frequently used embeddings
+3. **Batch Processing**: Process multiple texts simultaneously
+4. **Vectorization**: Use SIMD instructions for similarity computations
+
+## Security Considerations
+
+### Input Validation
+```c
+// All public functions validate input parameters
+if (!service || !task_description) {
+    return EMB_ERROR_NULL_POINTER;
+}
+```
+
+### Memory Safety
+- Bounds checking on all array accesses
+- Null pointer validation
+- Memory allocation failure handling
+
+### Data Integrity
+- Hash map key duplication prevention
+- Cache TTL enforcement
+- Configuration validation
+
+### Potential Vulnerabilities
+1. **Buffer Overflows**: Mitigated by capacity tracking
+2. **Memory Leaks**: Comprehensive cleanup functions
+3. **Integer Overflows**: Size_t used for memory sizes
+4. **API Misuse**: Extensive error checking and return codes
+
+## Testing Strategy
+
+### Unit Testing Framework
+```c
+void test_string_operations() {
+    struct String str = string_new("test");
+    assert(str.len == 4);
+    assert(strcmp(str.data, "test") == 0);
+    string_free(&str);
+}
+
+void test_hashmap_functionality() {
+    struct HashMap* map = hashmap_new();
+    int value = 42;
+    hashmap_insert(map, "key", &value);
+    assert(*(int*)hashmap_get(map, "key") == 42);
+    hashmap_free(map);
+}
+```
+
+### Test Categories
+1. **Unit Tests**: Individual function testing
+2. **Integration Tests**: Component interaction testing
+3. **Performance Tests**: Benchmarking critical operations
+4. **Memory Tests**: Leak detection and allocation patterns
+
+### Test Coverage Goals
+- 90%+ function coverage
+- 85%+ branch coverage
+- All error paths tested
+- Memory allocation/deallocation balanced
+
+## Deployment Instructions
+
+### Build Requirements
+```bash
+# Dependencies
+gcc >= 9.0
+make >= 4.0
+cmake >= 3.10 (optional)
+
+# Build commands
+gcc -c emb.c -o emb.o
+gcc -c main.c -o main.o
+gcc emb.o main.o -lm -o todozi_embedding
+```
+
+### Platform Support
+- **Linux**: Full support
+- **macOS**: Full support
+- **Windows**: Requires MinGW or WSL
+
+### Integration Steps
+1. Include header file: `#include "emb.h"`
+2. Link with library: `-lemb`
+3. Call initialization: `tool_initialize()`
+4. Use service functions as needed
+
+### Configuration Management
+```c
+// Environment-based configuration
+const char* model_env = getenv("EMBEDDING_MODEL");
+if (model_env) {
+    config.model_name = string_new(model_env);
+}
+```
+
+## Troubleshooting Guide
+
+### Common Issues
+
+#### Memory Leaks
+**Symptoms**: Increasing memory usage over time
+**Solution**: Ensure all allocated resources are freed
+```c
+// Proper cleanup sequence
+tool_free(tool);
+config_free(&config);
+```
+
+#### Performance Degradation
+**Symptoms**: Slow similarity computations
+**Solution**: Check cache hit rates, consider batch processing
+```c
+// Enable caching and monitor stats
+struct HashMap* stats = service_get_stats(service);
+```
+
+#### Model Loading Failures
+**Symptoms**: `service_initialize` returns error
+**Solution**: Verify model name and dependencies
+```c
+// Check model availability
+if (embedding_model_validate(model) != EMB_SUCCESS) {
+    // Handle validation error
+}
+```
+
+### Error Codes Reference
+| Code | Meaning | Recovery Action |
+|------|---------|-----------------|
+| `EMB_SUCCESS` | Operation successful | Continue normal flow |
+| `EMB_ERROR_NULL_POINTER` | Invalid null input | Check parameter validity |
+| `EMB_ERROR_MEMORY` | Allocation failure | Reduce memory usage or check system |
+| `EMB_ERROR_INVALID_INPUT` | Invalid parameter value | Validate input ranges |
+| `EMB_ERROR_NOT_FOUND` | Resource not found | Check existence before access |
+
+### Debugging Techniques
+1. **Memory Profiling**: Use valgrind or address sanitizer
+2. **Performance Profiling**: Use gprof or perf tools
+3. **Logging**: Add debug prints for complex operations
+4. **Assertions**: Use runtime checks for invariants
+
+### Recovery Strategies
+1. **Graceful Degradation**: Fall back to simpler algorithms
+2. **Resource Cleanup**: Comprehensive cleanup on failure
+3. **Error Propagation**: Clear error codes for caller handling
+4. **State Validation**: Check service state before operations
+
+This documentation provides comprehensive coverage of the Todozi Embedding Service implementation. The code demonstrates robust memory management, efficient data structures, and scalable architecture suitable for production use in embedding-based applications.# Todozi Error Management System - Comprehensive Documentation
+
+## Table of Contents
+1. [Overview](#overview)
+2. [Architecture](#architecture)
+3. [Data Structures](#data-structures)
+4. [API Reference](#api-reference)
+5. [Design Patterns](#design-patterns)
+6. [Implementation Details](#implementation-details)
+7. [Usage Examples](#usage-examples)
+8. [Performance Analysis](#performance-analysis)
+9. [Security Considerations](#security-considerations)
+10. [Testing Strategies](#testing-strategies)
+11. [Deployment Instructions](#deployment-instructions)
+12. [Troubleshooting Guide](#troubleshooting-guide)
+13. [Future Enhancements](#future-enhancements)
+
+## Overview
+
+Todozi is a comprehensive error management system designed for C applications. It provides a structured approach to error tracking, resolution, and analysis with a focus on extensibility and reliability.
+
+### Key Features
+- Structured error representation with severity and categorization
+- Error lifecycle management (creation, resolution, tracking)
+- Hash-based storage for efficient error lookup
+- Type-safe result types using tagged unions
+- Text-based error parsing for flexible error input
+- Comprehensive error metadata including timestamps and tags
+
+## Architecture
+
+```
+┌─────────────────┐    ┌─────────────────┐    ┌─────────────────┐
+│   Application   │───▶│ ErrorManager    │───▶│    HashMap      │
+│     Layer       │    │                 │    │                 │
+└─────────────────┘    └─────────────────┘    └─────────────────┘
+         │                       │                       │
+         │                       │                       ▼
+         │                       │             ┌─────────────────┐
+         │                       └─────────────│      Error      │
+         │                                     │   Structures    │
+         │                                     └─────────────────┘
+         │                                             │
+         └─────────────────────────────────────────────┘
+                         Error Reporting
+```
+
+### Component Relationships
+```text
+Application → ErrorManager → HashMap → Error
+     ↓              ↓            ↓        ↓
+  Creates      Manages       Stores    Contains
+  Errors      Lifecycle     Errors     Metadata
+```
+
+## Data Structures
+
+### ErrorSeverity Enum
+```c
+typedef enum {
+    ERROR_SEVERITY_LOW = 0,
+    ERROR_SEVERITY_MEDIUM = 1,
+    ERROR_SEVERITY_HIGH = 2,
+    ERROR_SEVERITY_CRITICAL = 3
+} ErrorSeverity;
+```
+**Purpose**: Defines the impact level of errors
+- **LOW**: Minor issues, non-breaking
+- **MEDIUM**: Moderate impact, may affect functionality
+- **HIGH**: Serious issues affecting core functionality
+- **CRITICAL**: System-breaking errors requiring immediate attention
+
+### ErrorCategory Enum
+```c
+typedef enum {
+    ERROR_CATEGORY_NETWORK = 0,
+    ERROR_CATEGORY_DATABASE = 1,
+    ERROR_CATEGORY_APPLICATION = 2,
+    ERROR_CATEGORY_SYSTEM = 3
+} ErrorCategory;
+```
+**Purpose**: Categorizes errors by system component
+- **NETWORK**: Communication and connectivity issues
+- **DATABASE**: Data storage and retrieval problems
+- **APPLICATION**: Business logic and processing errors
+- **SYSTEM**: Infrastructure and platform issues
+
+### Error Structure
+```c
+struct Error {
+    char* id;                // Unique identifier (UUID)
+    char* title;             // Brief error description
+    char* description;       // Detailed error explanation
+    ErrorSeverity severity;  // Error impact level
+    ErrorCategory category;  // Error classification
+    char* source;            // Originating component
+    char* context;           // Additional context information
+    char** tags;             // Categorization tags array
+    int tags_count;          // Number of tags
+    bool resolved;           // Resolution status
+    char* resolution;        // Resolution description
+    time_t created_at;       // Creation timestamp
+    time_t updated_at;       // Last update timestamp
+    time_t resolved_at;      // Resolution timestamp
+};
+```
+**Memory Management**: All string fields are dynamically allocated and must be freed
+
+### HashMap Structure
+```c
+struct HashMap {
+    char** keys;      // Array of string keys
+    Error** values;   // Array of Error pointers
+    int size;         // Current number of entries
+    int capacity;     // Maximum capacity before resize
+};
+```
+**Design**: Simple linear-probing hash map with dynamic resizing
+- Initial capacity: 16 entries
+- Growth factor: 2x when full
+- Linear search for key lookup
+
+### Result Types (Tagged Unions)
+```c
+// String result type
+typedef struct {
+    bool is_ok;
+    union {
+        char* ok_value;  // Success case: string result
+        struct {
+            TodoziErrorType error_type;
+            char* message;
+        } err_value;     // Error case: error information
+    } data;
+} TodoziResultString;
+
+// Error pointer result type
+typedef struct {
+    bool is_ok;
+    union {
+        Error* ok_value;  // Success case: Error pointer
+        struct {
+            TodoziErrorType error_type;
+            char* message;
+        } err_value;      // Error case: error information
+    } data;
+} TodoziResultErrorPtr;
+
+// Void result type
+typedef struct {
+    bool is_ok;
+    union {
+        void* ok_value;   // Success case: NULL (void)
+        struct {
+            TodoziErrorType error_type;
+            char* message;
+        } err_value;      // Error case: error information
+    } data;
+} TodoziResultVoid;
+```
+
+## API Reference
+
+### Core Management Functions
+
+#### error_manager_new
+```c
+ErrorManager* error_manager_new(void);
+```
+**Purpose**: Creates a new ErrorManager instance
+- **Returns**: Pointer to initialized ErrorManager, NULL on failure
+- **Memory**: Allocates memory for manager and internal hashmap
+- **Error Handling**: Returns NULL if allocation fails
+
+#### error_manager_free
+```c
+void error_manager_free(ErrorManager* manager);
+```
+**Purpose**: Releases all resources associated with ErrorManager
+- **Parameters**: 
+  - `manager`: ErrorManager instance to free
+- **Memory**: Frees manager, hashmap, and all contained errors
+- **Safety**: Handles NULL input gracefully
+
+#### error_manager_create_error
+```c
+TodoziResultString error_manager_create_error(ErrorManager* manager, Error* error);
+```
+**Purpose**: Adds a new error to the management system
+- **Parameters**:
+  - `manager`: ErrorManager instance
+  - `error`: Pre-configured Error structure (ID will be generated)
+- **Returns**: TodoziResultString containing error ID or error information
+- **Side Effects**: Generates UUID, sets timestamps, inserts into hashmap
+- **Error Conditions**: Invalid parameters, UUID generation failure
+
+#### error_manager_resolve_error
+```c
+TodoziResultVoid error_manager_resolve_error(ErrorManager* manager, const char* error_id, const char* resolution);
+```
+**Purpose**: Marks an error as resolved with explanation
+- **Parameters**:
+  - `manager`: ErrorManager instance
+  - `error_id`: UUID of error to resolve
+  - `resolution`: Description of resolution (optional)
+- **Returns**: TodoziResultVoid indicating success or failure
+- **Side Effects**: Updates error status, sets resolution text and timestamps
+- **Error Conditions**: Invalid parameters, error not found
+
+### Error Parsing Functions
+
+#### parse_error_format
+```c
+TodoziResultErrorPtr parse_error_format(const char* error_text);
+```
+**Purpose**: Parses error information from structured text format
+- **Parameters**: `error_text`: Formatted error string
+- **Format**: `<error>title;description;severity;category;source;context;tags</error>`
+- **Returns**: TodoziResultErrorPtr containing parsed Error or error information
+- **Validation**: Checks format integrity and field validity
+
+### Utility Functions
+
+#### error_new / error_free
+```c
+Error* error_new(void);
+void error_free(Error* error);
+```
+**Purpose**: Creates and destroys Error structures
+- **Memory**: Allocates/initializes or frees all nested resources
+
+#### Hash Map Operations
+```c
+HashMap* hashmap_new(void);
+void hashmap_free(HashMap* map);
+void hashmap_insert(HashMap* map, const char* key, Error* value);
+Error* hashmap_get(HashMap* map, const char* key);
+```
+
+### Helper Macros
+```c
+// Success macros
+#define TODOZI_OK_STRING(res, value)
+#define TODOZI_OK_ERROR_PTR(res, value)  
+#define TODOZI_OK_VOID(res)
+
+// Error macros  
+#define TODOZI_ERR_STRING(res, kind, msg)
+#define TODOZI_ERR_ERROR_PTR(res, kind, msg)
+#define TODOZI_ERR_VOID(res, kind, msg)
+```
+**Purpose**: Standardized result initialization
+- **Usage**: Ensures consistent result structure population
+
+## Design Patterns
+
+### 1. Result Type Pattern
+**Implementation**: Tagged unions with success/error discrimination
+**Benefits**: Type-safe error handling without exceptions
+**Usage**: All API functions return result types
+
+### 2. Resource Acquisition Is Initialization (RAII)
+**Implementation**: _new/_free function pairs
+**Benefits**: Clear ownership and memory management
+**Usage**: ErrorManager, Error, HashMap structures
+
+### 3. Factory Pattern
+**Implementation**: `parse_error_format` function
+**Benefits**: Flexible object creation from different sources
+**Usage**: Text-to-Error conversion
+
+### 4. Manager Pattern
+**Implementation**: ErrorManager centralizes error operations
+**Benefits**: Single responsibility, simplified interface
+**Usage**: Core error lifecycle management
+
+## Implementation Details
+
+### Memory Management Strategy
+```c
+// Ownership rules:
+// - ErrorManager owns HashMap and contained Errors
+// - HashMap owns key strings but shares Error ownership with manager
+// - Result types own their string/error data until freed
+// - Caller must free result data using todozi_result_*_free functions
+```
+
+### UUID Generation
+```c
+char* generate_uuid(void) {
+    // Note: This is a simplified implementation
+    // Production code should use proper UUID library
+    char* uuid = malloc(37);
+    snprintf(uuid, 37, "%08x-%04x-%04x-%04x-%012llx",
+            rand(), rand() & 0xFFFF, rand() & 0xFFFF,
+            rand() & 0xFFFF, ((long long)rand() << 32) | rand());
+    return uuid;
+}
+```
+**Limitation**: Not cryptographically secure
+**Improvement**: Use system UUID library in production
+
+### Error Text Parsing Logic
+```text
+Parsing Flow:
+1. Extract content between <error> tags
+2. Split by ';' delimiter into parts
+3. Validate minimum required parts (5)
+4. Parse severity and category from strings
+5. Handle optional context and tags
+6. Create Error structure with parsed data
+```
+
+## Usage Examples
+
+### Basic Error Creation and Management
+```c
+#include "todozi.h"
+
+int main() {
+    // Initialize error manager
+    ErrorManager* manager = error_manager_new();
+    if (!manager) {
+        fprintf(stderr, "Failed to create error manager\n");
+        return 1;
+    }
+
+    // Create a new error
+    Error* error = error_new();
+    error->title = strdup("Database Connection Failed");
+    error->description = strdup("Unable to connect to PostgreSQL");
+    error->severity = ERROR_SEVERITY_HIGH;
+    error->category = ERROR_CATEGORY_DATABASE;
+    error->source = strdup("database-service");
+
+    // Add error to manager
+    TodoziResultString result = error_manager_create_error(manager, error);
+    if (!result.is_ok) {
+        fprintf(stderr, "Error: %s\n", result.data.err_value.message);
+        todozi_result_string_free(&result);
+        error_free(error);
+        error_manager_free(manager);
+        return 1;
+    }
+
+    printf("Created error with ID: %s\n", result.data.ok_value);
+    
+    // Resolve the error
+    TodoziResultVoid resolve_result = error_manager_resolve_error(
+        manager, result.data.ok_value, "Restarted database service");
+    
+    if (!resolve_result.is_ok) {
+        fprintf(stderr, "Failed to resolve error: %s\n", 
+                resolve_result.data.err_value.message);
+    } else {
+        printf("Error resolved successfully\n");
+    }
+
+    // Cleanup
+    todozi_result_string_free(&result);
+    todozi_result_void_free(&resolve_result);
+    error_manager_free(manager);
+    return 0;
+}
+```
+
+### Error Parsing from Text
+```c
+void parse_error_example() {
+    const char* error_text = 
+        "<error>File Not Found;Unable to open configuration file;high;application;config-loader;Path: /etc/app/config.json;file,config,io</error>";
+    
+    TodoziResultErrorPtr result = parse_error_format(error_text);
+    
+    if (result.is_ok) {
+        Error* error = result.data.ok_value;
+        printf("Parsed Error:\n");
+        printf("  Title: %s\n", error->title);
+        printf("  Severity: %s\n", error_severity_to_str(error->severity));
+        printf("  Tags: ");
+        for (int i = 0; i < error->tags_count; i++) {
+            printf("%s ", error->tags[i]);
+        }
+        printf("\n");
+        
+        todozi_result_error_ptr_free(&result);
+    } else {
+        fprintf(stderr, "Parse failed: %s\n", result.data.err_value.message);
+        todozi_result_error_ptr_free(&result);
+    }
+}
+```
+
+### Batch Error Processing
+```c
+void process_unresolved_errors(ErrorManager* manager) {
+    int count;
+    Error** unresolved = error_manager_get_unresolved_errors(manager, &count);
+    
+    if (unresolved) {
+        printf("Found %d unresolved errors:\n", count);
+        
+        for (int i = 0; i < count; i++) {
+            Error* error = unresolved[i];
+            printf("  %s: %s (Severity: %s)\n", 
+                   error->id, error->title, 
+                   error_severity_to_str(error->severity));
+        }
+        
+        error_manager_free_unresolved_errors(unresolved);
+    }
+}
+```
+
+## Performance Analysis
+
+### Time Complexity
+| Operation | Best Case | Average Case | Worst Case |
+|-----------|-----------|--------------|------------|
+| error_manager_create_error | O(1) | O(n) | O(n) |
+| error_manager_resolve_error | O(1) | O(n) | O(n) |
+| hashmap_get | O(1) | O(n) | O(n) |
+| hashmap_insert | O(1) | O(n) | O(n) |
+| parse_error_format | O(n) | O(n) | O(n) |
+
+**Note**: HashMap operations are O(n) due to linear probing implementation
+
+### Space Complexity
+- **Error Structure**: O(1) per error, but variable string storage
+- **HashMap**: O(capacity) storage overhead
+- **Overall**: Linear in number of errors managed
+
+### Memory Usage Patterns
+```text
+Memory Allocation Breakdown:
+- Error structure: ~200-500 bytes base
+- String fields: Variable (typically 50-500 bytes each)
+- HashMap overhead: 16 * (pointer size) per capacity unit
+- Tag array: 4-8 bytes per tag plus string storage
+```
+
+### Optimization Opportunities
+1. **HashMap Improvement**: Implement proper hashing for O(1) operations
+2. **String Interning**: Reduce duplicate string storage
+3. **Memory Pool**: Batch allocation for Error structures
+4. **Lazy Resolution**: Deferred timestamp updates
+
+## Security Considerations
+
+### Input Validation
+```c
+// Current validation in parse_error_format:
+- Checks for NULL input
+- Validates tag structure presence
+- Verifies minimum required fields
+- Validates enum values from strings
+```
+
+### Memory Safety
+- **Risk**: Manual memory management can lead to leaks/double-free
+- **Mitigation**: Consistent _free function usage, NULL checks
+- **Improvement**: Add memory tracking in debug builds
+
+### UUID Security
+- **Current**: Pseudo-random generation not cryptographically secure
+- **Recommendation**: Use system UUID library (libuuid on Linux)
+
+### Buffer Handling
+- **Risk**: Fixed buffers in parsing logic
+- **Mitigation**: Dynamic allocation with size checks
+- **Example**: `content_len` calculation prevents overflow
+
+### Recommended Security Enhancements
+1. **Bounds Checking**: Add length validation for all string operations
+2. **Input Sanitization**: Validate error text format more rigorously
+3. **Memory Canaries**: Add guard bytes around allocations
+4. **Audit Logging**: Track error management operations
+
+## Testing Strategies
+
+### Unit Testing Framework
+```c
+// Test macros for comprehensive testing
+#define ASSERT(condition, message) \
+    if (!(condition)) { \
+        printf("TEST FAILED: %s\n", message); \
+        return 1; \
+    }
+
+#define TEST_ERROR_PARSING  // Compile flag for test main
+```
+
+### Test Categories
+
+#### 1. Functional Tests
+```c
+void test_error_creation() {
+    ErrorManager* manager = error_manager_new();
+    ASSERT(manager != NULL, "Manager creation");
+    
+    Error* error = error_new();
+    error->title = strdup("Test Error");
+    // ... configure error
+    
+    TodoziResultString result = error_manager_create_error(manager, error);
+    ASSERT(result.is_ok, "Error creation");
+    ASSERT(strlen(result.data.ok_value) > 0, "UUID generation");
+    
+    // Cleanup
+    todozi_result_string_free(&result);
+    error_manager_free(manager);
+}
+```
+
+#### 2. Error Condition Tests
+```c
+void test_error_conditions() {
+    // Test NULL parameters
+    TodoziResultString result = error_manager_create_error(NULL, NULL);
+    ASSERT(!result.is_ok, "NULL parameter handling");
+    ASSERT(result.data.err_value.error_type == TODOZI_ERROR_VALIDATION_ERROR,
+           "Correct error type");
+    
+    todozi_result_string_free(&result);
+}
+```
+
+#### 3. Boundary Tests
+```c
+void test_boundary_conditions() {
+    // Test hashmap resizing
+    ErrorManager* manager = error_manager_new();
+    
+    for (int i = 0; i < 20; i++) {
+        Error* error = error_new();
+        // ... create unique error
+        error_manager_create_error(manager, error);
+    }
+    
+    // Verify no crashes during resize
+    ASSERT(manager->errors->capacity >= 32, "HashMap resized correctly");
+    
+    error_manager_free(manager);
+}
+```
+
+#### 4. Memory Leak Tests
+```c
+void test_memory_management() {
+    // Use valgrind or similar tool to verify no leaks
+    ErrorManager* manager = error_manager_new();
+    
+    // Perform various operations
+    // ...
+    
+    error_manager_free(manager);
+    // Should show no memory leaks
+}
+```
+
+### Integration Testing
+```c
+// Test error lifecycle completely
+void test_full_lifecycle() {
+    ErrorManager* manager = error_manager_new();
+    
+    // Create error
+    Error* error = create_test_error();
+    TodoziResultString create_result = error_manager_create_error(manager, error);
+    
+    // Resolve error
+    TodoziResultVoid resolve_result = error_manager_resolve_error(
+        manager, create_result.data.ok_value, "Test resolution");
+    
+    // Verify resolution
+    Error* resolved_error = hashmap_get(manager->errors, create_result.data.ok_value);
+    ASSERT(resolved_error->resolved, "Error marked as resolved");
+    ASSERT(strcmp(resolved_error->resolution, "Test resolution") == 0, 
+           "Resolution text set");
+    
+    // Cleanup
+    todozi_result_string_free(&create_result);
+    todozi_result_void_free(&resolve_result);
+    error_manager_free(manager);
+}
+```
+
+## Deployment Instructions
+
+### Compilation Requirements
+```bash
+# Required headers
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <time.h>
+#include <stdbool.h>
+
+# Compilation command
+gcc -std=c99 -Wall -Wextra -O2 -DTEST_ERROR_PARSING todozi.c -o todozi_test
+```
+
+### Platform-Specific Considerations
+
+#### Linux
+```bash
+# Additional libraries for enhanced UUID generation
+sudo apt-get install uuid-dev
+gcc -luuid todozi.c -o todozi_app
+```
+
+#### Windows
+```cmd
+// Use Windows Crypto API for better UUID generation
+// Link with advapi32.lib
+cl todozi.c advapi32.lib
+```
+
+#### Embedded Systems
+```makefile
+# Minimal configuration for resource-constrained environments
+CFLAGS += -DTODOZI_MINIMAL -DNO_ERROR_PARSING
+```
+
+### Integration Steps
+
+1. **Header Inclusion**: Add `#include "todozi.h"` to your source files
+2. **Initialization**: Create ErrorManager at application startup
+3. **Error Reporting**: Use error creation functions throughout code
+4. **Cleanup**: Ensure proper manager freeing at application exit
+5. **Error Handling**: Check result types for all operations
+
+### Build System Integration
+
+#### CMake
+```cmake
+cmake_minimum_required(VERSION 3.10)
+project(MyAppWithTodozi)
+
+add_library(todozi STATIC todozi.c)
+target_include_directories(todozi PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
+
+add_executable(myapp main.c)
+target_link_libraries(myapp todozi)
+```
+
+#### Makefile
+```makefile
+CC = gcc
+CFLAGS = -std=c99 -Wall -Wextra -O2
+SRCS = todozi.c main.c
+OBJS = $(SRCS:.c=.o)
+TARGET = myapp
+
+$(TARGET): $(OBJS)
+	$(CC) $(CFLAGS) -o $@ $(OBJS)
+
+%.o: %.c
+	$(CC) $(CFLAGS) -c $< -o $@
+
+clean:
+	rm -f $(OBJS) $(TARGET)
+```
+
+## Troubleshooting Guide
+
+### Common Issues and Solutions
+
+#### 1. Memory Leaks
+**Symptom**: Increasing memory usage over time
+**Solution**: 
+```c
+// Ensure all allocated resources are freed
+ErrorManager* manager = error_manager_new();
+// ... use manager ...
+error_manager_free(manager);  // Must be called
+
+// For result types:
+TodoziResultString result = some_function();
+// ... use result ...
+todozi_result_string_free(&result);  // Cleanup result data
+```
+
+#### 2. UUID Collisions
+**Symptom**: Duplicate error IDs
+**Solution**: Use proper UUID library instead of `rand()`
+```c
+// Linux: use libuuid
+#include <uuid/uuid.h>
+char* generate_uuid_secure(void) {
+    uuid_t uuid;
+    char* str = malloc(37);
+    uuid_generate(uuid);
+    uuid_unparse(uuid, str);
+    return str;
+}
+```
+
+#### 3. HashMap Performance Degradation
+**Symptom**: Slower operations with many errors
+**Solution**: Improve hash function and collision resolution
+```c
+// Better hash function example
+unsigned int hash_function(const char* key) {
+    unsigned int hash = 5381;
+    int c;
+    while ((c = *key++))
+        hash = ((hash << 5) + hash) + c;
+    return hash;
+}
+```
+
+#### 4. Parsing Failures
+**Symptom**: `parse_error_format` returns errors for valid input
+**Solution**: Check input format strictly
+```text
+Required format: <error>title;desc;severity;category;source[;context][;tags]</error>
+Example: <error>DB Error;Connection failed;high;database;db-service;Timeout;db,network</error>
+```
+
+### Debugging Techniques
+
+#### 1. Memory Debugging
+```c
+// Add debug allocations
+#ifdef DEBUG
+#define malloc(size) debug_malloc(size, __FILE__, __LINE__)
+#define free(ptr) debug_free(ptr, __FILE__, __LINE__)
+#endif
+```
+
+#### 2. Error Tracking
+```c
+// Add error logging
+void error_manager_create_error_with_log(ErrorManager* manager, Error* error, const char* context) {
+    printf("Creating error from: %s\n", context);
+    TodoziResultString result = error_manager_create_error(manager, error);
+    // ... handle result
+}
+```
+
+#### 3. Performance Profiling
+```c
+// Add timing for performance analysis
+#include <sys/time.h>
+long get_time_us() {
+    struct timeval tv;
+    gettimeofday(&tv, NULL);
+    return tv.tv_sec * 1000000 + tv.tv_usec;
+}
+
+long start = get_time_us();
+// ... operation ...
+long end = get_time_us();
+printf("Operation took: %ld microseconds\n", end - start);
+```
+
+### Error Code Reference
+
+| Error Type | Description | Common Causes |
+|------------|-------------|---------------|
+| `TODOZI_ERROR_VALIDATION_ERROR` | Invalid input parameters | NULL pointers, malformed data |
+| `TODOZI_ERROR_STORAGE_ERROR` | Memory allocation failure | System out of memory |
+| `TODOZI_ERROR_UUID_ERROR` | UUID generation failure | Random number generator issue |
+| `TODOZI_ERROR_JSON_ERROR` | JSON parsing failure | Malformed JSON input |
+
+## Future Enhancements
+
+### Planned Features
+
+#### 1. Enhanced Storage Backends
+```c
+// Abstract storage interface
+typedef struct {
+    int (*save_error)(Error* error);
+    Error* (*load_error)(const char* id);
+    int (*delete_error)(const char* id);
+} ErrorStorageBackend;
+
+// Implementations for:
+// - File-based storage
+// - Database storage (SQLite, PostgreSQL)
+// - Network storage (REST API)
+```
+
+#### 2. Advanced Querying
+```c
+// Error query interface
+typedef struct {
+    ErrorSeverity min_severity;
+    ErrorCategory* categories;
+    int category_count;
+    time_t start_time;
+    time_t end_time;
+    char** tags;
+    int tag_count;
+} ErrorQuery;
+
+Error** error_manager_query_errors(ErrorManager* manager, ErrorQuery* query, int* count);
+```
+
+#### 3. Statistical Analysis
+```c
+// Error statistics
+typedef struct {
+    int total_errors;
+    int unresolved_errors;
+    int errors_by_severity[4];  // Indexed by ErrorSeverity
+    int errors_by_category[4];  // Indexed by ErrorCategory
+    double average_resolution_time;
+} ErrorStatistics;
+
+ErrorStatistics error_manager_get_statistics(ErrorManager* manager);
+```
+
+#### 4. Export Capabilities
+```c
+// Multiple export formats
+typedef enum {
+    EXPORT_FORMAT_JSON = 0,
+    EXPORT_FORMAT_XML = 1,
+    EXPORT_FORMAT_CSV = 2
+} ExportFormat;
+
+char* error_manager_export_errors(ErrorManager* manager, ExportFormat format);
+```
+
+### Performance Improvements
+
+1. **Caching Layer**: Add LRU cache for frequently accessed errors
+2. **Bulk Operations**: Batch error creation and resolution
+3. **Asynchronous Processing**: Non-blocking error management operations
+4. **Compression**: Reduce memory usage for error storage
+
+### Security Enhancements
+
+1. **Authentication**: Secure error access controls
+2. **Encryption**: Encrypt sensitive error data
+3. **Audit Trail**: Complete operation logging
+4. **Rate Limiting**: Prevent error reporting abuse
+
+This comprehensive documentation provides complete coverage of the Todozi error management system, including architectural overview, detailed API references, implementation guidance, and operational procedures. The system is designed for extensibility and can be adapted to various application needs while maintaining robustness and reliability.# Todozi Content Extraction Library - Comprehensive Documentation
+
+## Table of Contents
+1. [Overview](#overview)
+2. [Architecture](#architecture)
+3. [Data Structures](#data-structures)
+4. [API Reference](#api-reference)
+5. [Usage Examples](#usage-examples)
+6. [Design Patterns](#design-patterns)
+7. [Performance Analysis](#performance-analysis)
+8. [Security Considerations](#security-considerations)
+9. [Testing Strategies](#testing-strategies)
+10. [Deployment Instructions](#deployment-instructions)
+11. [Troubleshooting Guide](#troubleshooting-guide)
+
+## Overview
+
+Todozi is a comprehensive content extraction and management system that processes unstructured text to extract tasks, memories, ideas, errors, and training data. The library integrates with external APIs and provides multiple output formats for the extracted content.
+
+### Key Features
+- **Multi-format Content Extraction**: Extracts tasks, memories, ideas, errors, and training data
+- **API Integration**: Communicates with Todozi's external API service
+- **Multiple Output Formats**: JSON, CSV, Markdown, and human-readable checklists
+- **Automatic Persistence**: Saves extracted content to project files
+- **Comprehensive Error Handling**: Robust error management system
+- **Memory Safety**: Safe memory allocation and deallocation practices
+
+## Architecture
+
+### System Architecture Diagram
+
+```
+┌─────────────────┐    ┌──────────────────┐    ┌─────────────────┐
+│   Input Source  │───▶│  Content Parser  │───▶│   API Client    │
+│   (File/Text)   │    │                  │    │                 │
+└─────────────────┘    └──────────────────┘    └─────────┬───────┘
+                                                         │
+┌─────────────────┐    ┌──────────────────┐    ┌─────────▼───────┐
+│  Output Format  │◀───│ Response Parser  │◀───│  API Response   │
+│   Generator     │    │                  │    │                 │
+└─────────────────┘    └──────────────────┘    └─────────────────┘
+         │
+         ▼
+┌─────────────────┐    ┌──────────────────┐
+│   File System   │◀───│  Data Persister  │
+│   (Projects)    │    │                  │
+└─────────────────┘    └──────────────────┘
+```
+
+### Component Relationships
+
+```
+Main Functions
+├── extract_content()          # Primary extraction function
+├── strategy_content()         # Strategic content extraction
+├── extract_with_endpoint()    # Generic API caller
+└── Format Functions
+    ├── format_as_csv()
+    ├── format_as_markdown()
+    └── format_as_human_checklist()
+
+Data Structures
+├── ExtractResponse            # Container for all extracted data
+├── Task/Memory/Idea           # Domain objects
+└── Extracted* structures      # Parsed API responses
+
+Support Functions
+├── Memory Management
+├── Configuration Handling
+├── UUID Generation
+└── File I/O Operations
+```
+
+## Data Structures
+
+### Enumeration Types
+
+#### TodoziError
+```c
+typedef enum {
+    TODOZI_SUCCESS = 0,
+    TODOZI_ERROR_IO,           // File/IO operations failed
+    TODOZI_ERROR_VALIDATION,   // Input validation failed
+    TODOZI_ERROR_CONFIG,       // Configuration errors
+    TODOZI_ERROR_API,          // API communication errors
+    TODOZI_ERROR_SERIALIZATION // JSON serialization/parsing errors
+} TodoziError;
+```
+
+#### Priority Levels
+```c
+typedef enum {
+    PRIORITY_LOW,      // Low priority tasks
+    PRIORITY_MEDIUM,   // Medium priority (default)
+    PRIORITY_HIGH,     // High priority tasks
+    PRIORITY_CRITICAL  // Critical priority tasks
+} Priority;
+```
+
+#### Status Types
+```c
+typedef enum {
+    STATUS_TODO,        // Task not started
+    STATUS_IN_PROGRESS, // Task in progress
+    STATUS_DONE,        // Task completed
+    STATUS_CANCELLED    // Task cancelled
+} Status;
+```
+
+#### Memory Importance
+```c
+typedef enum {
+    MEMORY_IMPORTANCE_LOW,
+    MEMORY_IMPORTANCE_MEDIUM,
+    MEMORY_IMPORTANCE_HIGH,
+    MEMORY_IMPORTANCE_CRITICAL
+} MemoryImportance;
+```
+
+### Core Data Structures
+
+#### ExtractResponse
+```c
+typedef struct {
+    ExtractedTask* tasks;           // Array of extracted tasks
+    int tasks_count;                // Number of tasks
+    
+    ExtractedMemory* memories;      // Array of extracted memories
+    int memories_count;             // Number of memories
+    
+    ExtractedIdea* ideas;           // Array of extracted ideas
+    int ideas_count;                // Number of ideas
+    
+    ExtractedError* errors;         // Array of extracted errors
+    int errors_count;               // Number of errors
+    
+    ExtractedTrainingData* training_data; // Training data items
+    int training_data_count;        // Number of training items
+    
+    char** raw_tags;                // Raw tag strings
+    int raw_tags_count;             // Number of raw tags
+} ExtractResponse;
+```
+
+#### Task Structure
+```c
+typedef struct {
+    char* id;                   // UUID identifier
+    char* user_id;              // User identifier
+    char* action;               // Task description
+    char* time;                 // Time estimate/requirement
+    Priority priority;          // Priority level
+    char* parent_project;       // Parent project ID
+    Status status;              // Current status
+    char* assignee;             // Assigned person
+    char** tags;                // Array of tags
+    int tags_count;             // Number of tags
+    char** dependencies;        // Task dependencies
+    int dependencies_count;     // Number of dependencies
+    char* context;              // Context information
+    int progress;               // Progress percentage (0-100)
+} Task;
+```
+
+#### Memory Structure
+```c
+typedef struct {
+    char* id;                   // UUID identifier
+    char* user_id;              // User identifier
+    char* project_id;           // Associated project
+    ItemStatus status;          // Active/Archived/Deleted
+    char* moment;               // Memory moment description
+    char* meaning;              // Meaning/interpretation
+    char* reason;               // Reason for importance
+    MemoryImportance importance;// Importance level
+    MemoryTerm term;            // Time term (short/medium/long)
+    MemoryType memory_type;     // Type of memory
+    char** tags;                // Associated tags
+    int tags_count;             // Number of tags
+    time_t created_at;          // Creation timestamp
+    time_t updated_at;          // Last update timestamp
+} Memory;
+```
+
+## API Reference
+
+### Main Extraction Functions
+
+#### `extract_content()`
+```c
+TodoziError extract_content(
+    const char* content,        // Input text content (NULL if using file)
+    const char* file_path,      // Path to input file (NULL if using content)
+    const char* output_format,  // "json", "csv", "md", "markdown"
+    int human,                  // 1 to generate human checklist, 0 otherwise
+    char** result               // Output buffer (caller must free)
+);
+```
+
+**Parameters:**
+- `content`: Raw text content to extract from
+- `file_path`: Alternative file path to read content from
+- `output_format`: Desired output format
+- `human`: Flag for human-readable checklist generation
+- `result`: Pointer to output string (allocated by function)
+
+**Returns:** `TodoziError` indicating success or failure
+
+**Usage:**
+```c
+char* result = NULL;
+TodoziError error = extract_content(
+    "Complete project documentation by Friday",
+    NULL,  // No file path
+    "json", // JSON output
+    1,     // Generate human checklist
+    &result
+);
+
+if (error == TODOZI_SUCCESS) {
+    printf("Extraction successful: %s\n", result);
+    free(result);
+}
+```
+
+#### `strategy_content()`
+```c
+TodoziError strategy_content(
+    const char* content,
+    const char* file_path,
+    const char* output_format,
+    int human,
+    char** result
+);
+```
+
+Calls the "strategic" API endpoint for strategic planning content extraction.
+
+### Core Internal Function
+
+#### `extract_with_endpoint()`
+```c
+TodoziError extract_with_endpoint(
+    const char* content,
+    const char* file_path,
+    const char* output_format,
+    int human,
+    const char* endpoint,      // API endpoint ("plan" or "strategic")
+    char** result
+);
+```
+
+**Implementation Flow:**
+1. **Input Validation**: Validate input parameters and security constraints
+2. **Content Acquisition**: Read from file or use provided content
+3. **Configuration Loading**: Load user configuration and API key
+4. **API Request**: Build and send HTTP request to Todozi API
+5. **Response Handling**: Parse JSON response and extract structured data
+6. **Data Persistence**: Save extracted content to project files
+7. **Format Generation**: Convert to requested output format
+8. **Checklist Generation**: Create human-readable checklist if requested
+
+### Memory Management Functions
+
+#### `safe_malloc()`
+```c
+void* safe_malloc(size_t size);
+```
+**Description:** Wrapper around malloc that exits on failure
+**Parameters:** `size` - Number of bytes to allocate
+**Returns:** Pointer to allocated memory, never NULL
+
+#### `safe_strdup()`
+```c
+char* safe_strdup(const char* str);
+```
+**Description:** Safe string duplication with error handling
+**Parameters:** `str` - String to duplicate
+**Returns:** New string copy, NULL if input is NULL
+
+#### Memory Freeing Functions
+```c
+void free_extract_response(ExtractResponse* response);
+void free_extracted_task(ExtractedTask* task);
+void free_extracted_memory(ExtractedMemory* memory);
+// ... and other free functions
+```
+
+### Factory Functions
+
+#### `create_task()`
+```c
+Task* create_task(
+    const char* user_id,
+    const char* action,
+    const char* time,
+    Priority priority,
+    const char* project_id,
+    Status status,
+    const char* assignee,
+    char** tags,
+    int tags_count,
+    char** dependencies,
+    int dependencies_count,
+    const char* context,
+    int progress,
+    TodoziError* error
+);
+```
+
+**Returns:** Newly allocated Task structure with generated UUID
+
+## Usage Examples
+
+### Basic Content Extraction
+```c
+#include "todozi.h"
+
+int main() {
+    char* result = NULL;
+    TodoziError error;
+    
+    // Extract from inline text
+    error = extract_content(
+        "Meeting with team at 2 PM. High priority. Assign to John.",
+        NULL,
+        "json",
+        0,
+        &result
+    );
+    
+    if (error == TODOZI_SUCCESS) {
+        printf("Extracted: %s\n", result);
+        free(result);
+    }
+    
+    return 0;
+}
+```
+
+### File-based Extraction with Checklist
+```c
+int main() {
+    char* result = NULL;
+    TodoziError error;
+    
+    // Extract from file and generate human checklist
+    error = extract_content(
+        NULL,
+        "/path/to/project_notes.txt",
+        "markdown",
+        1,  // Generate human checklist
+        &result
+    );
+    
+    if (error == TODOZI_SUCCESS) {
+        // Save markdown result to file
+        FILE* out = fopen("extracted.md", "w");
+        fputs(result, out);
+        fclose(out);
+        free(result);
+    }
+    
+    return 0;
+}
+```
+
+### Strategic Content Processing
+```c
+int main() {
+    char* result = NULL;
+    
+    // Process strategic content
+    TodoziError error = strategy_content(
+        "Q4 goals: Increase revenue by 20%, launch new product line",
+        NULL,
+        "csv",
+        1,
+        &result
+    );
+    
+    if (error == TODOZI_SUCCESS) {
+        // Process CSV result
+        printf("Strategic analysis: %s\n", result);
+        free(result);
+    }
+    
+    return 0;
+}
+```
+
+### Error Handling Example
+```c
+int main() {
+    char* result = NULL;
+    TodoziError error = extract_content("test", NULL, "json", 0, &result);
+    
+    switch (error) {
+        case TODOZI_SUCCESS:
+            printf("Success: %s\n", result);
+            free(result);
+            break;
+        case TODOZI_ERROR_IO:
+            printf("I/O error occurred\n");
+            break;
+        case TODOZI_ERROR_API:
+            printf("API communication failed\n");
+            break;
+        case TODOZI_ERROR_CONFIG:
+            printf("Configuration error - check API key\n");
+            break;
+        default:
+            printf("Unknown error: %d\n", error);
+    }
+    
+    return 0;
+}
+```
+
+## Design Patterns
+
+### 1. Factory Pattern
+**Implementation:** `create_task()`, `create_memory()`, `create_idea()`
+**Purpose:** Centralized object creation with consistent initialization
+**Benefits:** 
+- Encapsulates complex initialization logic
+- Ensures consistent object state
+- Simplifies object creation throughout codebase
+
+### 2. Builder Pattern
+**Implementation:** API request building in `extract_with_endpoint()`
+**Purpose:** Step-by-step construction of complex API requests
+**Benefits:**
+- Flexible request configuration
+- Validation at each step
+- Easy modification of request parameters
+
+### 3. Strategy Pattern
+**Implementation:** Output format generators (`format_as_csv()`, `format_as_markdown()`)
+**Purpose:** Interchangeable output formatting algorithms
+**Benefits:**
+- Easy addition of new output formats
+- Clean separation of formatting logic
+- Runtime format selection
+
+### 4. Resource Acquisition Is Initialization (RAII)
+**Implementation:** Comprehensive cleanup in `extract_with_endpoint()`
+**Purpose:** Automatic resource management through structured cleanup
+**Benefits:**
+- Prevents memory leaks
+- Consistent error handling
+- Simplified resource management
+
+### 5. Adapter Pattern
+**Implementation:** JSON parsing adapts external API responses to internal structures
+**Purpose:** Bridge between external API format and internal data structures
+**Benefits:**
+- Isolation of external dependencies
+- Easy API version migration
+- Clean data transformation
+
+## Performance Analysis
+
+### Time Complexity
+| Operation | Complexity | Description |
+|-----------|------------|-------------|
+| JSON Parsing | O(n) | Linear to response size |
+| Memory Allocation | O(1) | Constant time per allocation |
+| String Operations | O(n) | Linear to string length |
+| API Request | O(1) | Network-bound, constant |
+
+### Space Complexity
+| Component | Complexity | Description |
+|-----------|------------|-------------|
+| ExtractResponse | O(n) | Proportional to extracted items |
+| JSON Parsing | O(n) | Linear to JSON depth and size |
+| String Buffers | O(n) | Proportional to content size |
+
+### Memory Usage Optimization
+- **String Reuse**: Reference counting for common strings
+- **Buffer Pooling**: Reusable buffers for formatting
+- **Lazy Allocation**: Memory allocated only when needed
+- **Early Freeing**: Immediate freeing of temporary objects
+
+### Performance Tips
+1. **Batch Processing**: Process multiple items together when possible
+2. **Stream Processing**: Use streaming JSON parsing for large responses
+3. **Memory Pools**: Implement object pools for frequent allocations
+4. **Caching**: Cache configuration and API responses when appropriate
+
+## Security Considerations
+
+### Input Validation
+```c
+// Buffer size validation
+if (strlen(endpoint) > 256) {
+    rc = TODOZI_ERROR_VALIDATION;
+    goto cleanup;
+}
+
+// API key length validation
+if (!api_key || strlen(api_key) > 400) {
+    rc = TODOZI_ERROR_VALIDATION;
+    // Handle error
+}
+```
+
+### Security Measures Implemented
+
+#### 1. Input Sanitization
+- **Path Validation**: Check file paths for directory traversal
+- **Size Limits**: Enforce maximum sizes for all inputs
+- **Type Checking**: Validate JSON types before processing
+
+#### 2. API Security
+- **Key Redaction**: API keys never printed to stdout
+- **HTTPS Enforcement**: All API calls use secure HTTPS
+- **Header Validation**: Validate HTTP headers before processing
+
+#### 3. Memory Safety
+- **Bounds Checking**: All buffer operations include bounds checks
+- **Null Termination**: Ensure all strings are properly terminated
+- **Safe String Functions**: Use length-limited string functions
+
+#### 4. File System Security
+- **Path Length Limits**: Prevent buffer overflow in path operations
+- **Directory Creation**: Safe directory creation with proper permissions
+- **File Access Control**: Validate file operations succeed
+
+### Security Best Practices
+1. **Never log sensitive data** (API keys, user identifiers)
+2. **Validate all external inputs** before processing
+3. **Use secure memory allocation** practices
+4. **Implement proper error handling** to avoid information leakage
+5. **Regular security audits** of the codebase
+
+## Testing Strategies
+
+### Unit Testing Framework
+
+#### Test Structure Example
+```c
+// test_todozi.c
+#include "todozi.h"
+#include <assert.h>
+
+void test_extract_content_basic() {
+    char* result = NULL;
+    TodoziError error = extract_content(
+        "Test task with high priority",
+        NULL,
+        "json",
+        0,
+        &result
+    );
+    
+    assert(error == TODOZI_SUCCESS);
+    assert(result != NULL);
+    // Validate JSON structure
+    free(result);
+}
+
+void test_memory_management() {
+    ExtractResponse* response = create_test_response();
+    free_extract_response(response);
+    // Use valgrind to check for leaks
+}
+
+void test_error_handling() {
+    char* result = NULL;
+    TodoziError error = extract_content(NULL, NULL, "json", 0, &result);
+    assert(error == TODOZI_ERROR_VALIDATION);
+}
+```
+
+### Integration Testing
+
+#### API Integration Tests
+```c
+void test_api_integration() {
+    // Mock API server required
+    // Test successful API calls
+    // Test error responses
+    // Test timeout scenarios
+}
+```
+
+#### File System Tests
+```c
+void test_file_operations() {
+    // Test file reading
+    // Test directory creation
+    // Test permission handling
+    // Test error conditions
+}
+```
+
+### Performance Testing
+
+#### Benchmark Suite
+```c
+void benchmark_large_content() {
+    // Test with large input files
+    // Measure memory usage
+    // Measure processing time
+    // Identify bottlenecks
+}
+```
+
+### Test Coverage Goals
+- **Function Coverage**: 100% of functions tested
+- **Branch Coverage**: 90%+ of conditional branches
+- **Path Coverage**: Critical paths thoroughly tested
+- **Memory Testing**: Valgrind for leak detection
+
+## Deployment Instructions
+
+### Build Requirements
+
+#### Dependencies
+```bash
+# Required libraries
+libcurl-dev    # HTTP client functionality
+json-c-dev     # JSON parsing and generation
+libuuid-dev    # UUID generation
+```
+
+#### Build Configuration
+```makefile
+# Makefile example
+CC = gcc
+CFLAGS = -Wall -Wextra -Werror -O2
+LDFLAGS = -lcurl -ljson-c -luuid
+
+todozi.o: todozi.c todozi.h
+	$(CC) $(CFLAGS) -c todozi.c -o todozi.o
+
+libtodozi.a: todozi.o
+	ar rcs libtodozi.a todozi.o
+```
+
+### Installation Steps
+
+#### Step 1: Install Dependencies
+```bash
+# Ubuntu/Debian
+sudo apt-get install libcurl4-openssl-dev libjson-c-dev uuid-dev
+
+# CentOS/RHEL
+sudo yum install libcurl-devel json-c-devel libuuid-devel
+```
+
+#### Step 2: Build Library
+```bash
+git clone https://github.com/todozi/library.git
+cd library
+make
+sudo make install
+```
+
+#### Step 3: Configuration
+```bash
+# Set API key environment variable
+export TODOZI_API_KEY="your_api_key_here"
+
+# Create configuration directory
+mkdir -p ~/.todozi
+```
+
+#### Step 4: Verification
+```c
+// test_installation.c
+#include <todozi.h>
+#include <stdio.h>
+
+int main() {
+    printf("Todozi library version: %s\n", TODOZI_VERSION);
+    return 0;
+}
+```
+
+### Docker Deployment
+```dockerfile
+FROM ubuntu:20.04
+
+# Install dependencies
+RUN apt-get update && apt-get install -y \
+    build-essential \
+    libcurl4-openssl-dev \
+    libjson-c-dev \
+    uuid-dev \
+    && rm -rf /var/lib/apt/lists/*
+
+# Copy source code
+COPY . /app
+WORKDIR /app
+
+# Build and install
+RUN make && make install
+
+# Set environment
+ENV TODOZI_API_KEY="your_key_here"
+```
+
+## Troubleshooting Guide
+
+### Common Issues and Solutions
+
+#### 1. API Connection Issues
+**Symptoms:** `TODOZI_ERROR_API` returned, curl errors in logs
+**Solutions:**
+```bash
+# Check network connectivity
+ping todozi.com
+
+# Verify API key
+echo $TODOZI_API_KEY
+
+# Test curl independently
+curl -H "Authorization: Bearer $TODOZI_API_KEY" https://todozi.com/api/tdz/plan
+```
+
+#### 2. Memory Allocation Errors
+**Symptoms:** Program crashes with allocation errors
+**Solutions:**
+```c
+// Check system memory
+#include <sys/sysinfo.h>
+struct sysinfo info;
+sysinfo(&info);
+printf("Free memory: %lu MB\n", info.freeram / 1024 / 1024);
+
+// Use valgrind for leak detection
+valgrind --leak-check=full ./your_program
+```
+
+#### 3. File Permission Errors
+**Symptoms:** `TODOZI_ERROR_IO` when accessing files
+**Solutions:**
+```bash
+# Check file permissions
+ls -la ~/.todozi/
+
+# Fix permissions if needed
+chmod 755 ~/.todozi/
+chmod 600 ~/.todozi/tdz.hlx
+```
+
+#### 4. JSON Parsing Errors
+**Symptoms:** `TODOZI_ERROR_SERIALIZATION` returned
+**Solutions:**
+```c
+// Enable verbose JSON parsing
+json_object* obj = json_tokener_parse_verbose(response, &error);
+if (!obj) {
+    printf("JSON error: %s\n", json_tokener_error_desc(error));
+}
+```
+
+### Debugging Techniques
+
+#### Verbose Logging
+```c
+// Add debug prints throughout the code
+#ifdef DEBUG
+#define DBG_PRINT(fmt, ...) printf("DEBUG: " fmt, ##__VA_ARGS__)
+#else
+#define DBG_PRINT(fmt, ...)
+#endif
+
+// Usage
+DBG_PRINT("Processing task %d: %s\n", i, task->action);
+```
+
+#### Memory Debugging
+```bash
+# Use valgrind for detailed memory analysis
+valgrind --tool=memcheck --leak-check=yes ./program
+
+# Use address sanitizer for build
+gcc -fsanitize=address -g todozi.c -o todozi
+```
+
+### Performance Troubleshooting
+
+#### Identify Bottlenecks
+```c
+#include <time.h>
+
+// Time specific operations
+clock_t start = clock();
+// Operation to time
+clock_t end = clock();
+double elapsed = (double)(end - start) / CLOCKS_PER_SEC;
+printf("Operation took: %f seconds\n", elapsed);
+```
+
+#### Memory Profiling
+```bash
+# Use massif for heap profiling
+valgrind --tool=massif ./program
+ms_print massif.out.*
+```
+
+### Recovery Procedures
+
+#### API Failure Recovery
+```c
+// Implement retry logic with exponential backoff
+int max_retries = 3;
+int retry_delay = 1; // seconds
+
+for (int i = 0; i < max_retries; i++) {
+    error = extract_with_endpoint(...);
+    if (error != TODOZI_ERROR_API) break;
+    sleep(retry_delay * (1 << i)); // Exponential backoff
+}
+```
+
+#### Data Corruption Recovery
+```c
+// Implement data validation before processing
+int validate_extract_response(const ExtractResponse* response) {
+    if (!response) return 0;
+    if (response->tasks_count < 0) return 0;
+    // Additional validation checks
+    return 1;
+}
+```
+
+This documentation provides comprehensive coverage of the Todozi content extraction library. The system is designed for robustness, security, and performance while maintaining flexibility for various use cases.# TODOZI Idea Management System - Comprehensive Documentation
+
+## Table of Contents
+1. [System Overview](#system-overview)
+2. [Architecture](#architecture)
+3. [Data Structures](#data-structures)
+4. [Core Functions](#core-functions)
+5. [Usage Examples](#usage-examples)
+6. [Design Patterns](#design-patterns)
+7. [Performance Analysis](#performance-analysis)
+8. [Security Considerations](#security-considerations)
+9. [Testing Strategy](#testing-strategy)
+10. [Deployment Instructions](#deployment-instructions)
+11. [Troubleshooting Guide](#troubleshooting-guide)
+
+## System Overview
+
+TODOZI is a C-based idea management system that provides comprehensive functionality for storing, organizing, and analyzing ideas. The system supports tagging, categorization by importance and sharing levels, search capabilities, and statistical analysis.
+
+### Key Features
+- **Idea Management**: Create, read, update, and delete ideas
+- **Tagging System**: Flexible tagging with automatic deduplication
+- **Search Functionality**: Case-insensitive search across idea content, tags, and context
+- **Sharing Levels**: Public, team, and private sharing controls
+- **Importance Classification**: Low, medium, high, and breakthrough levels
+- **Statistics Generation**: Comprehensive analytics and reporting
+- **Parsing Support**: Structured idea format parsing
+
+## Architecture
+
+### System Architecture Diagram
+```
+┌─────────────────┐    ┌─────────────────┐    ┌─────────────────┐
+│   IdeaManager   │◄───│   IdeaVector    │◄───│     Idea        │
+│                 │    │                 │    │                 │
+│ - ideas HashMap │    │ - Idea* array   │    │ - id, idea text │
+│ - tags HashMap  │    │ - size/capacity │    │ - metadata      │
+└─────────────────┘    └─────────────────┘    └─────────────────┘
+         │                       │                       │
+         ▼                       ▼                       ▼
+┌─────────────────┐    ┌─────────────────┐    ┌─────────────────┐
+│ StringHashMap   │    │  StringVector   │    │  IdeaUpdate     │
+│                 │    │                 │    │                 │
+│ - buckets array │    │ - string array  │    │ - update fields │
+│ - hash function │    │ - size/capacity │    │ - builder API   │
+└─────────────────┘    └─────────────────┘    └─────────────────┘
+```
+
+### Component Relationships
+- **IdeaManager**: Central controller managing all ideas and tags
+- **Idea**: Core data structure representing individual ideas
+- **IdeaUpdate**: Builder pattern for partial idea updates
+- **StringHashMap**: Generic hash map implementation for key-value storage
+- **StringVector**: Dynamic array implementation for string collections
+
+## Data Structures
+
+### Enum Definitions
+
+#### ShareLevel
+```c
+typedef enum {
+    SHARE_LEVEL_PUBLIC,    // Idea is publicly visible
+    SHARE_LEVEL_TEAM,      // Idea visible to team members only
+    SHARE_LEVEL_PRIVATE    // Idea private to creator only
+} ShareLevel;
+```
+
+#### IdeaImportance
+```c
+typedef enum {
+    IDEA_IMPORTANCE_LOW,         // Low priority idea
+    IDEA_IMPORTANCE_MEDIUM,      // Medium priority idea
+    IDEA_IMPORTANCE_HIGH,        // High priority idea
+    IDEA_IMPORTANCE_BREAKTHROUGH // Breakthrough/strategic idea
+} IdeaImportance;
+```
+
+#### ItemStatus
+```c
+typedef enum {
+    ITEM_STATUS_ACTIVE,    // Idea is active and visible
+    ITEM_STATUS_COMPLETED, // Idea has been implemented
+    ITEM_STATUS_ARCHIVED   // Idea is archived/hidden
+} ItemStatus;
+```
+
+### Core Structures
+
+#### Idea Structure
+```c
+struct Idea {
+    char* id;               // UUID identifier (36 bytes + null)
+    char* idea;             // Main idea text content
+    char* project_id;       // Optional project association
+    ItemStatus status;      // Current status (active/completed/archived)
+    ShareLevel share;       // Sharing visibility level
+    IdeaImportance importance; // Priority classification
+    StringVector* tags;     // Dynamic array of tags
+    char* context;          // Additional context/notes
+    time_t created_at;      // Creation timestamp
+    time_t updated_at;      // Last modification timestamp
+};
+```
+
+#### IdeaManager Structure
+```c
+struct IdeaManager {
+    StringHashMap* ideas;    // Main ideas storage (key: UUID, value: Idea*)
+    StringHashMap* idea_tags; // Tag associations (key: UUID, value: StringVector*)
+};
+```
+
+#### Error Handling
+```c
+typedef enum {
+    TODOZI_ERROR_VALIDATION, // Input validation errors
+    TODOZI_ERROR_NOT_FOUND   // Resource not found errors
+} TodoziErrorType;
+
+typedef struct {
+    TodoziErrorType type;   // Error category
+    char* message;          // Human-readable error message
+} TodoziError;
+```
+
+## Core Functions
+
+### Memory Management Functions
+
+#### string_vector_new()
+```c
+/**
+ * Creates a new StringVector with initial capacity
+ * 
+ * @return Pointer to allocated StringVector, NULL on allocation failure
+ * @memory Allocates 4 * sizeof(char*) + sizeof(StringVector) bytes initially
+ * @complexity O(1)
+ */
+StringVector* string_vector_new();
+```
+
+#### string_vector_push()
+```c
+/**
+ * Appends a string to the vector with automatic resizing
+ * 
+ * @param vec StringVector to modify
+ * @param str String to append (will be stored as-is, no copying)
+ * @memory May reallocate if capacity is exceeded (doubling strategy)
+ * @complexity Amortized O(1), worst-case O(n) during resize
+ */
+void string_vector_push(StringVector* vec, char* str);
+```
+
+#### string_hashmap_new()
+```c
+/**
+ * Creates a new StringHashMap with specified value destructor
+ * 
+ * @param value_free Function pointer for value cleanup, NULL for no cleanup
+ * @return Pointer to allocated StringHashMap, NULL on failure
+ * @memory Allocates 16 buckets + structure overhead
+ * @complexity O(1)
+ */
+StringHashMap* string_hashmap_new(void (*value_free)(void*));
+```
+
+### Idea Management Functions
+
+#### idea_manager_new()
+```c
+/**
+ * Creates a new IdeaManager instance with initialized storage
+ * 
+ * @return Pointer to allocated IdeaManager, NULL on allocation failure
+ * @memory Allocates two hash maps with 16 buckets each
+ * @complexity O(1)
+ * @error Returns NULL on memory allocation failure
+ */
+IdeaManager* idea_manager_new();
+```
+
+#### idea_manager_create_idea()
+```c
+/**
+ * Adds a new idea to the manager with automatic UUID generation
+ * 
+ * @param manager IdeaManager instance
+ * @param idea Pre-configured Idea structure
+ * @return Duplicate of generated UUID string, NULL on failure
+ * @memory Allocates UUID string and tag vector clone
+ * @complexity O(n) where n is number of tags
+ * @error Returns NULL on UUID generation or memory allocation failure
+ */
+char* idea_manager_create_idea(IdeaManager* manager, Idea* idea);
+```
+
+#### idea_manager_search_ideas()
+```c
+/**
+ * Searches ideas by content, tags, or context (case-insensitive)
+ * 
+ * @param manager IdeaManager instance
+ * @param query Search query string
+ * @return Vector of matching Idea pointers, NULL on error
+ * @memory Allocates result vector and temporary lowercase strings
+ * @complexity O(n*m) where n is ideas count, m is query length
+ * @error Returns NULL on memory allocation failure
+ */
+IdeaVector* idea_manager_search_ideas(IdeaManager* manager, const char* query);
+```
+
+### Statistical Functions
+
+#### idea_manager_get_idea_statistics()
+```c
+/**
+ * Generates comprehensive statistics about stored ideas
+ * 
+ * @param manager IdeaManager instance
+ * @return Pointer to IdeaStatistics structure, NULL on error
+ * @memory Allocates statistics structure and temporary vectors
+ * @complexity O(n) where n is number of ideas
+ * @error Returns NULL on memory allocation failure
+ */
+IdeaStatistics* idea_manager_get_idea_statistics(IdeaManager* manager);
+```
+
+## Usage Examples
+
+### Basic Idea Management
+```c
+#include "todozi.h"
+
+int main() {
+    // Initialize manager
+    IdeaManager* manager = idea_manager_new();
+    if (!manager) {
+        fprintf(stderr, "Failed to initialize idea manager\n");
+        return 1;
+    }
+
+    // Create a new idea
+    Idea* idea = idea_new();
+    idea->idea = strdup("Implement AI-powered search");
+    idea->share = SHARE_LEVEL_TEAM;
+    idea->importance = IDEA_IMPORTANCE_HIGH;
+    
+    // Add tags
+    string_vector_push(idea->tags, strdup("ai"));
+    string_vector_push(idea->tags, strdup("search"));
+    string_vector_push(idea->tags, strdup("enhancement"));
+
+    // Store the idea
+    char* idea_id = idea_manager_create_idea(manager, idea);
+    if (!idea_id) {
+        fprintf(stderr, "Failed to create idea\n");
+        idea_free(idea);
+        idea_manager_free(manager);
+        return 1;
+    }
+
+    printf("Created idea with ID: %s\n", idea_id);
+
+    // Search for ideas
+    IdeaVector* results = idea_manager_search_ideas(manager, "AI");
+    if (results) {
+        printf("Found %zu matching ideas\n", idea_vector_size(results));
+        idea_vector_free(results);
+    }
+
+    // Cleanup
+    free(idea_id);
+    idea_manager_free(manager);
+    return 0;
+}
+```
+
+### Advanced Usage with Updates
+```c
+// Update an existing idea
+IdeaUpdate* update = idea_update_new();
+idea_update_idea(update, "Enhanced AI search with ML");
+idea_update_importance(update, IDEA_IMPORTANCE_BREAKTHROUGH);
+
+TodoziError* error = idea_manager_update_idea(manager, idea_id, update);
+if (error) {
+    fprintf(stderr, "Update failed: %s\n", error->message);
+    todozi_error_free(error);
+}
+
+idea_update_free(update);
+```
+
+### Statistics Generation
+```c
+// Get comprehensive statistics
+IdeaStatistics* stats = idea_manager_get_idea_statistics(manager);
+if (stats) {
+    printf("Total ideas: %zu\n", stats->total_ideas);
+    printf("Public ideas: %.1f%%\n", idea_statistics_public_percentage(stats));
+    printf("Breakthrough ideas: %.1f%%\n", idea_statistics_breakthrough_percentage(stats));
+    idea_statistics_free(stats);
+}
+```
+
+## Design Patterns
+
+### 1. Builder Pattern
+**Implementation**: `IdeaUpdate` structure with fluent interface
+```c
+// Fluent builder API
+IdeaUpdate* update = idea_update_new()
+    ->idea_update_idea(update, "New content")
+    ->idea_update_share(update, SHARE_LEVEL_PUBLIC)
+    ->idea_update_importance(update, IDEA_IMPORTANCE_HIGH);
+```
+
+### 2. Factory Pattern
+**Implementation**: `idea_new()`, `idea_manager_new()` functions
+- Creates complex objects with proper initialization
+- Ensures consistent object state
+
+### 3. Strategy Pattern
+**Implementation**: Custom comparison functions for sorting
+```c
+// Configurable sorting strategy
+int idea_compare_by_created_at_desc(const void* a, const void* b);
+```
+
+### 4. Iterator Pattern
+**Implementation**: Vector and hash map traversal functions
+```c
+// Iterate through all ideas
+IdeaVector* all_ideas = idea_manager_get_all_ideas(manager);
+for (size_t i = 0; i < idea_vector_size(all_ideas); i++) {
+    Idea* idea = idea_vector_get(all_ideas, i);
+    // Process idea
+}
+```
+
+## Performance Analysis
+
+### Time Complexity Analysis
+
+| Operation | Average Case | Worst Case | Notes |
+|-----------|--------------|------------|-------|
+| Idea Creation | O(n) | O(n) | n = number of tags |
+| Idea Retrieval | O(1) | O(k) | k = bucket chain length |
+| Idea Search | O(n*m) | O(n*m) | n = ideas, m = query length |
+| Tag Statistics | O(n*t) | O(n*t) | n = ideas, t = tags per idea |
+| Recent Ideas | O(n log n) | O(n log n) | Due to sorting |
+
+### Space Complexity
+- **Idea Storage**: O(n) where n is number of ideas
+- **Tag Index**: O(n*t) where t is average tags per idea
+- **Search Operations**: O(k) temporary storage for results
+
+### Memory Usage Patterns
+```c
+// Memory allocation sizes:
+- Idea structure: ~64 bytes + string contents
+- StringVector: 16 bytes + 4*sizeof(char*) initially
+- StringHashMap: 16 buckets * 8 bytes + structure overhead
+```
+
+### Optimization Strategies
+1. **Hash Map Sizing**: Initial 16 buckets, consider tuning for expected load
+2. **Vector Resizing**: Doubling strategy provides amortized O(1) push operations
+3. **String Handling**: Avoid unnecessary copies, use reference counting if needed
+
+## Security Considerations
+
+### Input Validation
+```c
+// All public functions include null checks
+if (!manager || !idea_id) {
+    return error_response(TODOZI_ERROR_VALIDATION, "Invalid parameters");
+}
+```
+
+### Memory Safety
+- **String Handling**: Always use `strdup()` for user input
+- **Buffer Management**: No fixed-size buffers vulnerable to overflow
+- **Resource Cleanup**: Comprehensive free functions prevent leaks
+
+### UUID Security
+- Uses standard `uuid_generate()` for unique identifiers
+- No predictable sequences for idea IDs
+
+### Access Control
+- Share level enforcement through filtering functions
+- No authentication/authorization built-in (application-level concern)
+
+## Testing Strategy
+
+### Unit Testing Framework
+```c
+// Test structure example
+void test_functionality() {
+    // Setup
+    IdeaManager* manager = idea_manager_new();
+    assert(manager != NULL);
+    
+    // Exercise
+    Idea* idea = create_test_idea();
+    char* id = idea_manager_create_idea(manager, idea);
+    
+    // Verify
+    assert(id != NULL);
+    Idea* retrieved = idea_manager_get_idea(manager, id);
+    assert(retrieved != NULL);
+    assert(strcmp(retrieved->idea, idea->idea) == 0);
+    
+    // Teardown
+    free(id);
+    idea_manager_free(manager);
+}
+```
+
+### Test Categories
+
+#### 1. Core Functionality Tests
+- Idea creation, retrieval, update, deletion
+- Search functionality with various queries
+- Tag management and statistics
+
+#### 2. Boundary Tests
+- Empty manager operations
+- Maximum capacity testing (stress tests)
+- Invalid input handling
+
+#### 3. Integration Tests
+- End-to-end workflow validation
+- Memory leak detection
+- Performance benchmarking
+
+### Test Coverage Goals
+- 100% function coverage
+- 90% branch coverage
+- Memory leak detection in all tests
+
+## Deployment Instructions
+
+### Build Requirements
+```bash
+# Required libraries
+sudo apt-get install libuuid1 libuuid-dev  # UUID support
+gcc -std=c99 -D_POSIX_C_SOURCE=200809L     # Compiler flags
+```
+
+### Compilation Instructions
+```makefile
+# Makefile example
+CC = gcc
+CFLAGS = -std=c99 -Wall -Wextra -D_POSIX_C_SOURCE=200809L
+LIBS = -luuid
+
+todozi: todozi.c
+	$(CC) $(CFLAGS) -o todozi todozi.c $(LIBS)
+
+test: todozi
+	./todozi
+
+clean:
+	rm -f todozi
+```
+
+### Platform Support
+- **Linux**: Fully supported (primary platform)
+- **macOS**: Supported with Homebrew uuid installation
+- **Windows**: Requires MinGW-w64 and external UUID library
+
+### Integration Guidelines
+```c
+// Example integration with existing C application
+#include "todozi.h"
+
+// Initialize on application start
+IdeaManager* idea_mgr = idea_manager_new();
+
+// Use throughout application lifecycle
+// ...
+
+// Cleanup on application exit
+idea_manager_free(idea_mgr);
+```
+
+## Troubleshooting Guide
+
+### Common Issues and Solutions
+
+#### 1. Memory Allocation Failures
+**Symptom**: Functions return NULL unexpectedly
+**Solution**: Check system memory, implement graceful degradation
+```c
+IdeaManager* manager = idea_manager_new();
+if (!manager) {
+    // Implement fallback strategy or graceful shutdown
+    log_error("Failed to allocate idea manager");
+    return ERROR_MEMORY;
+}
+```
+
+#### 2. UUID Generation Failures
+**Symptom**: `generate_uuid()` returns NULL
+**Solution**: Check uuid library installation
+```bash
+# Verify UUID library
+ldconfig -p | grep libuuid
+# Reinstall if missing
+sudo apt-get install --reinstall libuuid1 libuuid-dev
+```
+
+#### 3. Search Performance Issues
+**Symptom**: Slow search operations with large datasets
+**Solution**: Implement indexing or limit search scope
+```c
+// Add search limits for large datasets
+IdeaVector* results = idea_manager_search_ideas(manager, query);
+if (idea_vector_size(results) > 1000) {
+    // Implement pagination or results limiting
+}
+```
+
+### Debugging Techniques
+
+#### Memory Leak Detection
+```bash
+# Using valgrind
+valgrind --leak-check=full ./todozi
+
+# Compile with debug symbols
+gcc -g -o todozi_debug todozi.c -luuid
+```
+
+#### Performance Profiling
+```bash
+# Using gprof
+gcc -pg -o todozi_prof todozi.c -luuid
+./todozi_prof
+gprof todozi_prof gmon.out > analysis.txt
+```
+
+### Error Code Reference
+
+| Error Type | Common Causes | Resolution |
+|------------|---------------|------------|
+| TODOZI_ERROR_VALIDATION | Null parameters, invalid format | Check input validation |
+| TODOZI_ERROR_NOT_FOUND | Invalid UUID, deleted idea | Verify idea existence |
+| Memory Allocation | System out of memory | Reduce load, check for leaks |
+
+### Recovery Procedures
+
+#### Application Crash Recovery
+```c
+// Implement periodic backup system
+void backup_ideas(IdeaManager* manager) {
+    // Serialize ideas to file periodically
+    // Implement recovery from backup on startup
+}
+```
+
+#### Data Corruption Handling
+```c
+// Add integrity checks
+int verify_idea_integrity(Idea* idea) {
+    return idea && idea->id && idea->idea; // Basic checks
+}
+```
+
+This comprehensive documentation provides complete coverage of the TODOZI system. The implementation demonstrates robust C programming practices with attention to memory management, error handling, and extensible architecture.# TODOZI C API - Comprehensive Documentation
+
+## Table of Contents
+1. [Overview](#overview)
+2. [Architecture](#architecture)
+3. [Data Structures](#data-structures)
+4. [Functions Reference](#functions-reference)
+5. [Usage Examples](#usage-examples)
+6. [Design Patterns](#design-patterns)
+7. [Performance Analysis](#performance-analysis)
+8. [Security Considerations](#security-considerations)
+9. [Testing Strategies](#testing-strategies)
+10. [Deployment Instructions](#deployment-instructions)
+11. [Troubleshooting Guide](#troubleshooting-guide)
+12. [Error Handling](#error-handling)
+
+## Overview
+
+TODOZI is a comprehensive task management and AI-powered productivity system written in C. The API provides extensive functionality for task management, memory tracking, idea generation, and intelligent task processing with semantic search capabilities.
+
+### Key Features
+- **Task Management**: Create, update, search, and manage tasks with priorities and dependencies
+- **AI Integration**: Semantic search and intelligent task planning
+- **Memory System**: Long-term memory storage and retrieval
+- **Idea Tracking**: Capture and organize creative ideas
+- **Project Organization**: Multi-project task management
+- **Embedding Service**: Vector-based similarity search
+- **Agent System**: AI agent assignment and management
+
+## Architecture
+
+### System Architecture Diagram
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│                    Application Layer                        │
+├─────────────────────────────────────────────────────────────┤
+│  Task Management  │  Memory System   │   Idea System       │
+│       API         │       API        │       API           │
+├─────────────────────────────────────────────────────────────┤
+│              Core Service Layer                             │
+│  Embedding Service  │  Storage Service  │  Search Engine   │
+├─────────────────────────────────────────────────────────────┤
+│                    Data Access Layer                        │
+│      File Storage      │     Metadata     │   Embeddings    │
+└─────────────────────────────────────────────────────────────┘
+```
+
+### Component Relationships
+
+```
+User Input → Task Editor → Task Storage
+                            ↓
+                    Embedding Service
+                            ↓
+                    Semantic Search Engine
+                            ↓
+                    AI Processing Pipeline
+                            ↓
+                    Result Display
+```
+
+## Data Structures
+
+### Core Enumerations
+
+#### TodoziPriority
+```c
+typedef enum {
+    TODOZI_PRIORITY_CRITICAL,  // Highest priority - immediate attention
+    TODOZI_PRIORITY_URGENT,    // Time-sensitive tasks
+    TODOZI_PRIORITY_HIGH,      // Important tasks
+    TODOZI_PRIORITY_MEDIUM,    // Normal priority (default)
+    TODOZI_PRIORITY_LOW        // Low priority - can be deferred
+} TodoziPriority;
+```
+
+#### TodoziStatus
+```c
+typedef enum {
+    TODOZI_STATUS_TODO,        // Task not started
+    TODOZI_STATUS_IN_PROGRESS, // Task actively being worked on
+    TODOZI_STATUS_DONE,        // Task completed
+    TODOZI_STATUS_BLOCKED      // Task cannot proceed due to dependencies
+} TodoziStatus;
+```
+
+### Main Data Structures
+
+#### Task Structure
+```c
+struct Task {
+    char* id;                    // UUID identifier
+    char* user_id;               // User identifier
+    char* action;                // Task description
+    char* time;                  // Time specification (e.g., "ASAP", "Tomorrow")
+    TodoziPriority priority;     // Priority level
+    char* parent_project;        // Project name
+    TodoziStatus status;         // Current status
+    TodoziAssignee assignee;     // Assigned entity
+    char** tags;                 // Array of tags
+    size_t tags_count;           // Number of tags
+    char** dependencies;         // Task dependencies
+    size_t dependencies_count;   // Number of dependencies
+    char* context_notes;         // Additional context
+    int* progress;               // Progress percentage (0-100)
+    time_t created_at;           // Creation timestamp
+    time_t updated_at;           // Last update timestamp
+    float* embedding_vector;     // Semantic embedding vector
+    size_t embedding_size;       // Embedding vector size
+};
+```
+
+#### TaskFilters Structure
+```c
+struct TaskFilters {
+    char* project;              // Filter by project
+    TodoziStatus* status;       // Filter by status
+    TodoziPriority* priority;   // Filter by priority
+    TodoziAssignee* assignee;   // Filter by assignee
+    char** tags;                // Filter by tags
+    size_t tags_count;          // Number of tags to filter
+    char* search;               // Text search query
+};
+```
+
+## Functions Reference
+
+### Initialization Functions
+
+#### `todozi_init()`
+**Purpose**: Initialize the TODOZI system
+**Parameters**: None
+**Returns**: `TodoziErrorCode` - Success or error code
+**Complexity**: O(1)
+```c
+TodoziErrorCode todozi_init() {
+    // Implementation would go here
+    return TODOZI_OK;
+}
+```
+
+#### `todozi_init_with_auto_registration()`
+**Purpose**: Initialize with automatic API key registration
+**Parameters**: None
+**Returns**: `TodoziErrorCode`
+**Complexity**: O(1)
+
+### Task Management Functions
+
+#### `todozi_create_task()`
+**Purpose**: Create a new task with full specifications
+**Parameters**:
+- `const char* action`: Task description
+- `TodoziPriority priority`: Priority level
+- `const char* project`: Project name
+- `const char* time_str`: Time specification
+- `const char* context`: Additional context
+- `Task** task`: Output parameter for created task
+
+**Returns**: `TodoziErrorCode`
+**Complexity**: O(n) where n is string lengths
+
+```c
+TodoziErrorCode todozi_create_task(const char* action, TodoziPriority priority, 
+                                  const char* project, const char* time_str, 
+                                  const char* context, Task** task) {
+    // Full implementation with memory allocation and validation
+}
+```
+
+#### `todozi_search_tasks()`
+**Purpose**: Search tasks with optional semantic search
+**Parameters**:
+- `const char* query`: Search query
+- `bool semantic`: Use semantic search if true
+- `size_t limit`: Maximum results to return
+- `Task*** tasks`: Output array of tasks
+- `size_t* tasks_count`: Output count of tasks found
+
+**Returns**: `TodoziErrorCode`
+**Complexity**: O(n log n) for semantic search
+
+### Memory Management Functions
+
+#### `free_task()`
+**Purpose**: Safely deallocate a Task structure and all its components
+**Parameters**: `Task* task` - Task to free
+**Complexity**: O(n) where n is number of tags/dependencies
+
+```c
+void free_task(Task* task) {
+    if (task) {
+        // Comprehensive memory cleanup
+        if (task->id) free(task->id);
+        if (task->tags) {
+            for (size_t i = 0; i < task->tags_count; i++) {
+                free(task->tags[i]);
+            }
+            free(task->tags);
+        }
+        // ... additional cleanup
+        free(task);
+    }
+}
+```
+
+## Usage Examples
+
+### Basic Task Creation
+```c
+#include "todozi.h"
+
+int main() {
+    TodoziErrorCode result;
+    Task* task = NULL;
+    
+    // Initialize system
+    result = todozi_init();
+    if (result != TODOZI_OK) {
+        printf("Initialization failed: %d\n", result);
+        return 1;
+    }
+    
+    // Create a task
+    result = todozi_create_task(
+        "Implement new feature", 
+        TODOZI_PRIORITY_HIGH,
+        "project-alpha",
+        "ASAP",
+        "This is critical for next release",
+        &task
+    );
+    
+    if (result == TODOZI_OK && task) {
+        printf("Task created: %s\n", task->action);
+        free_task(task);
+    }
+    
+    return 0;
+}
+```
+
+### Advanced Task Search with Filters
+```c
+void search_high_priority_tasks() {
+    TaskFilters* filters = NULL;
+    Task** tasks = NULL;
+    size_t tasks_count = 0;
+    
+    // Create filters for high priority tasks in progress
+    todozi_create_task_filters(
+        "project-alpha",      // project
+        "in_progress",        // status
+        "high",               // priority
+        NULL,                 // assignee (any)
+        "urgent,critical",    // tags
+        "feature",            // search text
+        &filters
+    );
+    
+    TodoziErrorCode result = todozi_search_with_filters(
+        filters, 10, &tasks, &tasks_count
+    );
+    
+    if (result == TODOZI_OK) {
+        for (size_t i = 0; i < tasks_count; i++) {
+            printf("Found task: %s\n", tasks[i]->action);
+        }
+        free_task_array(tasks, tasks_count);
+    }
+    
+    free_task_filters(filters);
+}
+```
+
+### Memory and Idea Management
+```c
+void manage_memories_and_ideas() {
+    Task* memory_task = NULL;
+    Task* idea_task = NULL;
+    
+    // Create a memory
+    todozi_remember(
+        "Team meeting discussion",
+        "Important decision about architecture",
+        &memory_task
+    );
+    
+    // Create an idea
+    todozi_ideate(
+        "New algorithm optimization approach",
+        &idea_task
+    );
+    
+    // Cleanup
+    if (memory_task) free_task(memory_task);
+    if (idea_task) free_task(idea_task);
+}
+```
+
+## Design Patterns
+
+### 1. Factory Pattern
+**Usage**: Task creation functions (`todozi_create_task`, `todozi_quick_task`)
+**Benefits**: Centralized object creation with validation
+
+### 2. Builder Pattern
+**Usage**: Filter creation (`todozi_create_task_filters`)
+**Benefits**: Flexible object construction with optional parameters
+
+### 3. Repository Pattern
+**Usage**: Data access through storage service
+**Benefits**: Separation of data access from business logic
+
+### 4. Strategy Pattern
+**Usage**: Search algorithms (semantic vs keyword)
+**Benefits**: Interchangeable algorithms at runtime
+
+### 5. Observer Pattern
+**Usage**: Task status updates and notifications
+**Benefits**: Loose coupling between components
+
+## Performance Analysis
+
+### Time Complexity
+| Operation | Best Case | Average Case | Worst Case |
+|-----------|-----------|--------------|------------|
+| Task Creation | O(1) | O(n) | O(n) |
+| Task Search (Keyword) | O(1) | O(log n) | O(n) |
+| Task Search (Semantic) | O(n) | O(n log n) | O(n²) |
+| Memory Allocation | O(1) | O(1) | O(1) |
+
+### Space Complexity
+- **Task Structure**: O(n + m) where n=tags, m=dependencies
+- **Search Operations**: O(k) where k=results count
+- **Embedding Storage**: O(d) where d=embedding dimensions
+
+### Memory Management Strategy
+- **Allocation**: Dynamic allocation with error checking
+- **Deallocation**: Comprehensive cleanup functions
+- **Leak Prevention**: Reference counting for shared resources
+
+## Security Considerations
+
+### Input Validation
+```c
+TodoziErrorCode validate_task_input(const char* action, const char* time, 
+                                   const char* priority, const char* project, 
+                                   const char* status, const char* assignee, 
+                                   const unsigned char* progress) {
+    // Comprehensive input validation
+    if (!action || strlen(action) == 0) {
+        return TODOZI_ERR_INVALID_ARG;
+    }
+    // Additional validation checks...
+}
+```
+
+### API Key Security
+- UUID-based key generation
+- Secure storage in user home directory
+- Key expiration mechanisms
+
+### Data Protection
+- Sensitive data encryption
+- Secure file permissions (600)
+- Input sanitization for file paths
+
+## Testing Strategies
+
+### Unit Testing Framework
+```c
+// Example test case for task creation
+void test_task_creation() {
+    Task* task = NULL;
+    TodoziErrorCode result;
+    
+    // Test valid input
+    result = todozi_create_task("Test task", TODOZI_PRIORITY_MEDIUM, 
+                               "test-project", "ASAP", NULL, &task);
+    assert(result == TODOZI_OK);
+    assert(task != NULL);
+    assert(strcmp(task->action, "Test task") == 0);
+    
+    free_task(task);
+    
+    // Test invalid input
+    result = todozi_create_task(NULL, TODOZI_PRIORITY_MEDIUM, 
+                               NULL, NULL, NULL, &task);
+    assert(result == TODOZI_ERR_INVALID_ARG);
+}
+```
+
+### Integration Testing
+- End-to-end workflow testing
+- Cross-component interaction tests
+- Performance benchmarking
+
+### Security Testing
+- Input validation tests
+- Boundary condition tests
+- Memory leak detection
+
+## Deployment Instructions
+
+### Build Requirements
+```bash
+# Dependencies
+sudo apt-get install uuid-dev  # UUID library
+gcc -std=c99 -Wall -Wextra -O2 todozi.c -o todozi -luuid
+```
+
+### Installation Steps
+1. **Clone and Build**
+   ```bash
+   git clone https://github.com/todozi/todozi-c.git
+   cd todozi-c
+   make && sudo make install
+   ```
+
+2. **Configuration**
+   ```bash
+   mkdir -p ~/.todozi
+   chmod 700 ~/.todozi
+   ```
+
+3. **API Key Setup**
+   ```c
+   char* api_key = NULL;
+   todozi_get_tdz_api_key(&api_key);
+   printf("Your API key: %s\n", api_key);
+   free(api_key);
+   ```
+
+### System Integration
+```c
+// CMakeLists.txt example
+cmake_minimum_required(VERSION 3.10)
+project(MyTodoziApp)
+
+find_library(UUID_LIB uuid)
+add_executable(myapp main.c)
+target_link_libraries(myapp ${UUID_LIB})
+```
+
+## Troubleshooting Guide
+
+### Common Issues
+
+#### Memory Leaks
+**Symptoms**: Increasing memory usage over time
+**Solution**: Use Valgrind for detection
+```bash
+valgrind --leak-check=full ./my_todozi_app
+```
+
+#### API Key Issues
+**Symptoms**: Registration failures
+**Solution**: Regenerate API key
+```c
+todozi_init_with_auto_registration();
+```
+
+#### Search Performance
+**Symptoms**: Slow semantic searches
+**Solution**: Limit results and use filters
+```c
+todozi_search_with_filters(filters, 50, &tasks, &tasks_count); // Limit to 50 results
+```
+
+### Error Codes Reference
+
+| Error Code | Description | Resolution |
+|------------|-------------|------------|
+| `TODOZI_OK` | Success | No action needed |
+| `TODOZI_ERR_NOT_IMPL` | Function not implemented | Check API version |
+| `TODOZI_ERR_IO` | I/O operation failed | Check file permissions |
+| `TODOZI_ERR_INVALID_ARG` | Invalid parameter | Validate input parameters |
+| `TODOZI_ERR_MEMORY` | Memory allocation failed | Check system memory |
+
+### Debugging Techniques
+```c
+// Enable verbose logging
+TodoziErrorCode todozi_verbose(bool verbose, void** result) {
+    // Implementation for debug output
+}
+```
+
+## Error Handling
+
+### Comprehensive Error Management
+```c
+TodoziErrorCode safe_task_operation(const char* action) {
+    Task* task = NULL;
+    TodoziErrorCode result;
+    
+    result = todozi_create_task(action, TODOZI_PRIORITY_MEDIUM, 
+                               NULL, NULL, NULL, &task);
+    
+    if (result != TODOZI_OK) {
+        // Handle specific error cases
+        switch (result) {
+            case TODOZI_ERR_MEMORY:
+                fprintf(stderr, "Memory allocation failed\n");
+                break;
+            case TODOZI_ERR_INVALID_ARG:
+                fprintf(stderr, "Invalid task parameters\n");
+                break;
+            default:
+                fprintf(stderr, "Unknown error: %d\n", result);
+        }
+        return result;
+    }
+    
+    // Process task...
+    free_task(task);
+    return TODOZI_OK;
+}
+```
+
+### Recovery Strategies
+- **Graceful degradation**: Fallback to simpler operations
+- **Resource cleanup**: Automatic memory management
+- **Error propagation**: Clear error codes and messages
+
+This documentation provides a comprehensive reference for the TODOZI C API. The system is designed for robustness, scalability, and ease of use with thorough error handling and memory management practices.# Todozi CLI - Comprehensive Documentation
+
+## Table of Contents
+1. [Overview](#overview)
+2. [Architecture](#architecture)
+3. [Data Structures](#data-structures)
+4. [Functions](#functions)
+5. [Usage Examples](#usage-examples)
+6. [Error Handling](#error-handling)
+7. [Design Patterns](#design-patterns)
+8. [Performance Analysis](#performance-analysis)
+9. [Security Considerations](#security-considerations)
+10. [Testing Strategies](#testing-strategies)
+11. [Deployment Instructions](#deployment-instructions)
+12. [Troubleshooting Guide](#troubleshooting-guide)
+
+## Overview
+
+Todozi is a comprehensive task management system with a command-line interface that provides extensive functionality for task management, project organization, AI integration, and data persistence. The system supports multiple commands ranging from basic task operations to advanced features like embeddings export, migration, and AI agent management.
+
+### Key Features
+- **Task Management**: Add, list, show, update, complete, and delete tasks
+- **Project Organization**: Project-based task grouping and management
+- **Backup System**: Automated backup and restore functionality
+- **Registration System**: Optional server registration for cloud synchronization
+- **AI Integration**: Embeddings, chat functionality, and ML capabilities
+- **Migration Tools**: Data migration between system versions
+- **Multiple Interfaces**: CLI, TUI, and GUI support
+
+## Architecture
+
+### System Architecture Diagram
+```
+┌─────────────────┐    ┌─────────────────┐    ┌─────────────────┐
+│   CLI Parser    │ →  │ Command Handler │ →  │    Storage      │
+└─────────────────┘    └─────────────────┘    └─────────────────┘
+         │                      │                      │
+         ↓                      ↓                      ↓
+┌─────────────────┐    ┌─────────────────┐    ┌─────────────────┐
+│  Error Handler  │    │   Todozi API    │    │   HLX Format    │
+└─────────────────┘    └─────────────────┘    └─────────────────┘
+```
+
+### Component Interactions
+```
+User Input → CLI Parser → Command Router → Specific Handler → Storage → HLX File
+                                 ↓
+                           Error Handler ←── Exception/Error
+```
+
+### Data Flow
+1. **Input**: Command line arguments
+2. **Parsing**: `parse_cli()` function extracts command and parameters
+3. **Validation**: Command validation and parameter checking
+4. **Execution**: Command-specific handler executes the operation
+5. **Storage**: Data persistence through Storage layer to HLX files
+6. **Output**: Result display or error reporting
+
+## Data Structures
+
+### Core Structures
+
+#### TodoziError
+```c
+typedef struct {
+    int code;        // Error code (system errno or custom)
+    char* message;   // Human-readable error message
+} TodoziError;
+```
+**Purpose**: Unified error handling structure across the system
+**Fields**:
+- `code`: Error code matching system errno or custom error codes
+- `message`: Dynamically allocated error message string
+
+#### Cli (Command Line Interface)
+```c
+typedef struct {
+    CommandType command_type;  // Type of command to execute
+    void* command_data;        // Command-specific parameters
+    bool has_command;          // Whether a valid command was parsed
+} Cli;
+```
+**Purpose**: Represents parsed command-line arguments
+**Fields**:
+- `command_type`: Enumeration of possible command types
+- `command_data`: Pointer to command-specific data structure
+- `has_command`: Flag indicating successful command parsing
+
+### Command-Specific Structures
+
+#### AddCmd - Add Command
+```c
+typedef struct {
+    char* title;        // Task title (required)
+    char* description;  // Task description (optional)
+} AddCmd;
+```
+
+#### ListCmd - List Command
+```c
+typedef struct {
+    char* filter;       // Filter string for task listing
+} ListCmd;
+```
+
+#### UpdateCmd - Update Command
+```c
+typedef struct {
+    int id;             // Task ID to update
+    char* action;       // Action description
+    char* time;         // Time-related updates
+    char* priority;     // Priority level
+    char* project;      // Project assignment
+    char* status;       // Status update
+    char* assignee;     // Assignee information
+    char* tags;         // Tag updates
+    char* dependencies; // Dependency information
+    char* context;      // Context information
+    int progress;       // Progress percentage
+} UpdateCmd;
+```
+
+#### Storage and Handler Structures
+```c
+struct Storage {
+    void* data;         // Opaque storage implementation data
+};
+
+struct TodoziHandler {
+    Storage* storage;   // Associated storage instance
+};
+
+struct Hlx {
+    void* data;         // HLX format data structure
+};
+
+struct PathBuf {
+    char* path;         // File system path
+};
+```
+
+## Functions
+
+### Core Functions
+
+#### Main Entry Point
+```c
+int main(int argc, char* argv[])
+```
+**Purpose**: Program entry point and main control flow
+**Parameters**:
+- `argc`: Argument count
+- `argv`: Argument vector
+**Returns**: Exit status code (0 for success, non-zero for error)
+**Flow**:
+1. Install error handling
+2. Parse CLI arguments
+3. Handle early exits (help, errors)
+4. Initialize storage and handlers
+5. Load HLX data
+6. Execute command
+7. Cleanup resources
+
+#### CLI Parsing
+```c
+Cli parse_cli(int argc, char* argv[])
+```
+**Purpose**: Parse command-line arguments into structured command data
+**Parameters**:
+- `argc`: Argument count
+- `argv`: Argument vector
+**Returns**: `Cli` structure containing parsed command information
+**Complexity**: O(n) where n is number of arguments
+
+#### Memory Management
+```c
+void free_cli_data(Cli* cli)
+```
+**Purpose**: Safely free all dynamically allocated command data
+**Parameters**:
+- `cli`: Pointer to Cli structure to cleanup
+**Features**: Idempotent (safe to call multiple times)
+
+### Error Handling Functions
+
+#### Error Cleanup
+```c
+static void todozi_error_cleanup(TodoziError* err)
+```
+**Purpose**: Safely free error message memory
+**Parameters**:
+- `err`: Error structure to cleanup
+**Safety**: Checks for NULL pointers before freeing
+
+#### Error Handling Macros
+```c
+#define CHECK(expr)     // Execute expression and exit on error
+#define HANDLE_ERROR(err_var, msg_prefix)  // Handle error with message prefix
+```
+
+### Storage Functions
+
+#### Storage Management
+```c
+TodoziError storage_new(Storage** storage)
+```
+**Purpose**: Create new storage instance
+**Parameters**:
+- `storage`: Double pointer to receive new storage instance
+**Returns**: Error structure indicating success/failure
+**Error Codes**: `EINVAL` (invalid pointer), `ENOMEM` (allocation failure)
+
+```c
+static void storage_free(Storage* storage)
+```
+**Purpose**: Free storage instance
+**Parameters**:
+- `storage`: Storage instance to free
+
+### Handler Functions
+
+#### Handler Management
+```c
+TodoziError todozi_handler_new(Storage* storage, TodoziHandler** handler)
+```
+**Purpose**: Create new todozi handler with associated storage
+**Parameters**:
+- `storage`: Storage instance to associate
+- `handler`: Double pointer to receive new handler
+**Returns**: Error structure indicating success/failure
+
+```c
+static void todozi_handler_free(TodoziHandler* handler)
+```
+**Purpose**: Free handler instance
+**Parameters**:
+- `handler`: Handler instance to free
+
+### File System Functions
+
+#### Directory Discovery
+```c
+static char* find_todozi(void* none)
+```
+**Purpose**: Find todozi directory using multiple fallback strategies
+**Parameters**:
+- `none`: Unused parameter (for API compatibility)
+**Returns**: Dynamically allocated path string
+**Search Order**:
+1. `TODOZI_HOME` environment variable
+2. `~/.todozi` (user home directory)
+3. `./todozi` (current directory)
+4. Fallback to `./todozi`
+
+#### HLX File Management
+```c
+TodoziError hlx_load(const char* path, Hlx** hlx)
+```
+**Purpose**: Load HLX format file
+**Parameters**:
+- `path`: File path to load
+- `hlx`: Double pointer to receive HLX instance
+**Returns**: Error structure indicating success/failure
+
+```c
+void hlx_free(Hlx* hlx)
+```
+**Purpose**: Free HLX instance
+**Parameters**:
+- `hlx`: HLX instance to free
+
+## Usage Examples
+
+### Basic Task Management
+
+#### Initialize Todozi
+```bash
+todozi init
+```
+**Purpose**: Initialize todozi directory structure
+**Files Created**: Configuration files, storage directories
+
+#### Add a Task
+```bash
+todozi add "Complete project documentation" "Write comprehensive docs for Todozi CLI"
+```
+**Purpose**: Add new task with title and description
+**Output**: Task ID and confirmation message
+
+#### List Tasks
+```bash
+todozi list
+todozi list "important"  # Filtered listing
+```
+**Purpose**: Display all tasks or filtered subset
+**Output**: Formatted task list with IDs, titles, and status
+
+#### Show Task Details
+```bash
+todozi show 1
+```
+**Purpose**: Display detailed information for specific task
+**Output**: Complete task details including metadata
+
+#### Update Task
+```bash
+todozi update 1 --priority high --progress 50
+```
+**Purpose**: Modify task properties
+**Parameters**: Various update options supported
+
+#### Complete Task
+```bash
+todozi complete 1
+```
+**Purpose**: Mark task as completed
+**Output**: Confirmation message
+
+### Advanced Operations
+
+#### Backup and Restore
+```bash
+todozi backup
+todozi list-backups
+todozi restore backup_20231201
+```
+**Purpose**: Manage data backups
+**Features**: Automated backup creation and selective restore
+
+#### Registration Management
+```bash
+todozi register https://api.todozi.com
+todozi registration-status
+todozi clear-registration
+```
+**Purpose**: Manage server registration for cloud sync
+**Note**: Registration is optional for local operation
+
+#### Export Embeddings
+```bash
+todozi export-embeddings ./ai_training_data.hlx
+```
+**Purpose**: Export task data in HLX format for AI/ML training
+**Use Case**: Machine learning model training data preparation
+
+#### Migration
+```bash
+todozi migrate --dry-run  # Test migration
+todozi migrate --force    # Execute migration
+```
+**Purpose**: Migrate data between system versions
+**Safety**: Dry-run option for testing migrations
+
+### Content Management
+
+#### Content Extraction
+```bash
+todozi extract "Meeting notes" --file notes.txt --format json
+```
+**Purpose**: Extract and process content from various sources
+**Formats**: Multiple output format support
+
+#### AI Integration
+```bash
+todozi chat "What tasks are due today?"
+todozi agent "Process incoming emails"
+```
+**Purpose**: AI-powered task management assistance
+**Features**: Natural language processing and automation
+
+## Error Handling
+
+### Error Codes System
+
+The system uses a unified error handling approach with the following error categories:
+
+#### System Errors (errno-based)
+- `EINVAL`: Invalid parameters
+- `ENOMEM`: Memory allocation failure
+- `ENOENT`: File or directory not found
+- `EACCES`: Permission denied
+
+#### Custom Error Categories
+- **Configuration Errors**: Invalid configuration or missing files
+- **Storage Errors**: Data persistence issues
+- **Network Errors**: Server communication failures
+- **Validation Errors**: Invalid input data
+
+### Error Handling Strategy
+
+#### Defensive Programming
+```c
+// All functions return TodoziError for consistent error handling
+TodoziError storage_new(Storage** storage) {
+    if (!storage) {
+        TodoziError err = {EINVAL, strdup("Invalid storage pointer")};
+        return err;
+    }
+    // ... implementation
+}
+```
+
+#### Resource Cleanup
+```c
+// Macros ensure proper cleanup on error
+#define CHECK(expr) do { \
+    TodoziError err = (expr); \
+    if (err.code != 0) { \
+        fprintf(stderr, "Error: %s\n", err.message); \
+        todozi_error_cleanup(&err); \
+        exit(err.code); \
+    } \
+} while(0)
+```
+
+#### Graceful Degradation
+```c
+// Fallback behavior when primary methods fail
+static char* find_todozi(void* none) {
+    // Try multiple strategies in priority order
+    // Final fallback to default location
+    return strdup("./todozi");
+}
+```
+
+## Design Patterns
+
+### 1. Command Pattern
+**Implementation**: Each command type corresponds to a specific handler function
+```c
+typedef enum {
+    CMD_ADD,
+    CMD_LIST,
+    CMD_SHOW,
+    // ... other commands
+} CommandType;
+
+// Command routing in main()
+switch (cli.command_type) {
+    case CMD_ADD:
+        err = todozi_handler_handle_add_command(handler, add_cmd);
+        break;
+    case CMD_LIST:
+        err = todozi_handler_handle_list_command(handler, list_cmd);
+        break;
+    // ... other cases
+}
+```
+
+### 2. Factory Pattern
+**Implementation**: Creation functions for major components
+```c
+TodoziError storage_new(Storage** storage);
+TodoziError todozi_handler_new(Storage* storage, TodoziHandler** handler);
+```
+
+### 3. Strategy Pattern
+**Implementation**: Different storage strategies and command implementations
+```c
+// Storage abstraction allows different implementations
+struct Storage {
+    void* data;  // Opaque implementation data
+};
+```
+
+### 4. RAII (Resource Acquisition Is Initialization)
+**Implementation**: Automatic cleanup through structured programming
+```c
+// Resources acquired in main() and cleaned up at the end
+Storage* storage = NULL;
+TodoziHandler* handler = NULL;
+Hlx* todozi_hlx = NULL;
+
+// ... acquisition code
+
+cleanup:
+    if (todozi_hlx) hlx_free(todozi_hlx);
+    if (handler) todozi_handler_free(handler);
+    if (storage) storage_free(storage);
+```
+
+### 5. Facade Pattern
+**Implementation**: Simplified interface to complex subsystem
+```c
+// TodoziHandler provides simplified interface to storage+logic
+TodoziError todozi_handler_handle_add_command(TodoziHandler* handler, AddCmd* add_cmd);
+```
+
+## Performance Analysis
+
+### Time Complexity
+
+#### Command Parsing: O(n)
+- Linear time relative to number of arguments
+- Efficient string comparisons
+
+#### File Operations: O(1) to O(n)
+- Constant time for existence checks
+- Linear time for file loading based on size
+
+#### Memory Operations: O(1)
+- Constant time allocation and deallocation
+- Efficient pointer management
+
+### Space Complexity
+
+#### Memory Usage: O(m + n)
+- `m`: Size of loaded HLX data
+- `n`: Size of command parameters and temporary buffers
+
+#### Disk Usage
+- Primary storage: HLX files with efficient binary format
+- Backups: Compressed or differential backup strategies
+
+### Optimization Strategies
+
+#### Efficient Memory Management
+```c
+// Reuse of buffers and careful allocation
+void free_cli_data(Cli* cli) {
+    // Comprehensive cleanup of all allocated resources
+}
+```
+
+#### Lazy Loading
+```c
+// HLX files loaded only when needed
+if (cli.command_type != CMD_EXPORT_EMBEDDINGS) {
+    TodoziError hlx_err = hlx_load(hlx_path, &todozi_hlx);
+}
+```
+
+#### Batch Operations
+```c
+// Commands designed for batch processing where appropriate
+TodoziError todozi_handler_handle_list_command(TodoziHandler* handler, ListCmd* list_cmd);
+```
+
+## Security Considerations
+
+### Input Validation
+
+#### Command Injection Prevention
+```c
+// All user input treated as data, not executable code
+char* command = argv[1];
+if (!command) {
+    cli.command_type = CMD_HELP;
+    return cli;
+}
+```
+
+#### Path Traversal Protection
+```c
+// Secure path construction with bounds checking
+char hlx_path[1024];
+int snprintf_result = snprintf(hlx_path, sizeof(hlx_path), "%s/tdz.hlx", todozi_dir_str);
+if (snprintf_result < 0 || snprintf_result >= (int)sizeof(hlx_path)) {
+    fprintf(stderr, "Path too long for HLX file\n");
+    goto cleanup_error;
+}
+```
+
+### Data Protection
+
+#### Secure Storage
+- Local data stored in user-controlled directories
+- Optional encryption for sensitive data
+- Backup integrity verification
+
+#### Network Security
+- TLS/SSL for server communications
+- Authentication token management
+- Secure credential storage
+
+### Privacy Considerations
+
+#### Data Minimization
+- Only essential data collected and stored
+- Optional features clearly documented
+- User control over data sharing
+
+#### Access Controls
+- File permission management
+- User-based access restrictions
+- Audit logging capabilities
+
+## Testing Strategies
+
+### Unit Testing
+
+#### Test Categories
+
+1. **Command Parsing Tests**
+```c
+// Test parse_cli with various inputs
+void test_parse_cli() {
+    char* args[] = {"todozi", "add", "test task"};
+    Cli cli = parse_cli(3, args);
+    assert(cli.command_type == CMD_ADD);
+    assert(cli.has_command == true);
+    free_cli_data(&cli);
+}
+```
+
+2. **Error Handling Tests**
+```c
+// Test error propagation and cleanup
+void test_error_handling() {
+    TodoziError err = {EINVAL, strdup("Test error")};
+    assert(err.code == EINVAL);
+    assert(strcmp(err.message, "Test error") == 0);
+    todozi_error_cleanup(&err);
+    assert(err.message == NULL);
+}
+```
+
+3. **File System Tests**
+```c
+// Test directory discovery and file operations
+void test_file_operations() {
+    char* path = find_todozi(NULL);
+    assert(path != NULL);
+    // Test file loading and validation
+    free(path);
+}
+```
+
+### Integration Testing
+
+#### Test Scenarios
+
+1. **End-to-End Workflow**
+```bash
+# Test complete task lifecycle
+todozi init
+todozi add "Test task"
+todozi list
+todozi show 1
+todozi complete 1
+todozi list
+```
+
+2. **Error Recovery Testing**
+- Test system behavior under various error conditions
+- Validate cleanup and recovery mechanisms
+
+3. **Performance Testing**
+- Load testing with large task datasets
+- Memory usage profiling
+- Response time measurements
+
+### Automated Testing Framework
+
+#### Continuous Integration
+- Automated build and test execution
+- Code coverage analysis
+- Memory leak detection
+- Static code analysis
+
+## Deployment Instructions
+
+### Build Requirements
+
+#### Prerequisites
+- C compiler (GCC, Clang, or MSVC)
+- Standard C library
+- POSIX-compliant system (for some features)
+- Optional: Todozi API library for enhanced functionality
+
+#### Build Process
+```bash
+# Basic compilation
+gcc -o todozi todozi.c -std=c99 -Wall -Wextra -pedantic
+
+# With optimizations
+gcc -o todozi todozi.c -O2 -std=c99 -Wall -Wextra -pedantic
+
+# Debug build
+gcc -o todozi todozi.c -g -std=c99 -Wall -Wextra -pedantic
+```
+
+### Installation Methods
+
+#### System-wide Installation
+```bash
+# Copy to system bin directory
+sudo cp todozi /usr/local/bin/
+
+# Set execute permissions
+sudo chmod +x /usr/local/bin/todozi
+```
+
+#### User-local Installation
+```bash
+# Install in user bin directory
+cp todozi ~/.local/bin/
+
+# Add to PATH if not already
+export PATH="$HOME/.local/bin:$PATH"
+```
+
+#### Package Management
+```bash
+# Create package (distribution-specific)
+# For Debian/Ubuntu: dpkg-buildpackage
+# For RedHat: rpmbuild
+# For macOS: brew create formula
+```
+
+### Configuration
+
+#### Environment Variables
+```bash
+# Custom todozi home directory
+export TODOZI_HOME="/path/to/custom/todozi"
+
+# Add to shell profile for persistence
+echo 'export TODOZI_HOME="/path/to/custom/todozi"' >> ~/.bashrc
+```
+
+#### Initial Setup
+```bash
+# Initialize todozi system
+todozi init
+
+# Verify installation
+todozi check-structure
+```
+
+## Troubleshooting Guide
+
+### Common Issues
+
+#### Installation Problems
+
+**Issue**: "Command not found" after installation
+**Solution**: Verify PATH environment variable includes installation directory
+```bash
+echo $PATH
+which todozi
+```
+
+**Issue**: Permission denied errors
+**Solution**: Check file permissions and ownership
+```bash
+chmod +x /path/to/todozi
+ls -la /path/to/todozi
+```
+
+#### Runtime Errors
+
+**Issue**: "HLX file not found" error
+**Solution**: Initialize todozi directory structure
+```bash
+todozi init
+todozi ensure-structure
+```
+
+**Issue**: Memory allocation failures
+**Solution**: Check system memory and ulimits
+```bash
+ulimit -a
+free -h
+```
+
+**Issue**: Command parsing errors
+**Solution**: Verify command syntax and parameters
+```bash
+todozi help
+todozi --help
+```
+
+### Debugging Techniques
+
+#### Verbose Logging
+```c
+// Enable debug output by modifying source
+#define DEBUG 1
+#ifdef DEBUG
+    fprintf(stderr, "Debug: %s\n", debug_message);
+#endif
+```
+
+#### Error Investigation
+```bash
+# Run with strace for system call tracing
+strace todozi list
+
+# Use valgrind for memory debugging
+valgrind --leak-check=full todozi list
+```
+
+#### Diagnostic Commands
+```bash
+# Check system status
+todozi check-structure
+todozi registration-status
+todozi stats
+```
+
+### Recovery Procedures
+
+#### Data Recovery
+```bash
+# List available backups
+todozi list-backups
+
+# Restore from backup
+todozi restore backup_name
+
+# Fix data consistency
+todozi fix-consistency
+```
+
+#### Configuration Reset
+```bash
+# Clear registration data
+todozi clear-registration
+
+# Reinitialize system
+rm -rf ~/.todozi
+todozi init
+```
+
+### Performance Troubleshooting
+
+#### Memory Usage
+```bash
+# Monitor memory usage
+top -p $(pgrep todozi)
+
+# Check for memory leaks
+valgrind --tool=memcheck todozi list
+```
+
+#### Disk I/O
+```bash
+# Monitor file operations
+iotop -p $(pgrep todozi)
+
+# Check disk space
+df -h ~/.todozi
+```
+
+This comprehensive documentation provides complete coverage of the Todozi CLI system, including architecture, implementation details, usage patterns, and operational guidance. The system demonstrates robust error handling, extensible design, and comprehensive functionality for modern task management needs.# Todozi Memory Management System - Comprehensive Documentation
+
+## Table of Contents
+1. [Overview](#overview)
+2. [Architecture](#architecture)
+3. [Data Structures](#data-structures)
+4. [Core Components](#core-components)
+5. [API Reference](#api-reference)
+6. [Design Patterns](#design-patterns)
+7. [Performance Analysis](#performance-analysis)
+8. [Security Considerations](#security-considerations)
+9. [Testing Strategy](#testing-strategy)
+10. [Deployment Instructions](#deployment-instructions)
+11. [Troubleshooting Guide](#troubleshooting-guide)
+12. [Usage Examples](#usage-examples)
+
+## Overview
+
+The Todozi Memory Management System is a C library designed for managing various types of memories with different classifications, importance levels, and metadata. It provides a comprehensive suite of functions for creating, updating, searching, and analyzing memories with support for tags, statistics, and advanced querying capabilities.
+
+### Key Features
+- Multi-type memory classification (Standard, Secret, Human, Emotional, Short, Long)
+- Importance-based prioritization (Low, Medium, High, Critical)
+- Term-based categorization (Short-term, Long-term)
+- Tag-based organization and search
+- Statistical analysis and reporting
+- Text-based memory parsing
+- Error handling and validation
+
+## Architecture
+
+```
+┌─────────────────┐    ┌─────────────────┐    ┌─────────────────┐
+│   MemoryManager │◄──►│     HashMap     │◄──►│    Memory       │
+└─────────────────┘    └─────────────────┘    └─────────────────┘
+         │                       │                       │
+         ▼                       ▼                       ▼
+┌─────────────────┐    ┌─────────────────┐    ┌─────────────────┐
+│ MemoryStatistics│    │  MemoryUpdate   │    │      Vector     │
+└─────────────────┘    └─────────────────┘    └─────────────────┘
+```
+
+### System Flow
+```
+Memory Creation → Memory Storage → Memory Query → Statistics Generation
+       ↑                ↑                ↑                ↑
+   Text Parsing     Hash Mapping     Search Logic    Data Analysis
+```
+
+## Data Structures
+
+### Memory
+```c
+struct Memory {
+    char* id;                    // UUID identifier
+    char* user_id;               // Owner identifier
+    char* project_id;            // Optional project association
+    ItemStatus status;           // ACTIVE, COMPLETED, ARCHIVED
+    char* moment;                // Memory content/description
+    char* meaning;               // Significance/interpretation
+    char* reason;                // Purpose/justification
+    MemoryImportance importance; // LOW, MEDIUM, HIGH, CRITICAL
+    MemoryTerm term;             // SHORT, LONG term
+    MemoryType memory_type;      // STANDARD, SECRET, HUMAN, etc.
+    char* emotion;               // For emotional memories
+    Vector* tags;                // String vector of tags
+    time_t created_at;           // Creation timestamp
+    time_t updated_at;           // Last update timestamp
+};
+```
+
+### MemoryManager
+```c
+struct MemoryManager {
+    HashMap* memories;      // Memory storage (id → Memory*)
+    HashMap* memory_tags;   // Tag index (memory_id → Vector* of tags)
+};
+```
+
+### MemoryUpdate
+```c
+struct MemoryUpdate {
+    char* moment;               // Optional update
+    char* meaning;              // Optional update  
+    char* reason;               // Optional update
+    MemoryImportance* importance; // Optional pointer update
+    MemoryTerm* term;           // Optional pointer update
+    Vector* tags;               // Optional tag replacement
+};
+```
+
+## Core Components
+
+### 1. HashMap Implementation
+**Purpose**: Provides key-value storage for efficient memory lookup
+
+**Functions**:
+- `hashmap_create(size_t capacity)`: Creates a new hashmap
+- `hashmap_destroy(HashMap*, void (*free_key)(void*), void (*free_value)(void*))`: Cleans up hashmap
+- `hashmap_put(HashMap*, const char* key, void* value)`: Stores key-value pair
+- `hashmap_get(HashMap*, const char* key)`: Retrieves value by key
+- `hashmap_remove(HashMap*, const char* key)`: Removes key-value pair
+- `hashmap_size(HashMap*)`: Returns number of entries
+
+**Hash Function**: Uses DJB2 algorithm for string hashing
+
+### 2. Vector Implementation
+**Purpose**: Dynamic array implementation for flexible collections
+
+**Functions**:
+- `vector_create()`: Creates empty vector
+- `vector_destroy(Vector*, void (*free_element)(void*))`: Cleans up vector
+- `vector_push(Vector*, void* element)`: Adds element to end
+- `vector_get(Vector*, size_t index)`: Retrieves element by index
+- `vector_size(Vector*)`: Returns number of elements
+
+### 3. Memory Management Core
+**Purpose**: Main API for memory operations
+
+**Key Functions**:
+- `memory_manager_create()`: Initializes memory manager
+- `memory_manager_create_memory()`: Adds new memory
+- `memory_manager_update_memory()`: Modifies existing memory
+- `memory_manager_delete_memory()`: Removes memory
+- `memory_manager_search_memories()`: Text-based search
+- `memory_manager_get_memory_statistics()`: Generates analytics
+
+## API Reference
+
+### Memory Creation and Management
+
+#### `Memory* memory_create(void)`
+**Purpose**: Creates a new empty memory structure
+**Returns**: Pointer to allocated Memory structure, NULL on failure
+**Memory Allocation**: Allocates memory for structure and internal vector
+
+#### `TodoziError* memory_manager_create_memory(MemoryManager* manager, Memory* memory)`
+**Parameters**:
+- `manager`: MemoryManager instance
+- `memory`: Pre-configured Memory structure
+
+**Returns**: TodoziError* on failure, NULL on success
+**Behavior**: Generates UUID, sets timestamps, stores in hashmap
+
+#### `TodoziError* memory_manager_update_memory(MemoryManager* manager, const char* memory_id, MemoryUpdate* updates)`
+**Parameters**:
+- `manager`: MemoryManager instance  
+- `memory_id`: UUID of memory to update
+- `updates`: MemoryUpdate structure with modifications
+
+**Returns**: TodoziError* on failure, NULL on success
+**Validation**: Checks memory existence, applies non-NULL updates
+
+### Query Operations
+
+#### `Vector* memory_manager_search_memories(MemoryManager* manager, const char* query)`
+**Purpose**: Case-insensitive text search across moments, meanings, reasons, and tags
+**Algorithm**: Linear scan with string duplication for case conversion
+**Performance**: O(n) where n is number of memories
+
+#### `Vector* memory_manager_get_memories_by_importance(MemoryManager* manager, MemoryImportance importance)`
+**Purpose**: Filters memories by importance level
+**Performance**: O(n) linear scan
+
+#### `Vector* memory_manager_get_recent_memories(MemoryManager* manager, size_t limit)`
+**Purpose**: Returns most recently created memories
+**Algorithm**: Quicksort on creation timestamp, then limit selection
+**Performance**: O(n log n) for sorting
+
+### Statistical Functions
+
+#### `MemoryStatistics* memory_manager_get_memory_statistics(MemoryManager* manager)`
+**Purpose**: Generates comprehensive memory analytics
+**Metrics Tracked**:
+- Total memories count
+- Short/long term distribution  
+- Critical memory count
+- Unique tags count
+- Type-based classifications
+- Percentage calculations
+
+## Design Patterns
+
+### 1. Builder Pattern
+**Implementation**: `MemoryUpdate` structure with chained setters
+```c
+MemoryUpdate* update = memory_update_create();
+memory_update_moment(update, "New moment")
+          ->memory_update_importance(update, MEMORY_IMPORTANCE_HIGH);
+```
+
+### 2. Factory Pattern  
+**Implementation**: `parse_memory_format()` function creates Memory from text
+```c
+TodoziError* error = parse_memory_format(memory_text, "user_123", &memory);
+```
+
+### 3. Repository Pattern
+**Implementation**: `MemoryManager` acts as data access layer
+```c
+Memory* memory = memory_manager_get_memory(manager, memory_id);
+```
+
+### 4. Strategy Pattern
+**Implementation**: Different search strategies via specialized functions
+```c
+Vector* by_importance = memory_manager_get_memories_by_importance(manager, HIGH);
+Vector* by_tag = memory_manager_get_memories_by_tag(manager, "work");
+```
+
+## Performance Analysis
+
+### Time Complexity
+| Operation | Complexity | Notes |
+|-----------|------------|-------|
+| Memory Creation | O(1) | HashMap insertion with good distribution |
+| Memory Retrieval | O(1) average | HashMap lookup |
+| Memory Update | O(1) average | HashMap lookup + field update |
+| Memory Deletion | O(1) average | HashMap removal |
+| Text Search | O(n) | Linear scan with string operations |
+| Filter by Property | O(n) | Linear scan through all memories |
+| Statistics Generation | O(n) | Multiple linear scans for different metrics |
+
+### Space Complexity
+- Memory Storage: O(n) where n is number of memories
+- Tag Index: O(n × t) where t is average tags per memory  
+- Search Results: O(k) where k is number of matching memories
+
+### Optimization Opportunities
+1. **Indexing**: Add secondary indexes for common queries (importance, term, type)
+2. **Caching**: Cache statistics and frequent query results
+3. **Pagination**: Implement limit/offset for large result sets
+4. **Batch Operations**: Add batch creation/deletion operations
+
+## Security Considerations
+
+### 1. Input Validation
+**Current Implementation**: Basic null checks and memory existence validation
+**Improvements Needed**:
+- Input length limits to prevent buffer overflows
+- Sanitization of user-provided strings
+- Validation of enum values ranges
+
+### 2. Memory Safety
+**Strengths**:
+- Consistent memory allocation/deallocation patterns
+- Ownership transfer clarity in API design
+- Error handling for allocation failures
+
+**Concerns**:
+- Potential memory leaks if error paths not properly handled
+- No bounds checking on string operations in search functions
+
+### 3. Data Privacy
+**Considerations**:
+- Secret memory type indicates sensitive data handling needed
+- Emotion and human memory types may contain personal information
+- Recommendation: Implement encryption for sensitive memory fields
+
+### 4. API Security
+**Recommendations**:
+- Add user authentication/authorization checks
+- Validate user_id ownership before operations
+- Implement rate limiting for API calls
+
+## Testing Strategy
+
+### Unit Testing Framework
+```c
+// Example test structure
+void test_memory_lifecycle() {
+    MemoryManager* manager = memory_manager_create();
+    Memory* memory = memory_create();
+    
+    // Test creation
+    TodoziError* error = memory_manager_create_memory(manager, memory);
+    assert(error == NULL);
+    
+    // Test retrieval
+    Memory* retrieved = memory_manager_get_memory(manager, memory->id);
+    assert(retrieved == memory);
+    
+    // Test deletion
+    error = memory_manager_delete_memory(manager, memory->id);
+    assert(error == NULL);
+    
+    memory_manager_destroy(manager);
+}
+```
+
+### Test Categories
+
+#### 1. Functional Tests
+- Memory creation, retrieval, update, deletion
+- Search functionality with various queries
+- Statistical calculations accuracy
+- Error handling scenarios
+
+#### 2. Performance Tests
+- Memory scalability (thousands of memories)
+- Search performance with large datasets
+- Memory allocation/deallocation patterns
+
+#### 3. Integration Tests
+- End-to-end memory lifecycle
+- Parser integration with manager
+- Statistical reporting accuracy
+
+#### 4. Boundary Tests
+- Empty memory manager operations
+- Maximum capacity testing
+- Invalid input handling
+
+### Test Data Generation
+```c
+// Helper function for test memory creation
+Memory* create_test_memory(const char* moment, MemoryImportance importance) {
+    Memory* memory = memory_create();
+    memory->moment = strdup(moment);
+    memory->importance = importance;
+    memory->term = MEMORY_TERM_SHORT;
+    // ... set other fields
+    return memory;
+}
+```
+
+## Deployment Instructions
+
+### Prerequisites
+- C compiler (GCC recommended)
+- UUID development library (`libuuid-devel` on Linux)
+- Standard C library
+
+### Build Process
+```bash
+# Compile with necessary flags
+gcc -o todozi_memory.o -c todozi_memory.c -luuid
+
+# Link with application
+gcc -o my_app my_app.c todozi_memory.o -luuid
+```
+
+### Platform-Specific Notes
+
+#### Linux
+```bash
+# Install UUID library
+sudo apt-get install uuid-dev  # Debian/Ubuntu
+sudo yum install libuuid-devel # CentOS/RHEL
+```
+
+#### macOS
+```bash
+# UUID library included in system
+gcc -o todozi_memory todozi_memory.c
+```
+
+#### Windows
+- Use Microsoft's GUID functions instead of libuuid
+- Modify UUID generation code accordingly
+
+### Integration with Applications
+```c
+#include "todozi_memory.h"
+
+int main() {
+    MemoryManager* manager = memory_manager_create();
+    if (!manager) {
+        fprintf(stderr, "Failed to initialize memory manager\n");
+        return 1;
+    }
+    
+    // Use memory manager functions...
+    memory_manager_destroy(manager);
+    return 0;
+}
+```
+
+## Troubleshooting Guide
+
+### Common Issues
+
+#### 1. Memory Leaks
+**Symptoms**: Increasing memory usage over time
+**Diagnosis**: Use valgrind or similar memory debugger
+```bash
+valgrind --leak-check=full ./my_app
+```
+**Solutions**: Ensure all allocated memory is properly freed in error paths
+
+#### 2. UUID Generation Failures
+**Symptoms**: Memory creation fails with allocation errors
+**Solution**: Check UUID library installation and linking
+
+#### 3. Search Performance Issues
+**Symptoms**: Slow response with large memory sets
+**Solutions**:
+- Implement query result caching
+- Add search indexes for common fields
+- Use pagination for large result sets
+
+#### 4. Tag Management Problems
+**Symptoms**: Tag statistics inaccurate or tags missing
+**Diagnosis**: Check tag vector handling in update operations
+**Solution**: Verify tag copying logic in update functions
+
+### Error Codes and Handling
+
+#### TodoziError Types
+- `TODOZI_ERROR_VALIDATION`: Input validation failures
+- `TODOZI_ERROR_OTHER`: General system errors
+
+#### Error Recovery Strategy
+```c
+TodoziError* error = memory_manager_create_memory(manager, memory);
+if (error) {
+    fprintf(stderr, "Error %d: %s\n", error->type, error->message);
+    todozi_error_free(error);
+    // Recovery logic...
+}
+```
+
+### Debugging Techniques
+
+#### 1. Memory State Inspection
+```c
+void debug_memory_manager(MemoryManager* manager) {
+    printf("Total memories: %zu\n", hashmap_size(manager->memories));
+    printf("Memory tags entries: %zu\n", hashmap_size(manager->memory_tags));
+    
+    Vector* all_memories = memory_manager_get_all_memories(manager);
+    printf("Vector size: %zu\n", vector_size(all_memories));
+    vector_destroy(all_memories, NULL);
+}
+```
+
+#### 2. Performance Profiling
+```c
+#include <time.h>
+
+clock_t start = clock();
+Vector* results = memory_manager_search_memories(manager, query);
+clock_t end = clock();
+printf("Search took %f seconds\n", (double)(end - start) / CLOCKS_PER_SEC);
+```
+
+## Usage Examples
+
+### Basic Memory Management
+```c
+#include "todozi_memory.h"
+
+int main() {
+    // Initialize memory manager
+    MemoryManager* manager = memory_manager_create();
+    
+    // Create a memory
+    Memory* memory = memory_create();
+    memory->moment = strdup("Meeting with client");
+    memory->meaning = strdup("Important project discussion");
+    memory->reason = strdup("Quarterly review preparation");
+    memory->importance = MEMORY_IMPORTANCE_HIGH;
+    memory->term = MEMORY_TERM_LONG;
+    memory->memory_type = MEMORY_TYPE_STANDARD;
+    memory->user_id = strdup("user_123");
+    
+    // Add tags
+    string_vector_push(memory->tags, "meeting");
+    string_vector_push(memory->tags, "client");
+    string_vector_push(memory->tags, "important");
+    
+    // Store memory
+    TodoziError* error = memory_manager_create_memory(manager, memory);
+    if (error) {
+        printf("Error: %s\n", error->message);
+        todozi_error_free(error);
+        memory_destroy(memory);
+    } else {
+        printf("Memory created with ID: %s\n", memory->id);
+    }
+    
+    // Search for memories
+    Vector* results = memory_manager_search_memories(manager, "client");
+    printf("Found %zu memories matching 'client'\n", vector_size(results));
+    
+    // Get statistics
+    MemoryStatistics* stats = memory_manager_get_memory_statistics(manager);
+    printf("Total memories: %zu\n", stats->total_memories);
+    printf("Short term percentage: %.2f%%\n", 
+           memory_statistics_short_term_percentage(stats));
+    
+    memory_statistics_destroy(stats);
+    vector_destroy(results, NULL);
+    memory_manager_destroy(manager);
+    
+    return 0;
+}
+```
+
+### Advanced Usage: Memory Updates
+```c
+// Update an existing memory
+MemoryUpdate* update = memory_update_create();
+memory_update_moment(update, "Updated meeting details")
+          ->memory_update_importance(update, MEMORY_IMPORTANCE_CRITICAL);
+
+// Create new tags vector
+Vector* new_tags = string_vector_create();
+string_vector_push(new_tags, "urgent");
+string_vector_push(new_tags, "followup");
+memory_update_tags(update, new_tags);
+
+TodoziError* update_error = memory_manager_update_memory(manager, memory_id, update);
+if (update_error) {
+    // Handle error
+    memory_update_destroy(update); // Clean up on failure
+} else {
+    // update object is consumed by update function
+}
+```
+
+### Text Parsing Example
+```c
+const char* memory_text = 
+    "<memory>emotional;happy; Birthday celebration; Family gathering; "
+    "Made me feel loved and appreciated; high; long; family,birthday,celebration</memory>";
+
+Memory* parsed_memory;
+TodoziError* parse_error = parse_memory_format(memory_text, "user_456", &parsed_memory);
+
+if (!parse_error) {
+    printf("Parsed emotional memory: %s\n", parsed_memory->emotion);
+    memory_manager_create_memory(manager, parsed_memory);
+} else {
+    printf("Parse error: %s\n", parse_error->message);
+    todozi_error_free(parse_error);
+}
+```
+
+### Statistical Reporting
+```c
+void print_memory_report(MemoryManager* manager) {
+    MemoryStatistics* stats = memory_manager_get_memory_statistics(manager);
+    
+    printf("=== Memory Statistics Report ===\n");
+    printf("Total Memories: %zu\n", stats->total_memories);
+    printf("Short Term: %zu (%.1f%%)\n", stats->short_term_memories,
+           memory_statistics_short_term_percentage(stats));
+    printf("Long Term: %zu (%.1f%%)\n", stats->long_term_memories,
+           memory_statistics_long_term_percentage(stats));
+    printf("Critical Memories: %zu (%.1f%%)\n", stats->critical_memories,
+           memory_statistics_critical_percentage(stats));
+    printf("Unique Tags: %zu\n", stats->unique_tags);
+    printf("Secret Memories: %zu\n", stats->secret_memories);
+    printf("Human Memories: %zu\n", stats->human_memories);
+    printf("Emotional Memories: %zu\n", stats->emotional_memories);
+    printf("Standard Memories: %zu\n", stats->standard_memories);
+    
+    memory_statistics_destroy(stats);
+    
+    // Tag popularity analysis
+    HashMap* tag_stats = memory_manager_get_tag_statistics(manager);
+    // Iterate through tag statistics...
+}
+```
+
+This comprehensive documentation provides complete coverage of the Todozi Memory Management System, including detailed API references, architectural insights, performance considerations, security guidelines, testing strategies, deployment instructions, and practical usage examples. The system demonstrates robust memory management capabilities with extensible architecture for various memory classification and analysis needs.# Comprehensive Documentation: Todozi Task Migration System
+
+## Table of Contents
+1. [Overview](#overview)
+2. [Architecture](#architecture)
+3. [Data Structures](#data-structures)
+4. [Core Components](#core-components)
+5. [API Reference](#api-reference)
+6. [Design Patterns](#design-patterns)
+7. [Performance Analysis](#performance-analysis)
+8. [Security Considerations](#security-considerations)
+9. [Testing Strategy](#testing-strategy)
+10. [Deployment Instructions](#deployment-instructions)
+11. [Troubleshooting Guide](#troubleshooting-guide)
+12. [Usage Examples](#usage-examples)
+
+## Overview
+
+The Todozi Task Migration System is a C library designed to migrate tasks from a legacy flat storage system to a project-based hierarchical storage system. It handles task grouping, validation, and cleanup operations with comprehensive error handling and reporting.
+
+### Key Features
+- **Dry Run Mode**: Preview migrations without making changes
+- **Project-based Organization**: Group tasks by project
+- **Verbose Logging**: Detailed progress reporting
+- **Validation**: Post-migration integrity checks
+- **Legacy Cleanup**: Automatic cleanup of migrated collections
+- **Error Handling**: Comprehensive error tracking and reporting
+
+## Architecture
+
+### System Architecture Diagram
+```
+┌─────────────────┐    ┌──────────────────┐    ┌──────────────────┐
+│   Legacy Tasks  │    │  Task Migrator   │    │ Project Storage  │
+│                 │    │                  │    │                  │
+│ • active        │───▶│ • Grouping       │───▶│ • project1.json  │
+│ • completed     │    │ • Migration      │    │ • project2.json  │
+│ • archived      │    │ • Validation     │    │ • projectN.json  │
+└─────────────────┘    └──────────────────┘    └──────────────────┘
+         │                        │                        │
+         └────────────────────────┼────────────────────────┘
+                                  ▼
+                       ┌──────────────────┐
+                       │ Migration Report │
+                       │ • Statistics     │
+                       │ • Errors         │
+                       └──────────────────┘
+```
+
+### Component Relationships
+```
+MigrationCli ───▶ TaskMigrator ───▶ MigrationReport
+     │                  │                  │
+     │                  │                  │
+     ▼                  ▼                  ▼
+   CLI Layer      Business Logic     Reporting Layer
+                    │       │
+                    ▼       ▼
+             StorageOps   Validation
+```
+
+## Data Structures
+
+### Core Structures
+
+#### Task
+```c
+struct Task {
+    char* id;                    // Unique task identifier
+    char* parent_project;        // Parent project name
+    char* status;                // Task status (active/completed/etc.)
+    double* embedding_vector;    // AI embedding vector
+    int vector_size;             // Size of embedding vector
+    Task* next;                  // Linked list pointer
+};
+```
+
+#### ProjectTaskContainer
+```c
+struct ProjectTaskContainer {
+    char* project_name;          // Name of the project
+    Task* tasks;                 // Linked list of tasks
+    int task_count;              // Number of tasks in project
+};
+```
+
+#### MigrationReport
+```c
+struct MigrationReport {
+    int tasks_found;             // Total tasks discovered
+    int tasks_migrated;          // Successfully migrated tasks
+    int projects_migrated;       // Number of projects processed
+    ProjectMigrationStats* project_stats; // Per-project statistics
+    char** errors;               // Array of error messages
+    int error_count;             // Number of errors encountered
+};
+```
+
+#### HashMap
+```c
+typedef struct {
+    char** keys;                 // Array of project names
+    Task** task_lists;           // Array of task lists
+    int* task_counts;            // Array of task counts
+    int size;                    // Current number of entries
+    int capacity;                // Maximum capacity
+} HashMap;
+```
+
+### Error Handling
+
+#### Result Type
+```c
+typedef struct {
+    TodoziError error_type;      // Error code
+    char* message;               // Human-readable error message
+} Result;
+```
+
+#### Error Codes
+```c
+typedef enum {
+    TODOZI_SUCCESS = 0,          // Operation completed successfully
+    TODOZI_ERROR_STORAGE,        // Storage-related error
+    TODOZI_ERROR_EMBEDDING,      // Embedding generation error
+    TODOZI_ERROR_FILE            // File I/O error
+} TodoziError;
+```
+
+## Core Components
+
+### TaskMigrator
+
+The main migration engine responsible for coordinating the entire migration process.
+
+#### Responsibilities
+- Load legacy tasks from collections
+- Group tasks by project
+- Migrate tasks to project containers
+- Generate migration reports
+- Validate migration integrity
+- Clean up legacy collections
+
+#### Configuration Flags
+- `dry_run`: Preview mode (no changes made)
+- `verbose`: Detailed logging output
+- `force_overwrite`: Override existing projects
+
+### MigrationCli
+
+Command-line interface wrapper providing a fluent API for migration configuration.
+
+#### Builder Pattern Methods
+- `migration_cli_with_dry_run()`: Enable/disable dry run mode
+- `migration_cli_with_verbose()`: Enable/disable verbose output
+- `migration_cli_with_force()`: Enable/disable force overwrite
+
+### HashMap Implementation
+
+Simple hash map for grouping tasks by project name.
+
+#### Characteristics
+- Fixed capacity (no dynamic resizing)
+- Linear search for key lookup
+- Task list storage using linked lists
+- Memory-efficient for small to medium datasets
+
+## API Reference
+
+### Core Migration Functions
+
+#### `task_migrator_migrate()`
+```c
+Result task_migrator_migrate(TaskMigrator* self, MigrationReport* report);
+```
+**Description**: Main migration function that orchestrates the entire process.
+
+**Parameters**:
+- `self`: TaskMigrator instance
+- `report`: MigrationReport structure to populate with results
+
+**Returns**: Result indicating success or failure
+
+**Process Flow**:
+1. Load legacy tasks from all collections
+2. Group tasks by project using HashMap
+3. Migrate each project's tasks
+4. Generate comprehensive report
+
+#### `task_migrator_load_legacy_tasks()`
+```c
+Result task_migrator_load_legacy_tasks(TaskMigrator* self, 
+                                      MigrationReport* report, 
+                                      Task** all_tasks, 
+                                      int* task_count);
+```
+**Description**: Loads tasks from legacy storage collections.
+
+**Parameters**:
+- `self`: TaskMigrator instance
+- `report`: MigrationReport for statistics
+- `all_tasks`: Output parameter for loaded tasks
+- `task_count`: Output parameter for task count
+
+**Collections Processed**:
+- "active": Currently active tasks
+- "completed": Completed tasks  
+- "archived": Archived tasks
+
+#### `task_migrator_group_tasks_by_project()`
+```c
+HashMap* task_migrator_group_tasks_by_project(TaskMigrator* self, 
+                                             Task* tasks, 
+                                             int task_count);
+```
+**Description**: Groups tasks by project name using a HashMap.
+
+**Parameters**:
+- `self`: TaskMigrator instance
+- `tasks`: Linked list of tasks to group
+- `task_count`: Number of tasks to process
+
+**Returns**: HashMap containing project-grouped tasks
+
+**Special Handling**: Tasks without projects are assigned to "general" project
+
+### Project Migration Functions
+
+#### `task_migrator_migrate_project_tasks()`
+```c
+Result task_migrator_migrate_project_tasks(TaskMigrator* self,
+                                          const char* project_name,
+                                          Task* tasks,
+                                          int task_count,
+                                          ProjectMigrationStats* stats);
+```
+**Description**: Migrates tasks for a specific project.
+
+**Parameters**:
+- `self`: TaskMigrator instance
+- `project_name`: Name of the project to migrate
+- `tasks`: Tasks belonging to the project
+- `task_count`: Number of tasks to migrate
+- `stats`: Statistics structure to populate
+
+**Process**:
+1. Check for existing project container
+2. Handle force overwrite logic
+3. Clone and migrate individual tasks
+4. Update statistics
+
+### Validation and Cleanup
+
+#### `task_migrator_validate_migration()`
+```c
+Result task_migrator_validate_migration(TaskMigrator* self, bool* is_valid);
+```
+**Description**: Validates migration integrity by comparing legacy and new systems.
+
+**Validation Logic**: 
+```c
+*is_valid = (legacy_tasks == 0) || (legacy_tasks > 0 && project_tasks >= legacy_tasks);
+```
+
+#### `task_migrator_cleanup_legacy()`
+```c
+Result task_migrator_cleanup_legacy(TaskMigrator* self);
+```
+**Description**: Removes empty legacy collections after successful migration.
+
+**Safety Measures**:
+- Only removes collections with 0 tasks
+- Respects dry-run mode
+- Comprehensive error reporting
+
+### Helper Functions
+
+#### Memory Management
+```c
+Task* task_clone(Task* task);                    // Deep copy of task
+void task_free(Task* task);                      // Free task memory
+void task_list_free(Task* tasks);                // Free linked list
+void migration_report_free(MigrationReport* report); // Free report
+```
+
+#### HashMap Operations
+```c
+HashMap* hashmap_new(int capacity);              // Create new HashMap
+void hashmap_free(HashMap* map);                 // Free HashMap memory
+void hashmap_put(HashMap* map, const char* key, Task* task); // Add entry
+int hashmap_size(HashMap* map);                  // Get number of entries
+```
+
+## Design Patterns
+
+### 1. Builder Pattern
+```c
+// Fluent interface for configuration
+MigrationCli* cli = migration_cli_new();
+migration_cli_with_dry_run(cli, true)
+    ->migration_cli_with_verbose(cli, true)
+    ->migration_cli_with_force(cli, false);
+```
+
+### 2. Command Pattern
+The `MigrationCli` acts as a command object that encapsulates the migration operation with its parameters.
+
+### 3. Iterator Pattern
+Task linked lists are traversed using iterative patterns:
+```c
+Task* current = tasks;
+while (current) {
+    // Process current task
+    current = current->next;
+}
+```
+
+### 4. Strategy Pattern
+Different behaviors based on configuration flags (dry-run vs actual migration).
+
+### 5. Factory Pattern
+Helper functions like `task_clone()` and `project_task_container_new()` act as factories.
+
+## Performance Analysis
+
+### Time Complexity
+| Operation | Complexity | Description |
+|-----------|------------|-------------|
+| Task loading | O(n) | Linear scan of collections |
+| Grouping | O(n×m) | n tasks × m projects (worst case) |
+| Migration | O(n) | Linear processing of tasks |
+| Validation | O(p) | p projects to verify |
+
+### Space Complexity
+| Component | Complexity | Description |
+|-----------|------------|-------------|
+| Task storage | O(n) | n tasks in memory |
+| HashMap | O(m) | m project groups |
+| Migration report | O(p + e) | p projects + e errors |
+
+### Memory Usage Optimizations
+- **Linked lists**: Efficient for variable-sized collections
+- **String pooling**: Duplicate project names are shared
+- **Lazy loading**: Tasks loaded on-demand per collection
+
+### Performance Tips
+1. **Batch operations**: Process projects sequentially to minimize memory
+2. **Early termination**: Stop on critical errors
+3. **Memory reuse**: Clone only necessary task data
+
+## Security Considerations
+
+### Input Validation
+```c
+// All public functions validate parameters
+if (!self || !project_name || !stats) {
+    return result_err(TODOZI_ERROR_STORAGE, "Invalid parameters");
+}
+```
+
+### Memory Safety
+- **Bounds checking**: HashMap prevents buffer overflow
+- **Null pointer checks**: Comprehensive validation
+- **Resource cleanup**: All allocated memory properly freed
+
+### File System Security
+- **Path validation**: Sanitize file paths before operations
+- **Permission checks**: Verify write permissions before saving
+- **Safe defaults**: Use `/tmp` fallback for storage directory
+
+### Data Integrity
+- **Duplicate detection**: Prevent task duplication during migration
+- **Validation checks**: Post-migration integrity verification
+- **Error recovery**: Continue migration after non-critical errors
+
+## Testing Strategy
+
+### Unit Testing Framework
+```c
+void test_task_migrator_creation(void) {
+    TaskMigrator* migrator = task_migrator_new();
+    if (migrator && !migrator->dry_run && !migrator->verbose && !migrator->force_overwrite) {
+        printf("✅ test_task_migrator_creation passed\n");
+    } else {
+        printf("❌ test_task_migrator_creation failed\n");
+    }
+    free(migrator);
+}
+```
+
+### Test Categories
+
+#### 1. Component Tests
+- Task creation and cloning
+- HashMap operations
+- Memory management
+
+#### 2. Integration Tests
+- End-to-end migration scenarios
+- Error handling paths
+- Configuration combinations
+
+#### 3. System Tests
+- Large dataset performance
+- File system operations
+- Recovery scenarios
+
+### Test Data Strategies
+- **Empty collections**: Verify graceful handling
+- **Large tasks**: Test memory management
+- **Duplicate projects**: Test conflict resolution
+- **Corrupted data**: Test error recovery
+
+## Deployment Instructions
+
+### Build Requirements
+```bash
+# Required libraries
+gcc (C11 standard)
+make
+valgrind (for memory testing)
+```
+
+### Compilation
+```bash
+# Basic compilation
+gcc -std=c11 -Wall -Wextra -pedantic -o todozi_migrator todozi_migration.c
+
+# Debug build with sanitizers
+gcc -std=c11 -g -fsanitize=address -fsanitize=undefined -o todozi_migrator_debug todozi_migration.c
+
+# Release build with optimizations
+gcc -std=c11 -O2 -DNDEBUG -o todozi_migrator_release todozi_migration.c
+```
+
+### Installation Steps
+
+1. **Clone repository**
+   ```bash
+   git clone https://github.com/todozi/migration-tool.git
+   cd migration-tool
+   ```
+
+2. **Build the tool**
+   ```bash
+   make all
+   ```
+
+3. **Run tests**
+   ```bash
+   make test
+   ```
+
+4. **Install system-wide**
+   ```bash
+   sudo make install
+   ```
+
+### Configuration
+
+#### Environment Variables
+```bash
+export TODOZI_STORAGE_DIR="$HOME/.todozi"  # Custom storage directory
+export TODOZI_VERBOSE=1                    # Enable verbose logging
+```
+
+#### Configuration File
+Create `~/.todozi/config`:
+```json
+{
+    "dry_run": false,
+    "verbose": true,
+    "force_overwrite": false,
+    "backup_before_migration": true
+}
+```
+
+## Troubleshooting Guide
+
+### Common Issues
+
+#### 1. Memory Allocation Failures
+**Symptom**: Program crashes with segmentation fault
+**Solution**: Check available memory, reduce batch size
+
+#### 2. File Permission Errors  
+**Symptom**: "Permission denied" errors during save operations
+**Solution**: Verify write permissions in storage directory
+
+#### 3. Migration Validation Failures
+**Symptom**: Validation reports mismatch between legacy and new systems
+**Solution**: Run with `--verbose` to identify specific issues
+
+### Debugging Techniques
+
+#### Verbose Mode
+```c
+MigrationCli* cli = migration_cli_new();
+migration_cli_with_verbose(cli, true);
+```
+
+#### Dry Run Analysis
+```c
+// Preview migration without changes
+migration_cli_with_dry_run(cli, true);
+```
+
+#### Memory Debugging
+```bash
+valgrind --leak-check=full ./todozi_migrator
+```
+
+### Error Recovery
+
+#### Partial Migration Recovery
+1. **Check migration report** for details
+2. **Manual verification** of problematic projects
+3. **Incremental re-migration** of failed tasks
+
+#### Data Corruption Handling
+1. **Backup creation** before migration
+2. **Validation checks** at each step
+3. **Rollback capability** for critical failures
+
+## Usage Examples
+
+### Basic Migration
+```c
+#include "todozi_migration.h"
+
+int main() {
+    MigrationCli* cli = migration_cli_new();
+    Result result = migration_cli_run(cli);
+    
+    if (result.error_type == TODOZI_SUCCESS) {
+        printf("Migration completed successfully!\n");
+    } else {
+        printf("Migration failed: %s\n", result.message);
+    }
+    
+    result_free(&result);
+    migration_cli_free(cli);
+    return 0;
+}
+```
+
+### Dry Run with Verbose Output
+```c
+MigrationCli* cli = migration_cli_new();
+migration_cli_with_dry_run(cli, true);
+migration_cli_with_verbose(cli, true);
+
+Result result = migration_cli_run(cli);
+// Preview migration without making changes
+```
+
+### Force Overwrite Existing Projects
+```c
+MigrationCli* cli = migration_cli_new();
+migration_cli_with_force(cli, true);
+
+Result result = migration_cli_run(cli);
+// Overwrites existing project containers
+```
+
+### Custom Storage Directory
+```c
+// Set custom storage directory before migration
+setenv("TODOZI_STORAGE_DIR", "/custom/path", 1);
+
+MigrationCli* cli = migration_cli_new();
+Result result = migration_cli_run(cli);
+```
+
+### Integration with Larger System
+```c
+void migrate_todozi_data() {
+    MigrationReport report;
+    TaskMigrator* migrator = task_migrator_new();
+    
+    // Configure migrator
+    task_migrator_verbose(migrator, true);
+    
+    // Perform migration
+    Result result = task_migrator_migrate(migrator, &report);
+    
+    if (result.error_type == TODOZI_SUCCESS) {
+        // Process migration report
+        printf("Migrated %d tasks across %d projects\n",
+               report.tasks_migrated, report.projects_migrated);
+        
+        // Validate migration
+        bool is_valid;
+        task_migrator_validate_migration(migrator, &is_valid);
+        
+        if (is_valid) {
+            // Clean up legacy data
+            task_migrator_cleanup_legacy(migrator);
+        }
+    }
+    
+    // Cleanup
+    migration_report_free(&report);
+    free(migrator);
+    result_free(&result);
+}
+```
+
+This comprehensive documentation provides complete coverage of the Todozi Task Migration System, including architectural details, API references, security considerations, and practical usage examples. The system is designed for reliability, performance, and ease of integration into larger todo management applications.# Todozi - Comprehensive C Library Documentation
+
+## Table of Contents
+1. [Overview](#overview)
+2. [Architecture](#architecture)
+3. [Data Structures](#data-structures)
+4. [API Reference](#api-reference)
+5. [Error Handling](#error-handling)
+6. [Design Patterns](#design-patterns)
+7. [Performance Analysis](#performance-analysis)
+8. [Security Considerations](#security-considerations)
+9. [Testing Strategies](#testing-strategies)
+10. [Deployment Instructions](#deployment-instructions)
+11. [Usage Examples](#usage-examples)
+12. [Troubleshooting Guide](#troubleshooting-guide)
+
+## Overview
+
+Todozi is a comprehensive C library for managing tasks and projects in a collaborative environment. It supports AI/human collaboration, task dependencies, progress tracking, and enterprise-grade configuration management.
+
+### Key Features
+- **Task Management**: Create, update, and track tasks with comprehensive metadata
+- **Project Organization**: Group tasks into projects with status tracking
+- **AI/Human Collaboration**: Support for AI, human, and mixed assignees
+- **Error Handling**: Comprehensive error reporting system
+- **Memory Safety**: Robust memory management with cleanup functions
+- **Extensibility**: Modular design for easy extension
+
+## Architecture
+
+### System Architecture Diagram
+```
+┌─────────────────┐    ┌─────────────────┐    ┌─────────────────┐
+│   Application   │◄──►│   Todozi API    │◄──►│  Data Storage   │
+│     Layer       │    │     Layer       │    │     Layer       │
+└─────────────────┘    └─────────────────┘    └─────────────────┘
+                              │
+                      ┌───────┴───────┐
+                      │               │
+               ┌─────────────┐  ┌─────────────┐
+               │  Core Types │  │  Utilities  │
+               │   (Task,    │  │ (UUID, Hash,│
+               │   Project)  │  │   Config)   │
+               └─────────────┘  └─────────────┘
+```
+
+### Module Relationships
+```
+Task Management ───┬──► Project Management
+                   │
+                   └──► Configuration
+                   │
+                   └──► Registration
+                   │
+                   └──► Utilities (UUID, Hashing)
+```
+
+## Data Structures
+
+### Enumerations
+
+#### TodoziResult
+```c
+typedef enum {
+    TODOZI_OK = 0,           // Operation successful
+    TODOZI_ERR_ALLOC,        // Memory allocation failure
+    TODOZI_ERR_INVALID,      // Invalid parameters
+    TODOZI_ERR_NOT_FOUND,    // Resource not found
+    TODOZI_ERR_INTERNAL      // Internal library error
+} TodoziResult;
+```
+
+#### Priority Levels
+```c
+typedef enum {
+    PRIORITY_LOW,        // Low priority task
+    PRIORITY_MEDIUM,     // Medium priority (default)
+    PRIORITY_HIGH,       // High priority
+    PRIORITY_CRITICAL,   // Critical priority
+    PRIORITY_URGENT      // Urgent priority (highest)
+} Priority;
+```
+
+#### Status Types
+```c
+typedef enum {
+    STATUS_TODO,         // Task is pending/not started
+    STATUS_PENDING,      // Synonym for TODO
+    STATUS_IN_PROGRESS,  // Task is being worked on
+    STATUS_BLOCKED,      // Task is blocked
+    STATUS_REVIEW,       // Task is under review
+    STATUS_DONE,         // Task is completed
+    STATUS_COMPLETED,    // Synonym for DONE
+    STATUS_CANCELLED,    // Task was cancelled
+    STATUS_DEFERRED      // Task was deferred
+} Status;
+```
+
+#### Assignee Types
+```c
+typedef enum {
+    ASSIGNEE_AI,             // AI-based assignee
+    ASSIGNEE_HUMAN,          // Human assignee
+    ASSIGNEE_COLLABORATIVE,  // Mixed AI/human collaboration
+    ASSIGNEE_AGENT           // Specific agent (AI or human)
+} AssigneeType;
+```
+
+### Core Structures
+
+#### Task Structure
+```c
+struct Task {
+    char* id;                    // Unique task identifier
+    char* user_id;               // User who created the task
+    char* action;                // Task description/action
+    char* time;                  // Time string (format flexible)
+    Priority priority;           // Task priority level
+    char* parent_project;        // Parent project identifier
+    Status status;               // Current task status
+    AssigneeType assignee_type;  // Type of assignee
+    char* assignee_agent_name;   // Specific agent name (if any)
+    char** tags;                 // Array of tag strings
+    size_t tags_count;           // Number of tags
+    char** dependencies;         // Array of dependent task IDs
+    size_t dependencies_count;   // Number of dependencies
+    char* context_notes;         // Additional context/notes
+    uint8_t* progress;           // Progress percentage (0-100)
+    float* embedding_vector;     // AI embedding vector (future use)
+    size_t embedding_vector_size;// Size of embedding vector
+    time_t created_at;           // Creation timestamp
+    time_t updated_at;           // Last update timestamp
+};
+```
+
+#### TaskUpdate Structure
+```c
+struct TaskUpdate {
+    char* action;                // Updated action string
+    char* time;                  // Updated time string
+    Priority* priority;          // Updated priority (nullable)
+    char* parent_project;        // Updated parent project
+    Status* status;              // Updated status (nullable)
+    AssigneeType* assignee_type; // Updated assignee type (nullable)
+    char* assignee_agent_name;   // Updated agent name
+    char** tags;                 // Updated tags array
+    size_t tags_count;           // Number of updated tags
+    char** dependencies;         // Updated dependencies array
+    size_t dependencies_count;   // Number of updated dependencies
+    char* context_notes;         // Updated context notes
+    uint8_t* progress;           // Updated progress (nullable)
+    float* embedding_vector;     // Updated embedding vector
+    size_t embedding_vector_size;// Size of updated embedding vector
+};
+```
+
+## API Reference
+
+### Error Handling Functions
+
+#### `todozi_priority_parse`
+```c
+/**
+ * Parse a string representation of priority to enum value
+ * 
+ * @param s String to parse ("low", "medium", "high", "critical", "urgent")
+ * @param out Output parameter for parsed priority
+ * @return TODOZI_OK on success, TODOZI_ERR_INVALID on failure
+ */
+TodoziResult todozi_priority_parse(const char* s, Priority* out);
+```
+
+#### `todozi_priority_to_string`
+```c
+/**
+ * Convert priority enum to string representation
+ * 
+ * @param p Priority enum value
+ * @param buf Buffer to store string (can be NULL for size calculation)
+ * @param buflen Buffer length
+ * @return Length of string (excluding null terminator)
+ */
+size_t todozi_priority_to_string(Priority p, char* buf, size_t buflen);
+```
+
+### Task Management Functions
+
+#### `todozi_task_new`
+```c
+/**
+ * Create a new task with basic parameters
+ * 
+ * @param user_id User identifier (required)
+ * @param action Task description (required)
+ * @param time_str Time string (required)
+ * @param priority Task priority
+ * @param parent_project Parent project ID (required)
+ * @param status Initial status
+ * @param out Output parameter for new task
+ * @param err Error information (can be NULL)
+ * @return TODOZI_OK on success, error code on failure
+ */
+TodoziResult todozi_task_new(const char* user_id, const char* action, const char* time_str,
+                            Priority priority, const char* parent_project, Status status,
+                            Task** out, TodoziError* err);
+```
+
+#### `todozi_task_new_full`
+```c
+/**
+ * Create a new task with all available parameters
+ * 
+ * @param user_id User identifier (required)
+ * @param action Task description (required)
+ * @param time_str Time string (required)
+ * @param priority Task priority
+ * @param parent_project Parent project ID (required)
+ * @param status Initial status
+ * @param assignee_type Type of assignee
+ * @param assignee_agent_name Specific agent name (for ASSIGNEE_AGENT)
+ * @param tags Array of tag strings
+ * @param tags_count Number of tags
+ * @param dependencies Array of dependent task IDs
+ * @param dependencies_count Number of dependencies
+ * @param context_notes Additional context information
+ * @param progress Progress percentage (0-100, can be NULL)
+ * @param out Output parameter for new task
+ * @param err Error information (can be NULL)
+ * @return TODOZI_OK on success, error code on failure
+ */
+TodoziResult todozi_task_new_full(const char* user_id, const char* action, const char* time_str,
+                                 Priority priority, const char* parent_project, Status status,
+                                 AssigneeType assignee_type, const char* assignee_agent_name,
+                                 char** tags, size_t tags_count, char** dependencies, size_t dependencies_count,
+                                 const char* context_notes, const uint8_t* progress,
+                                 Task** out, TodoziError* err);
+```
+
+#### `todozi_task_update`
+```c
+/**
+ * Update a task with the provided changes
+ * 
+ * @param task Task to update (required)
+ * @param updates Update structure containing changes
+ * @param err Error information (can be NULL)
+ * @return TODOZI_OK on success, error code on failure
+ */
+TodoziResult todozi_task_update(Task* task, const TaskUpdate* updates, TodoziError* err);
+```
+
+### Task Accessor Functions
+
+All accessor functions follow the pattern:
+- Return the requested field value
+- Return NULL/0/default value if task is NULL
+- Are thread-safe for read operations
+
+Example:
+```c
+const char* todozi_task_id(const Task* task);
+const char* todozi_task_action(const Task* task);
+Priority todozi_task_priority(const Task* task);
+```
+
+### Project Management Functions
+
+#### `todozi_project_new`
+```c
+/**
+ * Create a new project
+ * 
+ * @param name Project name (required)
+ * @param description Project description (can be NULL)
+ * @param out Output parameter for new project
+ * @param err Error information (can be NULL)
+ * @return TODOZI_OK on success, error code on failure
+ */
+TodoziResult todozi_project_new(const char* name, const char* description, Project** out, TodoziError* err);
+```
+
+#### `todozi_project_add_task`
+```c
+/**
+ * Add a task to a project
+ * 
+ * @param project Project to modify
+ * @param task_id Task ID to add (duplicates are ignored)
+ */
+void todozi_project_add_task(Project* project, const char* task_id);
+```
+
+### Utility Functions
+
+#### `todozi_generate_short_uuid`
+```c
+/**
+ * Generate a short UUID prefixed with "task_"
+ * 
+ * @return Newly allocated string with UUID, NULL on failure
+ */
+char* todozi_generate_short_uuid(void);
+```
+
+#### `todozi_generate_sha256`
+```c
+/**
+ * Generate SHA256 hash of input string
+ * 
+ * @param input String to hash
+ * @return Newly allocated hex string of hash, NULL on failure
+ */
+char* todozi_generate_sha256(const char* input);
+```
+
+## Error Handling
+
+### Error Structure
+```c
+typedef struct {
+    TodoziResult code;    // Error code
+    char *msg;           // Human-readable error message
+} TodoziError;
+```
+
+### Error Handling Best Practices
+
+1. **Always check return values**
+```c
+TodoziError err = {0};
+Task* task = NULL;
+TodoziResult result = todozi_task_new("user123", "Complete documentation", 
+                                     "2024-01-15", PRIORITY_HIGH, 
+                                     "project1", STATUS_TODO, &task, &err);
+if (result != TODOZI_OK) {
+    printf("Error: %s\n", err.msg);
+    // Handle error appropriately
+}
+```
+
+2. **Clean up error messages**
+```c
+// After handling error, free the message
+free(err.msg);
+```
+
+## Design Patterns
+
+### 1. Opaque Pointer Pattern
+- All main structures (Task, Project, etc.) are forward declared
+- Internal implementation details are hidden
+- Provides encapsulation and API stability
+
+### 2. Builder Pattern
+- `TaskUpdate` structure acts as a builder for task modifications
+- Allows incremental construction of complex updates
+
+### 3. Factory Pattern
+- Functions like `todozi_task_new()` act as factories
+- Centralized object creation with validation
+
+### 4. RAII-inspired Pattern
+- Every `_new` function has a corresponding `_free` function
+- Clear ownership semantics
+
+## Performance Analysis
+
+### Time Complexity
+| Operation | Complexity | Notes |
+|-----------|------------|-------|
+| Task Creation | O(1) | Constant time allocation |
+| Task Update | O(n) | n = number of tags/dependencies |
+| Project Task Addition | O(n) | n = current task count (duplicate check) |
+| Priority/Status Parsing | O(1) | String comparison |
+| UUID Generation | O(1) | System UUID call |
+
+### Memory Usage
+- **Task Structure**: ~200-500 bytes base + variable for strings/arrays
+- **Project Structure**: ~100 bytes base + variable for task IDs
+- **String Arrays**: Each string allocation + array overhead
+
+### Optimization Opportunities
+1. **String Interning**: Reduce duplicate string allocations
+2. **Array Pre-allocation**: Use growth factors for dynamic arrays
+3. **Memory Pooling**: For frequent task creation/destruction
+
+## Security Considerations
+
+### Input Validation
+- All string inputs are validated for NULL pointers
+- Progress values are validated (0-100 range)
+- Array bounds checking for tags/dependencies
+
+### Memory Safety
+- Comprehensive error handling for allocation failures
+- All allocated memory is properly freed
+- Buffer size checking in string operations
+
+### Cryptographic Security
+- Uses OpenSSL for SHA256/SHA512 hashing
+- UUID generation uses system cryptographic RNG
+- No sensitive data storage in plain text
+
+### Best Practices
+1. **Validate all external inputs**
+2. **Use the library's error reporting system**
+3. **Regularly free allocated memory**
+4. **Sanitize user-provided strings before use**
+
+## Testing Strategies
+
+### Unit Testing Framework
+```c
+// Example test structure
+typedef struct {
+    const char* name;
+    TodoziResult (*test_func)(void);
+} TestCase;
+
+// Example test case
+TodoziResult test_task_creation() {
+    Task* task = NULL;
+    TodoziError err = {0};
+    TodoziResult result = todozi_task_new("test_user", "test action", 
+                                         "now", PRIORITY_MEDIUM, 
+                                         "test_project", STATUS_TODO, 
+                                         &task, &err);
+    
+    if (result == TODOZI_OK) {
+        todozi_task_free(task);
+        return TODOZI_OK;
+    } else {
+        free(err.msg);
+        return result;
+    }
+}
+```
+
+### Test Categories
+1. **Unit Tests**: Individual function testing
+2. **Integration Tests**: Multi-function workflow testing
+3. **Memory Tests**: Allocation/failure testing
+4. **Boundary Tests**: Edge case testing
+
+### Test Coverage Goals
+- 90%+ line coverage
+- All error paths tested
+- Memory leak detection
+- Thread safety testing (where applicable)
+
+## Deployment Instructions
+
+### Build Dependencies
+```bash
+# Ubuntu/Debian
+sudo apt-get install libssl-dev uuid-dev
+
+# CentOS/RHEL
+sudo yum install openssl-devel libuuid-devel
+
+# macOS
+brew install openssl ossp-uuid
+```
+
+### Compilation Flags
+```makefile
+CFLAGS = -Wall -Wextra -Werror -O2 -std=c99
+LDFLAGS = -luuid -lcrypto
+```
+
+### Integration Steps
+1. **Include the header**: `#include "todozi.h"`
+2. **Link with dependencies**: `-luuid -lcrypto`
+3. **Initialize structures**: Use provided factory functions
+4. **Error handling**: Implement comprehensive error checking
+
+### Cross-Platform Considerations
+- Tested on Linux, macOS, Windows (with appropriate UUID library)
+- OpenSSL dependency requires version 1.1.1 or newer
+- UUID library compatibility verified
+
+## Usage Examples
+
+### Basic Task Creation
+```c
+#include "todozi.h"
+#include <stdio.h>
+
+int main() {
+    TodoziError err = {0};
+    Task* task = NULL;
+    
+    // Create a basic task
+    TodoziResult result = todozi_task_new(
+        "user123", 
+        "Write project documentation", 
+        "2024-01-15 10:00", 
+        PRIORITY_HIGH, 
+        "doc_project", 
+        STATUS_TODO, 
+        &task, 
+        &err
+    );
+    
+    if (result == TODOZI_OK) {
+        printf("Task created: %s\n", todozi_task_id(task));
+        printf("Action: %s\n", todozi_task_action(task));
+        
+        // Clean up
+        todozi_task_free(task);
+    } else {
+        printf("Error: %s (code: %d)\n", err.msg, err.code);
+        free(err.msg);
+    }
+    
+    return 0;
+}
+```
+
+### Advanced Task with Tags and Dependencies
+```c
+// Create tags array
+char* tags[] = {"documentation", "priority", "urgent"};
+size_t tags_count = 3;
+
+// Create dependencies array  
+char* deps[] = {"task_abc123", "task_def456"};
+size_t deps_count = 2;
+
+TodoziResult result = todozi_task_new_full(
+    "user123",
+    "Complete API documentation",
+    "2024-01-20",
+    PRIORITY_URGENT,
+    "api_project", 
+    STATUS_IN_PROGRESS,
+    ASSIGNEE_COLLABORATIVE,
+    "doc_team",
+    tags, tags_count,
+    deps, deps_count,
+    "This is critical for API launch",
+    NULL, // progress (NULL for default)
+    &task,
+    &err
+);
+```
+
+### Task Update Example
+```c
+// Create update structure
+TaskUpdate* update = NULL;
+todozi_task_update_new(&update, &err);
+
+// Set update fields
+todozi_task_update_with_status(update, STATUS_IN_PROGRESS, &err);
+todozi_task_update_with_progress(update, 50, &err);
+
+// Apply update
+todozi_task_update(task, update, &err);
+
+// Clean up
+todozi_task_update_free(update);
+```
+
+### Project Management
+```c
+// Create project
+Project* project = NULL;
+todozi_project_new("API Development", "Backend API implementation", &project, &err);
+
+// Add tasks to project
+todozi_project_add_task(project, "task_123456");
+todozi_project_add_task(project, "task_789012");
+
+// Archive project when done
+todozi_project_archive(project);
+```
+
+## Troubleshooting Guide
+
+### Common Issues
+
+#### 1. Memory Allocation Failures
+**Symptoms**: Functions return `TODOZI_ERR_ALLOC`
+**Solution**: Check system memory, implement graceful degradation
+
+#### 2. Invalid Parameter Errors
+**Symptoms**: Functions return `TODOZI_ERR_INVALID`
+**Solution**: Validate inputs before calling library functions
+
+#### 3. UUID Generation Failures
+**Symptoms**: `todozi_generate_short_uuid()` returns NULL
+**Solution**: Ensure uuid-dev package is installed and accessible
+
+#### 4. OpenSSL Issues
+**Symptoms**: Linker errors or hash generation failures
+**Solution**: Verify OpenSSL installation and library paths
+
+### Debugging Techniques
+
+#### Memory Leak Detection
+```c
+// Use valgrind or similar tools
+valgrind --leak-check=full ./your_application
+```
+
+#### Error Tracing
+```c
+// Enable detailed error logging
+TodoziError err = {0};
+TodoziResult result = some_function(..., &err);
+if (result != TODOZI_OK) {
+    fprintf(stderr, "Error at %s:%d - %s\n", __FILE__, __LINE__, err.msg);
+    free(err.msg);
+}
+```
+
+### Performance Monitoring
+
+#### Memory Usage Tracking
+```c
+// Implement custom memory tracking if needed
+#ifdef DEBUG
+#define todozi_malloc(sz) _debug_malloc(sz, __FILE__, __LINE__)
+#else
+#define todozi_malloc(sz) malloc(sz)
+#endif
+```
+
+This comprehensive documentation covers all aspects of the Todozi C library, providing developers with everything needed to effectively use, extend, and maintain the codebase.# Todozi Reminder System - Complete Documentation
+
+## Table of Contents
+1. [Overview](#overview)
+2. [Architecture](#architecture)
+3. [Data Structures](#data-structures)
+4. [Core Components](#core-components)
+5. [API Reference](#api-reference)
+6. [Usage Examples](#usage-examples)
+7. [Design Patterns](#design-patterns)
+8. [Performance Analysis](#performance-analysis)
+9. [Security Considerations](#security-considerations)
+10. [Testing Strategy](#testing-strategy)
+11. [Deployment Instructions](#deployment-instructions)
+12. [Troubleshooting Guide](#troubleshooting-guide)
+
+## Overview
+
+Todozi is a comprehensive reminder management system written in C that provides robust functionality for creating, managing, and tracking reminders with advanced features like tagging, searching, and statistical analysis.
+
+### Key Features
+- **UUID-based identification** for unique reminder tracking
+- **Priority and status management** with multiple levels
+- **Tag-based organization** and search capabilities
+- **Statistical analysis** of reminder data
+- **Advanced search functionality** across content and tags
+- **Date/time management** with overdue and due-soon detection
+- **Builder pattern** for complex updates
+
+## Architecture
+
+### System Architecture Diagram
+```
+┌─────────────────────────────────────────────────────────────┐
+│                    Application Layer                        │
+├─────────────────────────────────────────────────────────────┤
+│  ReminderManager  │  ReminderStatistics  │  Parser Utils    │
+├─────────────────────────────────────────────────────────────┤
+│                    Business Logic Layer                     │
+├─────────────────────────────────────────────────────────────┤
+│   Reminder        │  ReminderUpdate      │  DateTime        │
+├─────────────────────────────────────────────────────────────┤
+│                    Data Structure Layer                     │
+├─────────────────────────────────────────────────────────────┤
+│    HashMap        │       Vector         │   String Utils   │
+├─────────────────────────────────────────────────────────────┤
+│                    System Layer                             │
+├─────────────────────────────────────────────────────────────┤
+│   Standard C Library        │        UUID Library           │
+└─────────────────────────────────────────────────────────────┘
+```
+
+### Component Relationships
+```
+ReminderManager ──┬── HashMap<reminder_id, Reminder>
+                 └── HashMap<reminder_id, Vector<tags>>
+                      │
+                      ├── Reminder ──┬── DateTime (created_at, updated_at, remind_at)
+                      │              ├── Vector<tags>
+                      │              ├── Priority (enum)
+                      │              └── Status (enum)
+                      │
+                      └── ReminderUpdate (Builder Pattern)
+```
+
+## Data Structures
+
+### Enumerations
+
+#### ReminderPriority
+```c
+typedef enum {
+    REMINDER_PRIORITY_LOW,      // Low priority reminder
+    REMINDER_PRIORITY_MEDIUM,   // Medium priority (default)
+    REMINDER_PRIORITY_HIGH      // High priority reminder
+} ReminderPriority;
+```
+
+#### ReminderStatus
+```c
+typedef enum {
+    REMINDER_STATUS_PENDING,    // Created but not yet active
+    REMINDER_STATUS_ACTIVE,     // Currently active reminder
+    REMINDER_STATUS_COMPLETED,  // Successfully completed
+    REMINDER_STATUS_CANCELLED   // Manually cancelled
+} ReminderStatus;
+```
+
+### Core Structures
+
+#### HashNode
+```c
+typedef struct HashNode {
+    char* key;              // String key for the hash entry
+    void* value;            // Pointer to the stored value
+    struct HashNode* next;  // Next node in collision chain
+} HashNode;
+```
+
+#### HashMap
+```c
+typedef struct {
+    HashNode** buckets;     // Array of bucket pointers
+    size_t size;            // Current number of entries
+    size_t capacity;        // Total capacity of the hash table
+} HashMap;
+```
+
+#### Vector
+```c
+typedef struct {
+    void** data;            // Array of void pointers
+    size_t size;            // Current number of elements
+    size_t capacity;        // Total capacity of the vector
+} Vector;
+```
+
+#### DateTime
+```c
+typedef struct {
+    time_t timestamp;       // UNIX timestamp representation
+} DateTime;
+```
+
+#### Reminder
+```c
+typedef struct Reminder {
+    char* id;               // UUID string identifier
+    char* content;          // Reminder text content
+    DateTime remind_at;     // Scheduled reminder time
+    ReminderPriority priority; // Priority level
+    ReminderStatus status;  // Current status
+    Vector* tags;           // Vector of tag strings
+    DateTime created_at;    // Creation timestamp
+    DateTime updated_at;    // Last update timestamp
+} Reminder;
+```
+
+#### ReminderUpdate (Builder Pattern)
+```c
+typedef struct ReminderUpdate {
+    char* content;          // New content (optional)
+    DateTime* remind_at;    // New reminder time (optional)
+    ReminderPriority* priority; // New priority (optional)
+    ReminderStatus* status; // New status (optional)
+    Vector* tags;           // New tags vector (optional)
+} ReminderUpdate;
+```
+
+#### ReminderStatistics
+```c
+typedef struct {
+    size_t total_reminders;     // Total number of reminders
+    size_t pending_reminders;   // Reminders in pending state
+    size_t active_reminders;    // Currently active reminders
+    size_t overdue_reminders;   // Overdue reminders
+    size_t unique_tags;         // Number of unique tags used
+} ReminderStatistics;
+```
+
+## Core Components
+
+### HashMap Implementation
+
+#### hashmap_create()
+```c
+HashMap* hashmap_create(size_t capacity);
+```
+**Parameters:**
+- `capacity`: Initial capacity of the hash table
+
+**Returns:**
+- Pointer to newly allocated HashMap, or NULL on failure
+
+**Complexity:** O(1)
+
+#### hashmap_destroy()
+```c
+void hashmap_destroy(HashMap* map, 
+                    void (*key_destructor)(void*), 
+                    void (*value_destructor)(void*));
+```
+**Parameters:**
+- `map`: HashMap to destroy
+- `key_destructor`: Function to destroy key objects
+- `value_destructor`: Function to destroy value objects
+
+**Complexity:** O(n)
+
+#### hashmap_put()
+```c
+int hashmap_put(HashMap* map, char* key, void* value);
+```
+**Parameters:**
+- `map`: Target HashMap
+- `key`: Key string (ownership transferred)
+- `value`: Value to store
+
+**Returns:**
+- 1 on success, 0 on failure
+
+**Complexity:** O(1) average, O(n) worst-case
+
+#### hashmap_get()
+```c
+void* hashmap_get(HashMap* map, const char* key);
+```
+**Parameters:**
+- `map`: Source HashMap
+- `key`: Key to search for
+
+**Returns:**
+- Pointer to value, or NULL if not found
+
+**Complexity:** O(1) average, O(n) worst-case
+
+### Vector Implementation
+
+#### vector_create()
+```c
+Vector* vector_create(void);
+```
+**Returns:**
+- New Vector with initial capacity of 10
+
+**Complexity:** O(1)
+
+#### vector_push()
+```c
+int vector_push(Vector* vec, void* item);
+```
+**Parameters:**
+- `vec`: Target Vector
+- `item`: Item to add
+
+**Returns:**
+- 1 on success, 0 on failure
+
+**Complexity:** O(1) amortized
+
+#### vector_sort()
+```c
+void vector_sort(Vector* vec, int (*comparator)(const void*, const void*));
+```
+**Parameters:**
+- `vec`: Vector to sort
+- `comparator`: Comparison function
+
+**Complexity:** O(n log n)
+
+### DateTime Functions
+
+#### datetime_now()
+```c
+DateTime datetime_now(void);
+```
+**Returns:**
+- DateTime structure with current timestamp
+
+**Complexity:** O(1)
+
+#### datetime_add_days()
+```c
+DateTime datetime_add_days(DateTime dt, int days);
+```
+**Parameters:**
+- `dt`: Base DateTime
+- `days`: Number of days to add
+
+**Returns:**
+- New DateTime with added days
+
+**Complexity:** O(1)
+
+### Reminder Management
+
+#### reminder_create()
+```c
+Reminder* reminder_create(void);
+```
+**Returns:**
+- New Reminder with default values:
+  - Priority: MEDIUM
+  - Status: PENDING
+  - Created/Updated: Current time
+
+**Complexity:** O(1)
+
+#### reminder_manager_create()
+```c
+ReminderManager* reminder_manager_create(void);
+```
+**Returns:**
+- New ReminderManager with initialized data structures
+
+**Complexity:** O(1)
+
+#### reminder_manager_create_reminder()
+```c
+char* reminder_manager_create_reminder(ReminderManager* manager, Reminder* reminder);
+```
+**Parameters:**
+- `manager`: ReminderManager instance
+- `reminder`: Reminder to add (ownership transferred)
+
+**Returns:**
+- Copy of the generated UUID, or NULL on failure
+
+**Complexity:** O(n) where n is number of tags
+
+## API Reference
+
+### Complete Function Documentation
+
+#### HashMap Functions
+
+**hashmap_hash()**
+```c
+size_t hashmap_hash(const char* key, size_t capacity);
+```
+*Computes DJB2 hash for the given key*
+
+**Parameters:**
+- `key`: String to hash
+- `capacity`: Hash table capacity for modulo operation
+
+**Returns:**
+- Hash index between 0 and capacity-1
+
+**hashmap_remove()**
+```c
+void* hashmap_remove(HashMap* map, const char* key);
+```
+*Removes and returns value for given key*
+
+**Parameters:**
+- `map`: HashMap to remove from
+- `key`: Key to remove
+
+**Returns:**
+- Removed value, or NULL if not found
+
+**hashmap_values()**
+```c
+Vector* hashmap_values(HashMap* map);
+```
+*Returns all values in the hashmap as a Vector*
+
+**Parameters:**
+- `map`: Source HashMap
+
+**Returns:**
+- Vector containing all values
+
+#### Vector Functions
+
+**vector_destroy()**
+```c
+void vector_destroy(Vector* vec, void (*destructor)(void*));
+```
+*Destroys vector and optionally its elements*
+
+**Parameters:**
+- `vec`: Vector to destroy
+- `destructor`: Function to destroy each element
+
+**vector_get()**
+```c
+void* vector_get(Vector* vec, size_t index);
+```
+*Returns element at specified index*
+
+**Parameters:**
+- `vec`: Source Vector
+- `index`: Zero-based index
+
+**Returns:**
+- Element pointer, or NULL if index out of bounds
+
+**vector_filter()**
+```c
+Vector* vector_filter(Vector* vec, int (*predicate)(void*));
+```
+*Creates new vector with elements satisfying predicate*
+
+**Parameters:**
+- `vec`: Source Vector
+- `predicate`: Filter function returning non-zero for inclusion
+
+**Returns:**
+- New Vector with filtered elements
+
+#### String Utilities
+
+**string_duplicate()**
+```c
+char* string_duplicate(const char* str);
+```
+*Creates heap-allocated copy of string*
+
+**Parameters:**
+- `str`: Source string
+
+**Returns:**
+- New string copy, or NULL on failure
+
+**string_to_lowercase()**
+```c
+char* string_to_lowercase(const char* str);
+```
+*Creates lowercase version of string*
+
+**Parameters:**
+- `str`: Source string
+
+**Returns:**
+- Lowercase string copy
+
+**string_split()**
+```c
+Vector* string_split(const char* str, char delimiter);
+```
+*Splits string by delimiter into vector of strings*
+
+**Parameters:**
+- `str`: String to split
+- `delimiter`: Character delimiter
+
+**Returns:**
+- Vector of string tokens
+
+#### Reminder Operations
+
+**reminder_mark_completed()**
+```c
+void reminder_mark_completed(Reminder* reminder);
+```
+*Marks reminder as completed and updates timestamp*
+
+**Parameters:**
+- `reminder`: Reminder to update
+
+**reminder_manager_search_reminders()**
+```c
+Vector* reminder_manager_search_reminders(ReminderManager* manager, const char* query);
+```
+*Searches reminders by content and tags (case-insensitive)*
+
+**Parameters:**
+- `manager`: ReminderManager instance
+- `query`: Search query string
+
+**Returns:**
+- Vector of matching reminders
+
+**reminder_manager_get_overdue_reminders()**
+```c
+Vector* reminder_manager_get_overdue_reminders(ReminderManager* manager);
+```
+*Returns reminders that are overdue (past their remind_at time)*
+
+**Parameters:**
+- `manager`: ReminderManager instance
+
+**Returns:**
+- Vector of overdue reminders
+
+#### Statistical Functions
+
+**reminder_manager_get_reminder_statistics()**
+```c
+ReminderStatistics reminder_manager_get_reminder_statistics(ReminderManager* manager);
+```
+*Computes comprehensive statistics about reminders*
+
+**Parameters:**
+- `manager`: ReminderManager instance
+
+**Returns:**
+- ReminderStatistics structure
+
+**reminder_manager_get_tag_statistics()**
+```c
+HashMap* reminder_manager_get_tag_statistics(ReminderManager* manager);
+```
+*Returns hashmap of tag usage counts*
+
+**Parameters:**
+- `manager`: ReminderManager instance
+
+**Returns:**
+- HashMap<tag_string, count_int*>
+
+## Usage Examples
+
+### Basic Usage
+
+```c
+#include "todozi.h"
+
+int main() {
+    // Create reminder manager
+    ReminderManager* manager = reminder_manager_create();
+    if (!manager) {
+        printf("Failed to create manager\n");
+        return 1;
+    }
+    
+    // Create a reminder
+    Reminder* reminder = reminder_create();
+    if (!reminder) {
+        printf("Failed to create reminder\n");
+        reminder_manager_destroy(manager);
+        return 1;
+    }
+    
+    reminder->content = string_duplicate("Buy groceries");
+    reminder->priority = REMINDER_PRIORITY_HIGH;
+    
+    // Add tags
+    vector_push(reminder->tags, string_duplicate("shopping"));
+    vector_push(reminder->tags, string_duplicate("urgent"));
+    
+    // Add reminder to manager
+    char* reminder_id = reminder_manager_create_reminder(manager, reminder);
+    if (!reminder_id) {
+        printf("Failed to add reminder\n");
+        reminder_destroy(reminder);
+        reminder_manager_destroy(manager);
+        return 1;
+    }
+    
+    printf("Created reminder with ID: %s\n", reminder_id);
+    free(reminder_id);
+    
+    // Cleanup
+    reminder_manager_destroy(manager);
+    return 0;
+}
+```
+
+### Advanced Usage with Updates
+
+```c
+// Update a reminder using builder pattern
+ReminderUpdate* update = reminder_update_create();
+reminder_update_content(update, "Buy groceries and cook dinner");
+reminder_update_priority(update, REMINDER_PRIORITY_MEDIUM);
+
+Vector* new_tags = vector_create();
+vector_push(new_tags, string_duplicate("shopping"));
+vector_push(new_tags, string_duplicate("cooking"));
+vector_push(new_tags, string_duplicate("weekend"));
+reminder_update_tags(update, new_tags);
+
+// Apply update
+if (reminder_manager_update_reminder(manager, reminder_id, update)) {
+    printf("Reminder updated successfully\n");
+} else {
+    printf("Failed to update reminder\n");
+}
+
+reminder_update_destroy(update); // Only destroys the update struct, not transferred data
+```
+
+### Search and Statistics
+
+```c
+// Search for reminders
+Vector* results = reminder_manager_search_reminders(manager, "grocery");
+if (results) {
+    printf("Found %zu reminders\n", results->size);
+    for (size_t i = 0; i < results->size; i++) {
+        Reminder* rem = (Reminder*)vector_get(results, i);
+        printf(" - %s (Priority: %d)\n", rem->content, rem->priority);
+    }
+    vector_destroy(results, NULL);
+}
+
+// Get statistics
+ReminderStatistics stats = reminder_manager_get_reminder_statistics(manager);
+printf("Total reminders: %zu\n", stats.total_reminders);
+printf("Pending: %zu (%.1f%%)\n", stats.pending_reminders, 
+       reminder_statistics_pending_percentage(&stats));
+printf("Overdue: %zu\n", stats.overdue_reminders);
+
+// Get tag statistics
+HashMap* tag_stats = reminder_manager_get_tag_statistics(manager);
+if (tag_stats) {
+    Vector* all_tags = hashmap_values(tag_stats);
+    for (size_t i = 0; i < all_tags->size; i++) {
+        // Process tag statistics...
+    }
+    reminder_manager_free_tag_statistics(tag_stats);
+}
+```
+
+## Design Patterns
+
+### Builder Pattern
+The `ReminderUpdate` structure implements the Builder pattern, allowing flexible construction of update operations:
+
+```c
+// Fluent interface for building updates
+ReminderUpdate* update = reminder_update_create();
+reminder_update_content(update, "New content")
+    ->reminder_update_priority(update, REMINDER_PRIORITY_HIGH)
+    ->reminder_update_status(update, REMINDER_STATUS_ACTIVE);
+```
+
+### Factory Pattern
+`reminder_create()` and `reminder_manager_create()` act as factory functions, encapsulating object creation logic.
+
+### Observer Pattern (Implicit)
+The statistics functions observe the state of reminders without modifying them, providing insights into the system.
+
+### Strategy Pattern
+The `vector_sort()` function uses a comparator strategy, allowing different sorting algorithms to be applied.
+
+## Performance Analysis
+
+### Time Complexity
+
+| Operation | Average Case | Worst Case | Notes |
+|-----------|-------------|------------|--------|
+| Reminder Creation | O(n) | O(n) | n = number of tags |
+| Reminder Lookup | O(1) | O(n) | HashMap lookup |
+| Reminder Update | O(1) | O(n) | Depends on tag count |
+| Reminder Deletion | O(1) | O(n) | HashMap operations |
+| Search (by content) | O(n) | O(n) | Linear scan through all reminders |
+| Statistics Generation | O(n) | O(n) | Processes all reminders |
+
+### Space Complexity
+
+| Component | Space Usage | Notes |
+|-----------|-------------|--------|
+| Reminder | O(m) | m = content length + tag count |
+| HashMap | O(n) | n = number of reminders |
+| Vector | O(k) | k = number of elements |
+
+### Memory Management
+- **Allocations**: Extensive use of `malloc()` for dynamic structures
+- **Ownership**: Clear ownership transfer in API functions
+- **Cleanup**: Comprehensive destructor functions provided
+
+### Optimization Opportunities
+1. **Caching**: Implement LRU cache for frequently accessed reminders
+2. **Indexing**: Add secondary indexes for common search patterns
+3. **Pagination**: Implement pagination for large result sets
+4. **Batching**: Add batch operations for bulk updates
+
+## Security Considerations
+
+### Input Validation
+```c
+// Always validate inputs before processing
+if (!manager || !reminder_id) return 0;
+if (strlen(reminder_id) != 36) return 0; // UUID validation
+```
+
+### Memory Safety
+- **Bounds Checking**: Vector operations include bounds validation
+- **Null Checks**: Extensive null pointer checking throughout
+- **Ownership Management**: Clear documentation of ownership transfer
+
+### UUID Security
+- Uses cryptographically secure `uuid_generate_random()`
+- UUIDs are unique across system instances
+- No sensitive information encoded in IDs
+
+### String Handling
+- **Buffer Overflow Protection**: Proper string length calculations
+- **Case Conversion**: Safe lowercase conversion without locale dependencies
+- **Tokenization**: Robust string splitting with memory safety
+
+## Testing Strategy
+
+### Unit Testing Framework
+The code includes built-in test functions demonstrating comprehensive testing:
+
+### Test Categories
+
+#### 1. Data Structure Tests
+```c
+void test_hashmap_operations() {
+    HashMap* map = hashmap_create(10);
+    // Test put, get, remove, size operations
+    // Verify collision handling
+    // Test destruction with various destructors
+}
+```
+
+#### 2. Reminder Lifecycle Tests
+```c
+void test_reminder_lifecycle() {
+    // Test creation with various parameters
+    // Test status transitions
+    // Test update operations
+    // Test destruction and memory cleanup
+}
+```
+
+#### 3. Manager Integration Tests
+```c
+void test_manager_integration() {
+    // Test reminder creation and retrieval
+    // Test search functionality
+    // Test statistical calculations
+    // Test error conditions
+}
+```
+
+#### 4. Parser Tests
+```c
+void test_parser_edge_cases() {
+    // Test malformed input
+    // Test boundary conditions
+    // Test encoding issues
+    // Test memory allocation failures
+}
+```
+
+### Test Execution
+```bash
+# Compile with test flags
+gcc -std=c99 -D_POSIX_C_SOURCE=200809L -D_GNU_SOURCE todozi.c -luuid -o todozi_test
+
+# Run tests
+./todozi_test
+```
+
+### Coverage Goals
+- **Line Coverage**: >90% for core functions
+- **Branch Coverage**: >85% for decision points
+- **Error Paths**: All error conditions tested
+- **Memory Tests**: Valgrind checks for leaks
+
+## Deployment Instructions
+
+### Prerequisites
+```bash
+# Ubuntu/Debian
+sudo apt-get install libuuid1 libuuid-dev build-essential
+
+# CentOS/RHEL
+sudo yum install libuuid libuuid-devel gcc
+
+# macOS
+brew install ossp-uuid
+```
+
+### Compilation Options
+```makefile
+# Basic compilation
+CC = gcc
+CFLAGS = -std=c99 -Wall -Wextra -D_POSIX_C_SOURCE=200809L
+LIBS = -luuid
+
+todozi: todozi.c
+	$(CC) $(CFLAGS) -o todozi todozi.c $(LIBS)
+
+# Debug build
+todozi_debug: todozi.c
+	$(CC) $(CFLAGS) -g -DDEBUG -o todozi_debug todozi.c $(LIBS)
+
+# Release build
+todozi_release: todozi.c
+	$(CC) $(CFLAGS) -O2 -DNDEBUG -o todozi_release todozi.c $(LIBS)
+```
+
+### Integration with Applications
+
+#### As a Library
+```c
+// todozi.h
+#ifndef TODOZI_H
+#define TODOZI_H
+
+// Include all public headers
+#include "reminder.h"
+#include "manager.h"
+#include "statistics.h"
+
+#endif
+```
+
+#### As a Standalone Service
+```c
+// server.c - Example HTTP server integration
+#include "todozi.h"
+
+void handle_create_reminder(Request* req, Response* res) {
+    Reminder* reminder = parse_reminder_from_json(req->body);
+    char* id = reminder_manager_create_reminder(global_manager, reminder);
+    send_json_response(res, 201, {"id": id});
+}
+```
+
+### Deployment Checklist
+1. [ ] Verify UUID library installation
+2. [ ] Compile with appropriate flags
+3. [ ] Run unit tests
+4. [ ] Perform memory leak testing
+5. [ ] Validate on target platform
+6. [ ] Document API for consumers
+
+## Troubleshooting Guide
+
+### Common Issues
+
+#### 1. Compilation Errors
+**Problem**: "uuid/uuid.h: No such file or directory"
+**Solution**: Install UUID development package
+```bash
+sudo apt-get install libuuid-dev  # Ubuntu
+sudo yum install libuuid-devel    # CentOS
+```
+
+#### 2. Memory Leaks
+**Problem**: Application memory usage grows over time
+**Solution**: Use Valgrind to identify leaks
+```bash
+valgrind --leak-check=full ./todozi_app
+```
+
+#### 3. Performance Issues
+**Problem**: Slow search operations with large datasets
+**Solution**: Implement indexing or use smaller hashmap capacities
+```c
+// Use smaller initial capacity for better memory usage
+HashMap* map = hashmap_create(50); // Instead of 100
+```
+
+### Debugging Techniques
+
+#### Memory Debugging
+```c
+#ifdef DEBUG
+#define DEBUG_PRINT(...) printf(__VA_ARGS__)
+#else
+#define DEBUG_PRINT(...)
+#endif
+
+void* debug_malloc(size_t size, const char* file, int line) {
+    void* ptr = malloc(size);
+    DEBUG_PRINT("Allocated %zu bytes at %s:%d\n", size, file, line);
+    return ptr;
+}
+```
+
+#### Error Tracking
+```c
+typedef struct {
+    int error_code;
+    char* message;
+    const char* function;
+    int line;
+} TodoziError;
+
+#define RETURN_ERROR(code, msg) \
+    do { \
+        TodoziError err = {code, msg, __func__, __LINE__}; \
+        log_error(&err); \
+        return code; \
+    } while(0)
+```
+
+### Recovery Strategies
+
+#### 1. Graceful Degradation
+```c
+Vector* reminder_manager_search_reminders(ReminderManager* manager, const char* query) {
+    if (!manager || !query) {
+        // Return empty vector instead of NULL for graceful degradation
+        Vector* empty = vector_create();
+        return empty ? empty : NULL;
+    }
+    // ... normal processing
+}
+```
+
+#### 2. Data Corruption Recovery
+```c
+int validate_reminder_integrity(Reminder* reminder) {
+    if (!reminder) return 0;
+    if (!reminder->id || strlen(reminder->id) != 36) return 0;
+    if (!reminder->content) return 0;
+    // Additional validation checks
+    return 1;
+}
+```
+
+### Performance Monitoring
+
+#### Benchmarking Setup
+```c
+#include <time.h>
+
+void benchmark_operation() {
+    clock_t start = clock();
+    // Operation to benchmark
+    clock_t end = clock();
+    double time_spent = (double)(end - start) / CLOCKS_PER_SEC;
+    printf("Operation took: %f seconds\n", time_spent);
+}
+```
+
+This comprehensive documentation provides complete coverage of the Todozi reminder system, including architectural insights, detailed API references, practical examples, and operational guidance for successful deployment and maintenance.# Comprehensive Documentation: Search Engine Library
+
+## Table of Contents
+1. [Overview and Purpose](#overview-and-purpose)
+2. [Architecture](#architecture)
+3. [Data Structures](#data-structures)
+4. [Enums and Types](#enums-and-types)
+5. [Function Documentation](#function-documentation)
+6. [Usage Examples](#usage-examples)
+7. [Design Patterns](#design-patterns)
+8. [Performance Analysis](#performance-analysis)
+9. [Security Considerations](#security-considerations)
+10. [Testing Strategies](#testing-strategies)
+11. [Deployment Instructions](#deployment-instructions)
+12. [Troubleshooting Guide](#troubleshooting-guide)
+
+## Overview and Purpose
+
+This C library implements a comprehensive search engine for various data types including tasks, memories, ideas, errors, and training data. The system provides both simple text-based search and advanced filtering capabilities with relevance scoring.
+
+### Key Features:
+- Multi-data type search (Tasks, Memories, Ideas, Errors, Training Data)
+- Simple text search with relevance scoring
+- Advanced search with filtering criteria
+- Search suggestions based on keyword frequency
+- Analytics and statistics
+- Memory-efficient indexing
+
+## Architecture
+
+```
+┌─────────────────┐    ┌─────────────────┐    ┌─────────────────┐
+│   ChatContent   │───▶│  SearchEngine   │◄───│  SearchOptions  │
+│                 │    │                 │    │                 │
+│ - Tasks[]       │    │ - Index Arrays  │    │ - Data Types    │
+│ - Memories[]    │    │ - Tag Database  │    │ - Time Range    │
+│ - Ideas[]       │    └─────────────────┘    │ - Limit         │
+│ - Errors[]      │              │            └─────────────────┘
+│ - TrainingData[]│              │
+└─────────────────┘              │ Search
+                                 ▼
+                    ┌─────────────────┐    ┌─────────────────┐
+                    │ SearchResults   │◄───│ SearchAnalytics │
+                    │                 │    │                 │
+                    │ - TaskResults[] │    │ - Count Stats   │
+                    │ - MemoryResults││    └─────────────────┘
+                    │ - IdeaResults[] │
+                    │ - ErrorResults[]│
+                    │ - TrainingResults
+                    └─────────────────┘
+```
+
+### Component Relationships:
+- **ChatContent**: Input data container holding all searchable content
+- **SearchEngine**: Core engine maintaining indexed data and search functionality
+- **SearchOptions**: Configurable parameters for search operations
+- **SearchResults**: Container for search results with relevance scores
+- **SearchAnalytics**: Statistical information about indexed data
+
+## Data Structures
+
+### Primary Structures
+
+#### Task Structure
+```c
+struct Task {
+    char* action;           // Primary task description
+    Status status;          // PENDING, IN_PROGRESS, COMPLETED
+    Priority priority;      // LOW, MEDIUM, HIGH
+    char** tags;           // Array of tag strings
+    int tags_count;        // Number of tags
+    char* assignee;        // Person assigned to task
+    time_t created_at;     // Creation timestamp
+};
+```
+
+#### Memory Structure
+```c
+struct Memory {
+    char* moment;          // Description of the memory moment
+    char* meaning;         // Significance/meaning of memory
+    char* reason;          // Reason for remembering
+    MemoryImportance importance; // LOW, MEDIUM, HIGH importance
+    MemoryTerm term;       // SHORT_TERM or LONG_TERM
+    char** tags;          // Array of tag strings
+    int tags_count;       // Number of tags
+    time_t created_at;    // Creation timestamp
+};
+```
+
+#### SearchEngine Structure
+```c
+typedef struct {
+    Task* tasks;                    // Array of indexed tasks
+    int tasks_count;                // Number of tasks
+    Memory* memories;              // Array of indexed memories
+    int memories_count;            // Number of memories
+    Idea* ideas;                   // Array of indexed ideas
+    int ideas_count;               // Number of ideas
+    Error* errors;                 // Array of indexed errors
+    int errors_count;              // Number of errors
+    TrainingData* training_data;   // Array of training data
+    int training_data_count;       // Number of training items
+    Tag* tags;                     // Tag database (unused in current impl)
+    int tags_count;                // Tag count (unused in current impl)
+} SearchEngine;
+```
+
+## Enums and Types
+
+### Search Data Types
+```c
+typedef enum {
+    TASKS,        // 0 - Task data type
+    MEMORIES,     // 1 - Memory data type
+    IDEAS,        // 2 - Idea data type
+    ERRORS,       // 3 - Error data type
+    TRAINING      // 4 - Training data type
+} SearchDataType;
+```
+
+### Priority Levels
+```c
+typedef enum {
+    LOW,          // 0 - Low priority
+    MEDIUM,       // 1 - Medium priority
+    HIGH          // 2 - High priority
+} Priority;
+```
+
+### Status Types
+```c
+typedef enum {
+    PENDING,      // 0 - Task not started
+    IN_PROGRESS,  // 1 - Task in progress
+    COMPLETED     // 2 - Task completed
+} Status;
+```
+
+## Function Documentation
+
+### Core Engine Functions
+
+#### `search_engine_new()`
+**Purpose**: Creates and initializes a new search engine# Todozi Enhanced Server - Comprehensive Documentation
+
+## Table of Contents
+1. [Overview](#overview)
+2. [Architecture](#architecture)
+3. [Code Analysis](#code-analysis)
+4. [API Reference](#api-reference)
+5. [Design Patterns](#design-patterns)
+6. [Performance Analysis](#performance-analysis)
+7. [Security Considerations](#security-considerations)
+8. [Testing Strategy](#testing-strategy)
+9. [Deployment Instructions](#deployment-instructions)
+10. [Troubleshooting Guide](#troubleshooting-guide)
+11. [Future Enhancements](#future-enhancements)
+
+## Overview
+
+Todozi Enhanced Server is a multi-threaded HTTP server written in C that provides a comprehensive task management system with AI agent capabilities. The server handles HTTP requests, manages concurrent connections, and provides various API endpoints for task management, agent operations, analytics, and AI-powered features.
+
+### Key Features
+- Multi-threaded HTTP server with connection pooling
+- JSON-based REST API
+- Task management system
+- AI agent integration (26 agents available)
+- Training data management
+- Real-time analytics
+- Time tracking capabilities
+- Queue management system
+- Semantic search functionality
+- Authentication system
+
+## Architecture
+
+### System Architecture Diagram
+
+```
+┌─────────────────┐    ┌──────────────────┐    ┌─────────────────┐
+│   HTTP Client   │────│  Todozi Server   │────│   Storage       │
+│                 │    │                  │    │   Backend       │
+└─────────────────┘    └──────────────────┘    └─────────────────┘
+         │                       │                       │
+         │                       │                       │
+┌─────────────────┐    ┌──────────────────┐    ┌─────────────────┐
+│   Load Balancer │    │  Thread Pool     │    │   AI Agents     │
+│   (Optional)    │    │                  │    │   (26 Agents)   │
+└─────────────────┘    └──────────────────┘    └─────────────────┘
+```
+
+### Component Architecture
+
+```
+Main Application
+├── Server Configuration Management
+├── HTTP Request/Response Handling
+├── Connection Management (Multi-threaded)
+├── API Route Handlers
+│   ├── Health Check Endpoints
+│   ├── Task Management
+│   ├── Agent Management
+│   ├── Training Data
+│   ├── Analytics
+│   ├── Time Tracking
+│   ├── Queue Management
+│   └── AI Operations
+├── Authentication System
+├── Signal Handling
+└── Memory Management
+```
+
+### Data Flow Diagram
+
+```
+Client Request
+    ↓
+Socket Acceptance
+    ↓
+Request Parsing (HTTP)
+    ↓
+Authentication Check
+    ↓
+Route Dispatch
+    ↓
+Business Logic Execution
+    ↓
+Response Generation (JSON)
+    ↓
+Response Transmission
+    ↓
+Connection Cleanup
+```
+
+## Code Analysis
+
+### Header Files and Dependencies
+
+```c
+#include <stdio.h>      // Standard I/O operations
+#include <stdlib.h>     // Memory allocation, process control
+#include <string.h>     // String manipulation
+#include <time.h>       // Time functions
+#include <sys/socket.h> // Socket programming
+#include <netinet/in.h> // Internet address family
+#include <unistd.h>     // POSIX API
+#include <pthread.h>    // Thread management
+#include <errno.h>      // Error handling
+#include <arpa/inet.h>  // IP address conversion
+#include "json-c/json.h"// JSON parsing/generation
+#include <signal.h>     // Signal handling
+#include <stdatomic.h>  // Atomic operations
+#include <stdint.h>     // Fixed-width integer types
+#include <limits.h>     // System limits
+#include <fcntl.h>      // File control options
+```
+
+### Data Structures
+
+#### ServerConfig
+```c
+struct ServerConfig {
+    char* host;           // Server listening address
+    int port;            // Server listening port
+    int max_connections; // Maximum concurrent connections
+};
+```
+
+#### HttpHeaders
+```c
+struct HttpHeaders {
+    char** keys;         // Array of header keys
+    char** values;       // Array of header values
+    size_t count;        // Current number of headers
+    size_t capacity;     // Maximum capacity of arrays
+};
+```
+
+#### HttpResponse
+```c
+struct HttpResponse {
+    int status;          // HTTP status code
+    HttpHeaders headers; // Response headers
+    char* body;         // Response body content
+};
+```
+
+#### HttpRequest
+```c
+struct HttpRequest {
+    char method[16];     // HTTP method (GET, POST, etc.)
+    char path[256];      // Request path
+    HttpHeaders headers; // Request headers
+    char* body;         // Request body
+    size_t body_length; // Body length
+};
+```
+
+#### TodoziServer (Main Server Structure)
+```c
+struct TodoziServer {
+    ServerConfig config;           // Server configuration
+    void* code_graph;             // Placeholder for code graph
+    void* storage;                // Placeholder for storage backend
+    pthread_mutex_t mutex;        // Thread synchronization
+    volatile sig_atomic_t stop;   // Server shutdown flag
+    int server_fd;                // Server socket file descriptor
+    atomic_int active_connections; // Active connection counter
+};
+```
+
+## API Reference
+
+### Core Server Functions
+
+#### `create_default_server_config()`
+Creates a server configuration with default values.
+
+**Parameters:** None
+**Returns:** `ServerConfig*` - Pointer to allocated configuration
+**Memory:** Caller must free with `destroy_server_config()`
+
+#### `destroy_server_config(ServerConfig* config)`
+Frees server configuration memory.
+
+**Parameters:** `config` - Configuration to destroy
+**Returns:** void
+
+#### `create_todozi_server(ServerConfig* config)`
+Creates and initializes the main server instance.
+
+**Parameters:** `config` - Server configuration
+**Returns:** `TodoziServer*` - Server instance
+**Memory:** Caller must free with `free_todozi_server()`
+
+#### `start_server(TodoziServer* server)`
+Starts the server main loop.
+
+**Parameters:** `server` - Server instance to start
+**Returns:** void
+
+### HTTP Handling Functions
+
+#### `parse_request(const char* request_str, size_t length)`
+Parses HTTP request string into structured format.
+
+**Parameters:**
+- `request_str` - Raw HTTP request string
+- `length` - Length of request string
+
+**Returns:** `HttpRequest*` - Parsed request object
+**Memory:** Caller must free with `free_http_request()`
+
+#### `handle_request(TodoziServer* server, HttpRequest* request)`
+Processes HTTP request and generates response.
+
+**Parameters:**
+- `server` - Server instance
+- `request` - HTTP request to handle
+
+**Returns:** `HttpResponse*` - Generated response
+**Memory:** Caller must free with `free_http_response()`
+
+#### `send_response(int client_fd, HttpResponse* response)`
+Sends HTTP response to client.
+
+**Parameters:**
+- `client_fd` - Client socket descriptor
+- `response` - Response to send
+
+**Returns:** void
+
+### Response Creation Functions
+
+#### `create_http_response_ok(const char* body)`
+Creates 200 OK response.
+
+**Parameters:** `body` - Response body content
+**Returns:** `HttpResponse*` - OK response
+**Memory:** Caller must free with `free_http_response()`
+
+#### `create_http_response_error(int status, const char* message)`
+Creates error response with JSON error message.
+
+**Parameters:**
+- `status` - HTTP status code
+- `message` - Error message
+
+**Returns:** `HttpResponse*` - Error response
+**Memory:** Caller must free with `free_http_response()`
+
+#### `create_http_response_json(json_object* data)`
+Creates JSON response from json_object.
+
+**Parameters:** `data` - JSON data object
+**Returns:** `HttpResponse*` - JSON response
+**Memory:** Caller must free with `free_http_response()`
+
+### Header Management Functions
+
+#### `init_http_headers(HttpHeaders* headers)`
+Initializes headers structure.
+
+**Parameters:** `headers` - Headers structure to initialize
+**Returns:** void
+
+#### `add_http_header(HttpHeaders* headers, const char* key, const char* value)`
+Adds header key-value pair.
+
+**Parameters:**
+- `headers` - Headers structure
+- `key` - Header name
+- `value` - Header value
+
+**Returns:** void
+
+#### `free_http_headers(HttpHeaders* headers)`
+Frees headers memory.
+
+**Parameters:** `headers` - Headers to free
+**Returns:** void
+
+### Business Logic Functions (Placeholders)
+
+The server includes numerous placeholder functions for various features:
+
+- **Task Management:** `get_all_tasks()`, `create_task()`, `update_task()`, `delete_task()`
+- **Agent Management:** `get_all_agents()`, `create_agent()`, `get_agent_status()`
+- **Training Data:** `get_all_training_data()`, `create_training_data()`
+- **Analytics:** `get_task_analytics()`, `get_agent_analytics()`
+- **Time Tracking:** `start_time_tracking()`, `stop_time_tracking()`
+- **Queue Management:** `create_queue_item()`, `get_all_queue_items()`
+- **AI Operations:** `semantic_search()`, `get_ai_insights()`
+
+## Design Patterns
+
+### 1. Factory Pattern
+Used for creating server components:
+- `create_default_server_config()`
+- `create_todozi_server()`
+- `create_http_response_*()` functions
+
+### 2. Thread Pool Pattern
+Multi-threaded connection handling:
+- Each connection spawns a new thread
+- Threads are detached for automatic cleanup
+- Atomic counter tracks active connections
+
+### 3. Builder Pattern
+HTTP response construction:
+- Step-by-step header addition
+- Flexible body content assignment
+
+### 4. Singleton Pattern
+Global server instance for signal handling:
+- `g_server_instance` global variable
+- Protected by `g_server_mutex`
+
+### 5. Strategy Pattern
+Route handling through function pointers:
+- Different endpoints call different handler functions
+- Extensible without modifying core server code
+
+### 6. Observer Pattern
+Signal handling for graceful shutdown:
+- Signal handlers observe termination signals
+- Notify server to shutdown gracefully
+
+## Performance Analysis
+
+### Memory Usage Analysis
+```c
+// Memory allocation patterns:
+ServerConfig: ~24 bytes + host string
+HttpRequest: ~280 bytes + headers + body
+HttpResponse: ~16 bytes + headers + body
+TodoziServer: ~56 bytes + configuration
+```
+
+### Time Complexity
+- **Request Parsing:** O(n) where n is request length
+- **Header Lookup:** O(k) where k is number of headers
+- **Connection Handling:** O(1) per connection
+- **JSON Processing:** O(m) where m is JSON size
+
+### Space Complexity
+- **Server Instance:** O(1) fixed size
+- **Per Connection:** O(8192) buffer + request/response objects
+- **Headers:** Dynamic growth O(2^n) worst case
+
+### Optimization Opportunities
+1. **Connection Pooling:** Reuse threads instead of creating/destroying
+2. **Buffer Recycling:** Reuse request buffers
+3. **Header Caching:** Cache common headers
+4. **JSON Streaming:** Stream large JSON responses
+5. **Memory Pool:** Custom allocator for HTTP objects
+
+## Security Considerations
+
+### Input Validation
+```c
+// Current validation includes:
+- Request length bounds checking
+- Method and path length limits
+- Header key/value size limits
+- Buffer overflow protection
+```
+
+### Authentication System
+```c
+// API Key Authentication:
+- Checks X-API-Key and Authorization headers
+- Returns user ID for authorization
+- Placeholder implementation needs enhancement
+```
+
+### Security Recommendations
+
+#### 1. Input Sanitization
+```c
+// Add input validation:
+- Validate UTF-8 encoding
+- Check for malicious patterns
+- Limit maximum request size
+```
+
+#### 2. Authentication Enhancement
+```c
+// Implement proper authentication:
+- API key validation against database
+- JWT token support
+- Rate limiting per user
+```
+
+#### 3. Secure Headers
+```c
+// Add security headers:
+"Strict-Transport-Security": "max-age=31536000"
+"X-Content-Type-Options": "nosniff"
+"X-Frame-Options": "DENY"
+"X-XSS-Protection": "1; mode=block"
+```
+
+#### 4. Network Security
+- Implement TLS/SSL encryption
+- Add IP whitelisting
+- Implement request rate limiting
+- Add connection timeout handling
+
+## Testing Strategy
+
+### Unit Testing Framework
+
+#### Test Cases Structure
+```c
+// Example test structure:
+void test_create_default_server_config() {
+    ServerConfig* config = create_default_server_config();
+    assert(config != NULL);
+    assert(strcmp(config->host, "0.0.0.0") == 0);
+    assert(config->port == 8636);
+    destroy_server_config(config);
+}
+
+void test_parse_valid_request() {
+    const char* request = "GET /health HTTP/1.1\r\nHost: localhost\r\n\r\n";
+    HttpRequest* req = parse_request(request, strlen(request));
+    assert(req != NULL);
+    assert(strcmp(req->method, "GET") == 0);
+    free_http_request(req);
+}
+```
+
+### Integration Testing
+
+#### API Endpoint Testing
+```bash
+# Health check test
+curl -X GET http://localhost:8636/health
+
+# Task creation test
+curl -X POST http://localhost:8636/tasks \
+  -H "Content-Type: application/json" \
+  -d '{"title":"Test Task"}'
+```
+
+### Performance Testing
+
+#### Load Testing Script
+```python
+import requests
+import threading
+import time
+
+def stress_test():
+    for i in range(1000):
+        response = requests.get('http://localhost:8636/health')
+        assert response.status_code == 200
+```
+
+### Security Testing
+
+#### Input Fuzzing
+```python
+# Fuzz testing with malformed inputs
+malformed_inputs = [
+    "GET /../../etc/passwd HTTP/1.1",
+    "POST /health HTTP/1.1\r\n" + "A"*10000,
+    "GET /health HTTP/1.1\r\nX-API-Key: ' OR 1=1--"
+]
+```
+
+## Deployment Instructions
+
+### Build Instructions
+
+#### Prerequisites
+```bash
+# Required packages on Ubuntu/Debian
+sudo apt-get update
+sudo apt-get install build-essential libjson-c-dev
+
+# Required packages on CentOS/RHEL
+sudo yum install gcc json-c-devel
+```
+
+#### Compilation
+```bash
+# Basic compilation
+gcc -o todozi_server todozi.c -ljson-c -lpthread
+
+# With debugging symbols
+gcc -g -o todozi_server todozi.c -ljson-c -lpthread
+
+# With optimization
+gcc -O2 -o todozi_server todozi.c -ljson-c -lpthread
+```
+
+### Systemd Service Setup
+
+#### Service File: `/etc/systemd/system/todozi.service`
+```ini
+[Unit]
+Description=Todozi Enhanced Server
+After=network.target
+
+[Service]
+Type=simple
+User=todozi
+Group=todozi
+WorkingDirectory=/opt/todozi
+ExecStart=/opt/todozi/todozi_server
+Restart=always
+RestartSec=5
+StandardOutput=journal
+StandardError=journal
+
+[Install]
+WantedBy=multi-user.target
+```
+
+#### Deployment Steps
+```bash
+# 1. Create user and directory
+sudo useradd -r -s /bin/false todozi
+sudo mkdir -p /opt/todozi
+sudo chown todozi:todozi /opt/todozi
+
+# 2. Copy binary
+sudo cp todozi_server /opt/todozi/
+
+# 3. Enable service
+sudo systemctl daemon-reload
+sudo systemctl enable todozi
+sudo systemctl start todozi
+
+# 4. Check status
+sudo systemctl status todozi
+```
+
+### Docker Deployment
+
+#### Dockerfile
+```dockerfile
+FROM alpine:latest
+
+# Install dependencies
+RUN apk add --no-cache gcc musl-dev json-c-dev make
+
+# Copy source code
+COPY . /app
+WORKDIR /app
+
+# Build application
+RUN gcc -o todozi_server todozi.c -ljson-c -lpthread -static
+
+# Create non-root user
+RUN adduser -D todozi
+USER todozi
+
+# Expose port
+EXPOSE 8636
+
+# Start server
+CMD ["./todozi_server"]
+```
+
+#### Docker Compose
+```yaml
+version: '3.8'
+services:
+  todozi:
+    build: .
+    ports:
+      - "8636:8636"
+    environment:
+      - TODOZI_HOST=0.0.0.0
+      - TODOZI_PORT=8636
+    restart: unless-stopped
+```
+
+## Troubleshooting Guide
+
+### Common Issues and Solutions
+
+#### 1. Port Binding Error
+**Problem:** `bind failed: Address already in use`
+**Solution:**
+```bash
+# Find process using port
+sudo netstat -tulpn | grep :8636
+# Kill process or change port in configuration
+```
+
+#### 2. Memory Leak Detection
+**Problem:** Server memory usage increases over time
+**Solution:**
+```bash
+# Use Valgrind for memory checking
+valgrind --leak-check=full ./todozi_server
+
+# Compile with address sanitizer
+gcc -fsanitize=address -o todozi_server todozi.c -ljson-c -lpthread
+```
+
+#### 3. Thread Issues
+**Problem:** `pthread_create: Resource temporarily unavailable`
+**Solution:**
+```bash
+# Increase thread limits
+ulimit -u unlimited
+# Check system thread limits
+cat /proc/sys/kernel/threads-max
+```
+
+#### 4. JSON Parsing Errors
+**Problem:** JSON responses are malformed
+**Solution:**
+```c
+// Add JSON validation
+json_object* obj = json_tokener_parse(json_str);
+if (obj == NULL) {
+    // Handle parsing error
+}
+```
+
+### Debugging Techniques
+
+#### Logging Setup
+```c
+// Add debug logging
+#ifdef DEBUG
+#define LOG(msg) fprintf(stderr, "[DEBUG] %s:%d: %s\n", __FILE__, __LINE__, msg)
+#else
+#define LOG(msg)
+#endif
+```
+
+#### Signal Handling Debug
+```c
+void signal_handler(int signal) {
+    fprintf(stderr, "Received signal %d\n", signal);
+    // Existing signal handling code
+}
+```
+
+### Performance Monitoring
+
+#### Connection Monitoring
+```bash
+# Monitor active connections
+watch -n 1 'netstat -an | grep :8636 | wc -l'
+
+# Monitor thread count
+ps -eLf | grep todozi_server | wc -l
+```
+
+#### Memory Monitoring
+```bash
+# Monitor memory usage
+watch -n 1 'ps -o pid,ppid,cmd,%mem,rss -p $(pgrep todozi_server)'
+```
+
+## Future Enhancements
+
+### Immediate Improvements
+1. **Database Integration:** Replace placeholder storage with real database
+2. **Authentication:** Implement proper API key validation
+3. **Configuration File:** Support external configuration files
+4. **Logging System:** Implement comprehensive logging
+
+### Medium-term Features
+1. **WebSocket Support:** Real-time communication
+2. **Load Balancing:** Multiple server instances
+3. **Caching Layer:** Redis integration
+4. **Monitoring:** Prometheus metrics endpoint
+
+### Long-term Vision
+1. **Cluster Support:** Distributed server architecture
+2. **Plugin System:** Extensible feature architecture
+3. **Admin Interface:** Web-based management console
+4. **Mobile API:** Optimized endpoints for mobile clients
+
+## Conclusion
+
+This documentation provides a comprehensive overview of the Todozi Enhanced Server codebase. The server demonstrates solid architectural patterns, proper memory management, and extensible design. While many features are currently implemented as placeholders, the foundation is robust and ready for full implementation.
+
+The server's multi-threaded architecture, proper error handling, and modular design make it suitable for production use with appropriate enhancements to security, storage, and business logic implementation.
+
+---
+
+*This documentation covers all aspects of the provided codebase. For specific implementation details or additional questions, refer to the corresponding sections above.*# Todozi C Library Documentation
+
+## Table of Contents
+1. [Overview](#overview)
+2. [Architecture](#architecture)
+3. [Data Structures](#data-structures)
+4. [File Structure](#file-structure)
+5. [Error Handling](#error-handling)
+6. [API Reference](#api-reference)
+7. [Design Patterns](#design-patterns)
+8. [Performance Analysis](#performance-analysis)
+9. [Security Considerations](#security-considerations)
+10. [Testing Strategies](#testing-strategies)
+11. [Deployment Instructions](#deployment-instructions)
+12. [Usage Examples](#usage-examples)
+13. [Troubleshooting Guide](#troubleshooting-guide)
+
+## Overview
+
+Todozi is a comprehensive task management system written in C that provides sophisticated organization, AI integration, and multi-agent task assignment capabilities. The system manages projects, tasks, agents, and various data types through a structured file-based storage system.
+
+### Key Features
+- Multi-project task management
+- AI agent system with specialized roles
+- Configurable storage and backup
+- Semantic search capabilities
+- Agent-task assignment system
+- Memory and idea tracking
+- Error and feeling logging
+
+## Architecture
+
+### System Architecture Diagram
+```
+┌─────────────────────────────────────────────────────────────┐
+│                      TODOZI SYSTEM                          │
+├─────────────────────────────────────────────────────────────┤
+│  ┌─────────────┐  ┌─────────────┐  ┌─────────────┐         │
+│  │   STORAGE   │  │   CONFIG    │  │    AGENTS   │         │
+│  │   MANAGER   │  │   MANAGER   │  │    SYSTEM   │         │
+│  └─────────────┘  └─────────────┘  └─────────────┘         │
+├─────────────────────────────────────────────────────────────┤
+│  ┌─────────────┐  ┌─────────────┐  ┌─────────────┐         │
+│  │   TASK      │  │   PROJECT   │  │   QUEUE     │         │
+│  │   MANAGER   │  │   MANAGER   │  │   MANAGER   │         │
+│  └─────────────┘  └─────────────┘  └─────────────┘         │
+├─────────────────────────────────────────────────────────────┤
+│  ┌─────────────────────────────────────────────────────────┤
+│  │                   FILE SYSTEM LAYER                    │
+│  └─────────────────────────────────────────────────────────┤
+└─────────────────────────────────────────────────────────────┘
+```
+
+### Data Flow
+```
+User/Agent → API Layer → Business Logic → Storage Layer → File System
+```
+
+## Data Structures
+
+### Core Structures
+
+#### PathBuf
+```c
+struct PathBuf {
+    char* path;  // Dynamically allocated path string
+};
+```
+**Purpose**: Wrapper for file system paths with automatic memory management.
+
+#### Config
+```c
+struct Config {
+    RegistrationInfo* registration;  // User registration details
+    char* version;                  // Application version
+    char* default_project;          // Default project name
+    int auto_backup;                // Auto-backup enabled flag
+    char* backup_interval;          // Backup frequency
+    int ai_enabled;                 // AI integration flag
+    char* default_assignee;         // Default task assignee
+    char* date_format;              // Date formatting string
+    char* timezone;                 // Timezone setting
+};
+```
+
+#### RegistrationInfo
+```c
+struct RegistrationInfo {
+    char* user_name;      // User's display name
+    char* user_email;     // User's email address
+    char* api_key;        // API authentication key
+    char* user_id;        // Unique user identifier
+    char* fingerprint;    // System fingerprint
+    time_t registered_at; // Registration timestamp
+    char* server_url;     // Server endpoint URL
+};
+```
+
+#### Task
+```c
+struct Task {
+    char* id;               // Unique task identifier
+    char* action;           // Task description/action
+    char* status;           // Current status (active/completed/etc.)
+    char* priority;         // Priority level
+    char* parent_project;   // Associated project
+    time_t created_at;      // Creation timestamp
+    time_t updated_at;      // Last update timestamp
+    char* context_notes;    // Additional context information
+    float* embedding_vector; // Semantic embedding vector
+    int embedding_size;     // Size of embedding vector
+};
+```
+
+#### Agent
+```c
+struct Agent {
+    char* id;             // Unique agent identifier
+    char* name;           // Display name
+    char* description;    // Agent description
+    char* system_prompt;  // AI system prompt
+};
+```
+
+### Specialized Structures
+
+#### ProjectTaskContainer
+Manages project-task relationships with hashed project names for efficient lookup.
+
+#### SemanticSearchResult
+Contains task information with similarity score for semantic search operations.
+
+#### AgentAssignment
+Links agents to specific tasks for assignment tracking.
+
+## File Structure
+
+### Directory Hierarchy
+```
+~/.todozi/
+├── tdz.hlx                     # Main configuration file
+├── tasks/                      # Task storage
+│   ├── active.json
+│   ├── completed.json
+│   └── archived.json
+├── projects/                   # Project definitions
+├── agents/                     # Agent configurations
+├── memories/                   # System memories
+├── ideas/                      # Idea storage
+├── training/                   # Training data
+├── chunks/                     # Code chunks
+├── errors/                     # Error logs
+├── assignments/                # Agent-task assignments
+├── feelings/                   # System feeling logs
+├── queue/                      # Processing queue
+├── templates/                  # Template storage
+├── backups/                    # Backup files
+├── api/                        # API-related data
+├── models/                     # AI model data
+├── responses/                  # AI response storage
+├── embed/                      # Embedding data
+└── steps/                      # Step-by-step process data
+```
+
+## Error Handling
+
+### Error Codes
+```c
+typedef enum {
+    TODOZI_SUCCESS = 0,
+    TODOZI_ERROR_STORAGE,
+    TODOZI_ERROR_PROJECT_NOT_FOUND,
+    TODOZI_ERROR_TASK_NOT_FOUND,
+    TODOZI_ERROR_VALIDATION
+} TodoziError;
+```
+
+### Error Structure
+```c
+struct Error {
+    char* id;        // Unique error identifier
+    char* message;   // Human-readable error message
+};
+```
+
+## API Reference
+
+### Storage Management Functions
+
+#### `init_storage()`
+**Purpose**: Initialize the complete Todozi storage structure.
+**Returns**: `TodoziError` status code.
+**Complexity**: O(n) where n is number of directories to create.
+
+```c
+int init_storage();
+```
+
+#### `check_folder_structure()`
+**Purpose**: Validate that all required directories exist.
+**Returns**: 1 if valid, 0 if invalid.
+**Complexity**: O(n) directory checks.
+
+```c
+int check_folder_structure();
+```
+
+### Path Management Functions
+
+#### `get_storage_dir()`
+**Purpose**: Get the base storage directory path.
+**Returns**: `PathBuf*` containing the storage path.
+**Memory**: Caller must free with `free_path_buf()`.
+
+```c
+PathBuf* get_storage_dir();
+```
+
+#### `join_paths()`
+**Purpose**: Safely join two path components.
+**Parameters**: 
+- `const char* base`: Base path
+- `const char* append`: Path component to append
+**Returns**: Newly allocated path string.
+**Memory**: Caller must free returned string.
+
+```c
+static char* join_paths(const char* base, const char* append);
+```
+
+### Configuration Functions
+
+#### `save_config()`
+**Purpose**: Save configuration to file.
+**Parameters**: `Config* config`: Configuration to save.
+**Returns**: `TodoziError` status.
+
+```c
+int save_config(Config* config);
+```
+
+#### `load_config()`
+**Purpose**: Load configuration from file.
+**Returns**: `Config*` or NULL on error.
+**Memory**: Caller must free with `free_config()`.
+
+```c
+Config* load_config();
+```
+
+### Project Management
+
+#### `save_project()`
+**Purpose**: Save project definition.
+**Parameters**: `Project* project`: Project to save.
+**Returns**: `TodoziError` status.
+
+```c
+int save_project(Project* project);
+```
+
+#### `load_project()`
+**Purpose**: Load project by name.
+**Parameters**: `const char* project_name`: Project identifier.
+**Returns**: `Project*` or NULL if not found.
+
+```c
+Project* load_project(const char* project_name);
+```
+
+### Task Management
+
+#### `save_task()`
+**Purpose**: Save individual task.
+**Parameters**: `Task* task`: Task to save.
+**Returns**: `TodoziError` status.
+
+```c
+int save_task(Task* task);
+```
+
+#### `load_task()`
+**Purpose**: Load task by ID.
+**Parameters**: `const char* task_id`: Task identifier.
+**Returns**: `Task*` or NULL if not found.
+
+```c
+Task* load_task(const char* task_id);
+```
+
+### Agent System
+
+#### Agent Creation Functions
+Specialized functions for creating different agent types:
+- `create_planner_agent()`
+- `create_tester_agent()`
+- `create_designer_agent()`
+- `create_devops_agent()`
+- `create_friend_agent()`
+- `create_detective_agent()`
+- `create_architect_agent()`
+- `create_skeleton_agent()`
+- `create_mason_agent()`
+- `create_framer_agent()`
+- `create_finisher_agent()`
+- `create_investigator_agent()`
+- `create_recycler_agent()`
+- `create_tuner_agent()`
+- `create_writer_agent()`
+- `create_comrad_agent()`
+- `create_nerd_agent()`
+- `create_party_agent()`
+- `create_nun_agent()`
+- `create_hoarder_agent()`
+- `create_snitch_agent()`
+- `create_overlord_agent()`
+
+#### `create_default_agents()`
+**Purpose**: Create all default agent configurations.
+**Returns**: `TodoziError` status.
+
+```c
+int create_default_agents();
+```
+
+### Memory Management Functions
+
+Each data structure has corresponding free function:
+- `free_path_buf()`
+- `free_config()`
+- `free_project()`
+- `free_task()`
+- `free_agent()`
+- etc.
+
+## Design Patterns
+
+### 1. Factory Pattern
+**Implementation**: Agent creation functions act as factories for different agent types.
+
+### 2. Repository Pattern
+**Implementation**: Each data type has dedicated save/load functions that abstract storage details.
+
+### 3. Singleton Pattern
+**Implementation**: Configuration is loaded once and shared across the system.
+
+### 4. Strategy Pattern
+**Implementation**: Different agents implement different strategies for task handling.
+
+### 5. Observer Pattern
+**Implementation**: Queue system observes task changes and triggers agent assignments.
+
+## Performance Analysis
+
+### Time Complexity
+| Operation | Complexity | Notes |
+|-----------|------------|-------|
+| Directory creation | O(n) | n = number of directories |
+| File operations | O(1) | Constant time for individual files |
+| Path joining | O(1) | String concatenation |
+| Configuration load | O(1) | Single file read |
+| Task search | O(n) | Linear search through task files |
+
+### Memory Usage
+- Each structure uses dynamic memory allocation
+- Path strings are duplicated for safety
+- Embedded vectors can consume significant memory
+- File handles are properly closed after operations
+
+### Optimization Opportunities
+1. Implement caching for frequently accessed data
+2. Add indexing for faster task searches
+3. Use memory pooling for frequent allocations
+4. Implement lazy loading for large datasets
+
+## Security Considerations
+
+### Data Security
+1. **File Permissions**: All directories created with 0755 permissions
+2. **Path Sanitization**: Input validation for all file operations
+3. **Memory Safety**: Proper allocation and freeing of all resources
+4. **Error Handling**: Comprehensive error checking throughout
+
+### Authentication Security
+1. **API Key Storage**: Secure storage of authentication tokens
+2. **User Identification**: Fingerprint-based system identification
+3. **Configuration Protection**: Sensitive data in configuration files
+
+### Best Practices
+- Always validate paths before file operations
+- Use secure memory allocation patterns
+- Implement proper error recovery
+- Regular backup of critical data
+
+## Testing Strategies
+
+### Unit Testing
+```c
+// Example test structure
+void test_storage_initialization() {
+    // Test directory creation
+    // Test file existence
+    // Test permission settings
+}
+
+void test_config_management() {
+    // Test config save/load
+    // Test default values
+    // Test error conditions
+}
+```
+
+### Integration Testing
+1. **End-to-end workflow testing**
+2. **File system interaction testing**
+3. **Multi-agent coordination testing**
+4. **Error recovery testing**
+
+### Performance Testing
+1. **Load testing with large datasets**
+2. **Memory leak detection**
+3. **File I/O performance benchmarking**
+4. **Concurrent access testing**
+
+## Deployment Instructions
+
+### Prerequisites
+- C compiler (GCC recommended)
+- Standard C library
+- POSIX-compliant system
+- Sufficient disk space for storage
+
+### Build Process
+```bash
+# Compile the library
+gcc -c todozi.c -o todozi.o
+gcc -shared todozi.o -o libtodozi.so
+
+# Or compile statically
+gcc -c todozi.c -o todozi.o
+ar rcs libtodozi.a todozi.o
+```
+
+### Installation
+```bash
+# Copy library to system location
+sudo cp libtodozi.so /usr/local/lib/
+sudo cp todozi.h /usr/local/include/
+
+# Update library cache
+sudo ldconfig
+```
+
+### Configuration
+1. Run initialization: `init_storage()`
+2. Set up user registration
+3. Configure AI settings if needed
+4. Verify folder structure with `check_folder_structure()`
+
+## Usage Examples
+
+### Basic Initialization
+```c
+#include "todozi.h"
+
+int main() {
+    // Initialize storage
+    if (init_storage() != TODOZI_SUCCESS) {
+        printf("Failed to initialize storage\n");
+        return 1;
+    }
+    
+    // Check structure
+    if (!check_folder_structure()) {
+        printf("Folder structure invalid\n");
+        return 1;
+    }
+    
+    // Load configuration
+    Config* config = load_config();
+    if (!config) {
+        printf("Failed to load config\n");
+        return 1;
+    }
+    
+    // Use the system...
+    free_config(config);
+    return 0;
+}
+```
+
+### Task Management
+```c
+// Create and save a task
+Task* task = malloc(sizeof(Task));
+task->id = strdup("task_001");
+task->action = strdup("Implement feature X");
+task->status = strdup("active");
+task->priority = strdup("high");
+
+if (save_task(task) != TODOZI_SUCCESS) {
+    printf("Failed to save task\n");
+}
+
+free_task(task);
+```
+
+### Agent System
+```c
+// Create specialized agents
+Agent* planner = create_planner_agent();
+Agent* tester = create_tester_agent();
+
+// Save agents
+char* planner_file = make_json_filename(planner->id);
+// ... save logic
+
+free_agent(planner);
+free_agent(tester);
+```
+
+### Project Management
+```c
+// Create project
+Project* project = malloc(sizeof(Project));
+project->name = strdup("New Project");
+project->description = strdup("Project description");
+
+if (save_project(project) != TODOZI_SUCCESS) {
+    printf("Failed to save project\n");
+}
+
+free_project(project);
+```
+
+## Troubleshooting Guide
+
+### Common Issues
+
+#### 1. Storage Initialization Failure
+**Symptoms**: `init_storage()` returns error
+**Solutions**:
+- Check disk space availability
+- Verify write permissions in home directory
+- Check for existing .todozi directory conflicts
+
+#### 2. Configuration Load Failure
+**Symptoms**: `load_config()` returns NULL
+**Solutions**:
+- Verify tdz.hlx file exists and is readable
+- Check file permissions
+- Validate configuration file syntax
+
+#### 3. Memory Allocation Errors
+**Symptoms**: Segmentation faults or NULL returns
+**Solutions**:
+- Check system memory availability
+- Verify proper error handling in calling code
+- Use memory debugging tools
+
+#### 4. File Permission Issues
+**Symptoms**: Save operations failing
+**Solutions**:
+- Verify directory permissions
+- Check for locked files
+- Ensure proper user permissions
+
+### Debugging Techniques
+
+#### 1. Enable Verbose Logging
+```c
+// Add debug prints to track execution flow
+printf("DEBUG: Entering function %s\n", __FUNCTION__);
+```
+
+#### 2. Memory Debugging
+Use tools like Valgrind to detect memory leaks:
+```bash
+valgrind --leak-check=full ./your_program
+```
+
+#### 3. File System Inspection
+Manually check the storage structure:
+```bash
+ls -la ~/.todozi/
+find ~/.todozi/ -name "*.json" -exec cat {} \;
+```
+
+### Recovery Procedures
+
+#### 1. Data Corruption
+- Use backup files from backups/ directory
+- Run integrity checks on data files
+- Reinitialize storage if necessary
+
+#### 2. Configuration Loss
+- Restore from backup configuration
+- Use default configuration template
+- Re-run registration process
+
+#### 3. Agent System Failure
+- Recreate default agents with `create_default_agents()`
+- Verify agent configuration files
+- Check agent assignment integrity
+
+This documentation provides comprehensive coverage of the Todozi C library. The system is designed for robustness, extensibility, and performance, with careful attention to memory management and error handling.# Todozi Summary Management System - Comprehensive Documentation
+
+## Table of Contents
+1. [Overview](#overview)
+2. [Architecture](#architecture)
+3. [Data Structures](#data-structures)
+4. [Function Reference](#function-reference)
+5. [Usage Examples](#usage-examples)
+6. [Design Patterns](#design-patterns)
+7. [Performance Analysis](#performance-analysis)
+8. [Security Considerations](#security-considerations)
+9. [Testing Strategies](#testing-strategies)
+10. [Deployment Instructions](#deployment-instructions)
+11. [Troubleshooting Guide](#troubleshooting-guide)
+
+## Overview
+
+The Todozi Summary Management System is a C library for managing text summaries with priority levels, tagging, and search capabilities. It provides a comprehensive API for creating, retrieving, updating, and deleting summaries with advanced filtering and statistics features.
+
+### Key Features
+- **Summary Management**: Create, read, update, delete operations
+- **Priority System**: Low, Medium, High, Critical priority levels
+- **Tagging System**: Flexible tagging with search capabilities
+- **Search Functionality**: Content, tag, and context-based search
+- **Statistics**: Summary counts, priority distribution, tag usage
+- **Error Handling**: Comprehensive error reporting system
+- **Memory Management**: Automatic memory allocation and cleanup
+
+## Architecture
+
+### System Architecture Diagram
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│                    Application Layer                        │
+├─────────────────────────────────────────────────────────────┤
+│                    Summary Manager                          │
+│  ┌─────────────┐  ┌─────────────┐  ┌─────────────────────┐ │
+│  │ CRUD Ops    │  │ Search      │  │ Statistics          │ │
+│  └─────────────┘  └─────────────┘  └─────────────────────┘ │
+├─────────────────────────────────────────────────────────────┤
+│                    Data Structures                         │
+│  ┌─────────────┐  ┌─────────────┐  ┌─────────────────────┐ │
+│  │ Summary     │  │ StringVec   │  │ Various Maps        │ │
+│  └─────────────┘  └─────────────┘  └─────────────────────┘ │
+├─────────────────────────────────────────────────────────────┤
+│                    Utility Layer                           │
+│  ┌─────────────┐  ┌─────────────┐  ┌─────────────────────┐ │
+│  │ UUID Gen    │  │ String Ops  │  │ DateTime Ops        │ │
+│  └─────────────┘  └─────────────┘  └─────────────────────┘ │
+└─────────────────────────────────────────────────────────────┘
+```
+
+### Component Relationships
+
+```
+SummaryManager
+    │
+    ├── StringPtrMap (summaries: id → Summary*)
+    │
+    └── StringStringVecMap (summary_tags: id → tags)
+        │
+        └── StringVec (tags array)
+```
+
+### Data Flow
+
+1. **Creation**: Summary → UUID Generation → Map Storage
+2. **Retrieval**: ID → Map Lookup → Summary Return
+3. **Update**: ID + Update Object → Validation → Map Update
+4. **Deletion**: ID → Map Removal → Memory Cleanup
+
+## Data Structures
+
+### Core Structures
+
+#### Summary
+```c
+struct Summary {
+    char* id;                    // UUID string
+    char* content;               // Main summary text
+    char* context;               // Optional context
+    SummaryPriority priority;    // Priority level
+    StringVec tags;              // Tag collection
+    DateTime created_at;         // Creation timestamp
+    DateTime updated_at;         // Last update timestamp
+};
+```
+
+#### SummaryManager
+```c
+struct SummaryManager {
+    StringPtrMap summaries;      // id → Summary* mapping
+    StringStringVecMap summary_tags; // id → tags mapping
+};
+```
+
+#### SummaryUpdate
+```c
+struct SummaryUpdate {
+    char* content;               // New content (optional)
+    char* context;               // New context (optional)
+    SummaryPriority* priority;   // New priority (optional)
+    StringVec* tags;             // New tags (optional)
+    int has_content;             // Content update flag
+    int has_context;             // Context update flag
+    int has_priority;            // Priority update flag
+    int has_tags;                // Tags update flag
+};
+```
+
+### Container Structures
+
+#### StringVec (Dynamic String Array)
+```c
+typedef struct {
+    char** data;        // Array of string pointers
+    size_t size;        // Current element count
+    size_t capacity;    // Allocated capacity
+} StringVec;
+```
+
+#### StringPtrMap (String to Pointer Map)
+```c
+typedef struct {
+    char** keys;        // Array of key strings
+    void** values;      // Array of pointer values
+    size_t size;        // Current entry count
+    size_t capacity;    // Allocated capacity
+} StringPtrMap;
+```
+
+#### StringStringVecMap (String to StringVec Map)
+```c
+typedef struct {
+    char** keys;        // Array of key strings
+    StringVec* values;  // Array of StringVec values
+    size_t size;        // Current entry count
+    size_t capacity;    // Allocated capacity
+} StringStringVecMap;
+```
+
+### Enumeration Types
+
+#### SummaryPriority
+```c
+typedef enum {
+    SUMMARY_PRIORITY_LOW,
+    SUMMARY_PRIORITY_MEDIUM,
+    SUMMARY_PRIORITY_HIGH,
+    SUMMARY_PRIORITY_CRITICAL
+} SummaryPriority;
+```
+
+#### TodoziErrorType
+```c
+typedef enum {
+    TODOZI_ERROR_VALIDATION
+} TodoziErrorType;
+```
+
+## Function Reference
+
+### Core Management Functions
+
+#### `summary_manager_new()`
+**Description**: Creates a new SummaryManager instance
+**Parameters**: None
+**Returns**: `SummaryManager*` - Pointer to new manager, NULL on failure
+**Memory**: Allocates memory for manager structure
+**Thread Safety**: Not thread-safe
+
+#### `summary_manager_free()`
+**Description**: Frees all resources associated with a SummaryManager
+**Parameters**: `SummaryManager* manager` - Manager to free
+**Returns**: void
+**Memory**: Frees all manager resources including all summaries
+**Notes**: Must be called to avoid memory leaks
+
+#### `summary_manager_create_summary()`
+**Description**: Creates a new summary with auto-generated UUID
+**Parameters**: 
+- `SummaryManager* manager` - Target manager
+- `Summary* summary` - Summary data to create
+**Returns**: `char*` - New summary ID (caller must free), NULL on failure
+**Memory**: Creates deep copy of summary data
+**Error Handling**: Returns NULL on allocation failure
+
+#### `summary_manager_get_summary()`
+**Description**: Retrieves a summary by ID
+**Parameters**: 
+- `SummaryManager* manager` - Target manager
+- `const char* summary_id` - Summary ID to retrieve
+**Returns**: `Summary*` - Pointer to summary, NULL if not found
+**Notes**: Returns internal pointer - do not free
+
+### Search and Filter Functions
+
+#### `summary_manager_search_summaries()`
+**Description**: Searches summaries by content, tags, or context
+**Parameters**: 
+- `SummaryManager* manager` - Target manager
+- `const char* query` - Search query (case-insensitive)
+- `size_t* count` - Output parameter for result count
+**Returns**: `Summary**` - Array of matching summaries, NULL if none
+**Memory**: Caller must free returned array (but not summaries)
+**Search Scope**: Content, tags, and context fields
+
+#### `summary_manager_get_summaries_by_priority()`
+**Description**: Retrieves summaries by specific priority level
+**Parameters**: 
+- `SummaryManager* manager` - Target manager
+- `SummaryPriority priority` - Priority level to filter
+- `size_t* count` - Output parameter for result count
+**Returns**: `Summary**` - Array of matching summaries, NULL if none
+
+#### `summary_manager_get_summaries_by_tag()`
+**Description**: Retrieves summaries containing a specific tag
+**Parameters**: 
+- `SummaryManager* manager` - Target manager
+- `const char* tag` - Tag to search for (case-insensitive)
+- `size_t* count` - Output parameter for result count
+**Returns**: `Summary**` - Array of matching summaries, NULL if none
+
+### Statistics Functions
+
+#### `summary_manager_get_summary_statistics()`
+**Description**: Generates comprehensive summary statistics
+**Parameters**: `SummaryManager* manager` - Target manager
+**Returns**: `SummaryStatistics*` - Statistics object, NULL on failure
+**Statistics Included**: 
+- Total summary count
+- High priority count
+- Unique tag count
+
+#### `summary_manager_get_tag_statistics()`
+**Description**: Generates tag usage statistics
+**Parameters**: `SummaryManager* manager` - Target manager
+**Returns**: `StringStringMap*` - Map of tag → usage count, NULL on failure
+**Memory**: Caller must free returned map
+
+### Update Operations
+
+#### `summary_manager_update_summary()`
+**Description**: Updates specific fields of a summary
+**Parameters**: 
+- `SummaryManager* manager` - Target manager
+- `const char* summary_id` - Summary ID to update
+- `SummaryUpdate* updates` - Update specifications
+**Returns**: `int` - 1 on success, 0 on failure
+**Update Semantics**: Only fields marked for update are modified
+
+#### `summary_update_new()`
+**Description**: Creates a new update specification object
+**Parameters**: None
+**Returns**: `SummaryUpdate*` - New update object, NULL on failure
+
+#### `summary_update_*()` Family
+**Description**: Builder pattern functions for update specifications
+**Parameters**: Varies by field type
+**Returns**: `SummaryUpdate*` - Modified update object (for chaining)
+
+### Utility Functions
+
+#### `string_vec_new()`, `string_vec_push()`, `string_vec_free()`
+**Description**: Dynamic string array management
+**Memory**: Automatic capacity growth, deep string copying
+
+#### `string_clone()`
+**Description**: Creates a deep copy of a string
+**Parameters**: `const char* str` - String to clone
+**Returns**: `char*` - New string copy, NULL on failure
+**Memory**: Caller must free returned string
+
+#### `datetime_now()`, `datetime_compare()`
+**Description**: Date/time operations using standard time_t
+
+## Usage Examples
+
+### Basic CRUD Operations
+
+```c
+#include "todozi_summary.h"
+
+// Example 1: Create and manage summaries
+void basic_operations() {
+    SummaryManager* manager = summary_manager_new();
+    
+    // Create a summary
+    Summary* summary = summary_new();
+    summary->content = string_clone("Complete project documentation");
+    summary->context = string_clone("Work Project");
+    summary->priority = SUMMARY_PRIORITY_HIGH;
+    
+    // Add tags
+    string_vec_push(&summary->tags, "work");
+    string_vec_push(&summary->tags, "urgent");
+    
+    // Store summary
+    char* summary_id = summary_manager_create_summary(manager, summary);
+    printf("Created summary with ID: %s\n", summary_id);
+    
+    // Retrieve summary
+    Summary* retrieved = summary_manager_get_summary(manager, summary_id);
+    if (retrieved) {
+        printf("Retrieved: %s\n", retrieved->content);
+    }
+    
+    // Cleanup
+    free(summary_id);
+    summary_free(summary);
+    summary_manager_free(manager);
+}
+```
+
+### Update Operations with Builder Pattern
+
+```c
+// Example 2: Update operations
+void update_example() {
+    SummaryManager* manager = summary_manager_new();
+    
+    // Assume we have a summary with ID "existing_id"
+    SummaryUpdate* update = summary_update_new();
+    
+    // Build update using fluent interface
+    summary_update_content(update, "Updated content")
+        ->summary_update_priority(update, SUMMARY_PRIORITY_CRITICAL)
+        ->summary_update_context(update, "New context");
+    
+    // Add new tags
+    StringVec new_tags;
+    new_tags.data = NULL; new_tags.size = 0; new_tags.capacity = 0;
+    string_vec_push(&new_tags, "updated");
+    string_vec_push(&new_tags, "critical");
+    summary_update_tags(update, &new_tags);
+    
+    // Apply update
+    int success = summary_manager_update_summary(manager, "existing_id", update);
+    
+    // Cleanup
+    string_vec_free(&new_tags);
+    summary_update_free(update);
+    summary_manager_free(manager);
+}
+```
+
+### Search and Statistics
+
+```c
+// Example 3: Search and statistics
+void search_and_stats() {
+    SummaryManager* manager = summary_manager_new();
+    
+    // Search for summaries containing "project"
+    size_t count;
+    Summary** results = summary_manager_search_summaries(manager, "project", &count);
+    
+    if (results) {
+        printf("Found %zu summaries matching 'project':\n", count);
+        for (size_t i = 0; i < count; i++) {
+            printf("- %s\n", results[i]->content);
+        }
+        free(results);
+    }
+    
+    // Get statistics
+    SummaryStatistics* stats = summary_manager_get_summary_statistics(manager);
+    if (stats) {
+        printf("Total summaries: %zu\n", stats->total_summaries);
+        printf("High priority: %zu (%.2f%%)\n", 
+               stats->high_priority_summaries,
+               summary_statistics_high_priority_percentage(stats));
+        printf("Unique tags: %zu\n", stats->unique_tags);
+        summary_statistics_free(stats);
+    }
+    
+    summary_manager_free(manager);
+}
+```
+
+### Tag Management
+
+```c
+// Example 4: Tag operations
+void tag_operations() {
+    SummaryManager* manager = summary_manager_new();
+    
+    // Get all unique tags
+    size_t tag_count;
+    char** all_tags = summary_manager_get_all_tags(manager, &tag_count);
+    
+    if (all_tags) {
+        printf("System tags (%zu):\n", tag_count);
+        for (size_t i = 0; i < tag_count; i++) {
+            printf("- %s\n", all_tags[i]);
+            free(all_tags[i]); // Free individual strings
+        }
+        free(all_tags); // Free array
+    }
+    
+    // Get tag statistics
+    StringStringMap* tag_stats = summary_manager_get_tag_statistics(manager);
+    if (tag_stats) {
+        for (size_t i = 0; i < tag_stats->size; i++) {
+            printf("Tag '%s' used %s times\n", 
+                   tag_stats->keys[i], tag_stats->values[i]);
+        }
+        string_string_map_free(tag_stats);
+    }
+    
+    summary_manager_free(manager);
+}
+```
+
+## Design Patterns
+
+### 1. Manager Pattern
+**Implementation**: `SummaryManager` class centralizes all operations
+**Benefits**: 
+- Single responsibility principle
+- Encapsulated data management
+- Consistent error handling
+
+### 2. Builder Pattern
+**Implementation**: `SummaryUpdate` with fluent interface methods
+**Benefits**:
+- Flexible object construction
+- Readable method chaining
+- Optional parameter support
+
+### 3. Factory Pattern  
+**Implementation**: `*_new()` functions for object creation
+**Benefits**:
+- Consistent object initialization
+- Memory allocation abstraction
+- Error handling standardization
+
+### 4. Iterator Pattern
+**Implementation**: Search functions returning arrays with count
+**Benefits**:
+- Consistent result handling
+- Memory management clarity
+- Pagination support via count parameter
+
+### 5. Strategy Pattern
+**Implementation**: Different search strategies (content, tag, priority)
+**Benefits**:
+- Extensible search capabilities
+- Polymorphic search behavior
+- Clean separation of search logic
+
+## Performance Analysis
+
+### Time Complexity
+
+| Operation | Best Case | Average Case | Worst Case | Notes |
+|-----------|-----------|--------------|------------|-------|
+| Create Summary | O(1) | O(1) | O(1) | UUID generation + map insertion |
+| Get Summary | O(1) | O(n) | O(n) | Linear search in map (no hashing) |
+| Update Summary | O(1) | O(n) | O(n) | Find + field updates |
+| Delete Summary | O(1) | O(n) | O(n) | Find + removal |
+| Search Summaries | O(n) | O(n) | O(n) | Linear scan of all summaries |
+| Priority Filter | O(n) | O(n) | O(n) | Linear scan |
+| Tag Filter | O(n*m) | O(n*m) | O(n*m) | n summaries × m tags each |
+
+### Space Complexity
+
+| Component | Space Usage | Growth Pattern |
+|-----------|-------------|----------------|
+| SummaryManager | O(n + m) | n summaries, m unique tags |
+| Individual Summary | O(1) | Fixed size plus dynamic content |
+| Search Results | O(k) | k matching summaries |
+
+### Memory Management Patterns
+- **Allocation**: Deep copying for owned strings
+- **Deallocation**: Comprehensive cleanup functions
+- **Growth**: Exponential capacity doubling for dynamic arrays
+
+### Optimization Opportunities
+1. **Hashing**: Implement hash tables for O(1) lookups
+2. **Indexing**: Create priority and tag indices
+3. **Caching**: Cache frequent search results
+4. **Pagination**: Implement result pagination for large datasets
+
+## Security Considerations
+
+### Input Validation
+```c
+// Current validation gaps:
+- No maximum length checks for content/context
+- No tag count limits
+- No priority value validation in some functions
+```
+
+### Recommended Enhancements
+1. **Input Sanitization**:
+   - Maximum field lengths
+   - Tag count limits (e.g., max 10 tags per summary)
+   - Priority value range validation
+
+2. **Memory Safety**:
+   - Boundary checks in all array operations
+   - Null pointer validation in public API
+   - Buffer overflow protection
+
+3. **Resource Management**:
+   - Maximum summary count limits
+   - Memory usage monitoring
+   - Graceful degradation on allocation failure
+
+### Security Best Practices Implemented
+- ✅ Deep copying of string data
+- ✅ Comprehensive memory cleanup
+- ✅ Null pointer checks in critical functions
+- ✅ UUID generation for unique identifiers
+
+### Potential Vulnerabilities
+1. **Unbounded Data Growth**: No limits on summary count or content size
+2. **Linear Search**: O(n) operations could be exploited for DoS
+3. **Memory Exhaustion**: No recovery mechanism for allocation failures
+
+## Testing Strategies
+
+### Unit Testing Framework
+
+#### Test Categories
+1. **Creation Tests**: Verify summary creation with various inputs
+2. **Retrieval Tests**: Test get operations with valid/invalid IDs
+3. **Update Tests**: Validate partial and full updates
+4. **Deletion Tests**: Confirm proper cleanup
+5. **Search Tests**: Test all search variants
+6. **Statistics Tests**: Verify accurate counting
+7. **Memory Tests**: Check for leaks and corruption
+
+#### Sample Test Cases
+
+```c
+// Example unit test for summary creation
+void test_summary_creation() {
+    SummaryManager* manager = summary_manager_new();
+    assert(manager != NULL);
+    
+    Summary* summary = summary_new();
+    summary->content = string_clone("Test content");
+    summary->priority = SUMMARY_PRIORITY_MEDIUM;
+    
+    char* id = summary_manager_create_summary(manager, summary);
+    assert(id != NULL);
+    
+    Summary* retrieved = summary_manager_get_summary(manager, id);
+    assert(retrieved != NULL);
+    assert(strcmp(retrieved->content, "Test content") == 0);
+    
+    // Cleanup
+    free(id);
+    summary_free(summary);
+    summary_manager_free(manager);
+}
+```
+
+### Integration Testing
+- Multi-operation sequences
+- Error recovery scenarios
+- Memory leak detection
+- Performance benchmarking
+
+### Stress Testing
+- Large dataset operations
+- Concurrent access simulations
+- Memory exhaustion scenarios
+- Long-running operation stability
+
+## Deployment Instructions
+
+### Build Requirements
+
+#### Dependencies
+```bash
+# Ubuntu/Debian
+sudo apt-get install build-essential libuuid-dev
+
+# CentOS/RHEL  
+sudo yum install gcc libuuid-devel
+
+# macOS
+brew install libuuid
+```
+
+#### Compilation
+```bash
+# Basic compilation
+gcc -o todozi_lib todozi_summary.c -luuid
+
+# With debugging
+gcc -g -DDEBUG -o todozi_lib todozi_summary.c -luuid
+
+# With optimization
+gcc -O2 -o todozi_lib todozi_summary.c -luuid
+
+# As shared library
+gcc -shared -fPIC -o libtodozi.so todozi_summary.c -luuid
+```
+
+### Integration Steps
+
+1. **Header File Inclusion**:
+```c
+#include "todozi_summary.h"
+```
+
+2. **Linking**:
+```bash
+gcc -o myapp myapp.c -L. -ltodozi -luuid
+```
+
+3. **Runtime Requirements**:
+   - libuuid.so.1 (or equivalent)
+   - Standard C library
+
+### Platform Considerations
+
+| Platform | Notes | Dependencies |
+|----------|-------|--------------|
+| Linux | Primary platform | libuuid-dev |
+| macOS | Good support | libuuid via Homebrew |
+| Windows | Requires porting | No native UUID library |
+
+### Memory Configuration
+- **Default Limits**: None (unbounded growth)
+- **Recommended Limits**: Set based on application requirements
+- **Monitoring**: Implement application-level memory monitoring
+
+## Troubleshooting Guide
+
+### Common Issues
+
+#### 1. Memory Leaks
+**Symptoms**: Gradual memory increase, eventual crash
+**Diagnosis**: Use valgrind or similar memory checker
+**Solution**: Ensure all `*_free()` functions are called appropriately
+
+```bash
+valgrind --leak-check=full ./my_application
+```
+
+#### 2. UUID Generation Failures
+**Symptoms**: Summary creation returns NULL
+**Diagnosis**: Check libuuid installation and linking
+**Solution**: Verify UUID library installation
+
+```bash
+# Check UUID library
+ldconfig -p | grep uuid
+```
+
+#### 3. Search Performance Issues
+**Symptoms**: Slow response with large datasets
+**Diagnosis**: Linear search complexity (O(n))
+**Solution**: Implement indexing or limit dataset size
+
+#### 4. Compilation Errors
+**Common Errors**:
+- `undefined reference to uuid_generate`: Missing -luuid flag
+- `uuid/uuid.h: No such file`: Missing development package
+
+### Debugging Techniques
+
+#### 1. Logging Integration
+```c
+#ifdef DEBUG
+#define LOG(msg) printf("DEBUG: %s\n", msg)
+#else
+#define LOG(msg)
+#endif
+```
+
+#### 2. Memory Debugging
+```c
+// Track allocations
+size_t total_allocations = 0;
+void* debug_malloc(size_t size) {
+    total_allocations++;
+    return malloc(size);
+}
+```
+
+#### 3. Error Code Enhancement
+```c
+typedef enum {
+    TODOZI_SUCCESS = 0,
+    TODOZI_ERROR_MEMORY,
+    TODOZI_ERROR_NOT_FOUND,
+    TODOZI_ERROR_VALIDATION,
+    TODOZI_ERROR_INVALID_PARAM
+} TodoziResultCode;
+```
+
+### Recovery Strategies
+
+#### 1. Graceful Degradation
+- Return error codes instead of crashing
+- Provide fallback operations
+- Implement resource limits
+
+#### 2. Data Integrity
+- Regular consistency checks
+- Backup/restore mechanisms
+- Transaction-like operations for critical updates
+
+#### 3. Performance Monitoring
+- Operation timing
+- Memory usage tracking
+- Resource utilization alerts
+
+This comprehensive documentation provides complete coverage of the Todozi Summary Management System, including architectural insights, detailed API references, usage examples, and operational guidance. The system demonstrates solid software engineering principles with opportunities for optimization and enhancement in production environments.# Comprehensive Documentation for Todozi Tag Management System
+
+## Table of Contents
+1. [System Overview](#system-overview)
+2. [Architecture](#architecture)
+3. [Data Structures](#data-structures)
+4. [API Reference](#api-reference)
+5. [Design Patterns](#design-patterns)
+6. [Performance Analysis](#performance-analysis)
+7. [Security Considerations](#security-considerations)
+8. [Testing Strategies](#testing-strategies)
+9. [Deployment Instructions](#deployment-instructions)
+10. [Troubleshooting Guide](#troubleshooting-guide)
+
+## System Overview
+
+Todozi is a comprehensive tag management system written in C that provides robust functionality for creating, updating, searching, and managing tags with relationships, categories, and statistics tracking. The system supports advanced search capabilities including fuzzy matching and tag suggestions.
+
+### Key Features
+- **Tag Management**: Create, read, update, delete operations
+- **Tag Relationships**: Establish and manage relationships between tags
+- **Category Support**: Organize tags into categories
+- **Advanced Search**: Multi-criteria search with sorting
+- **Fuzzy Search**: Levenshtein distance-based approximate matching
+- **Statistics**: Usage tracking and analytics
+- **Bulk Operations**: Batch tag creation and merging
+
+## Architecture
+
+### System Architecture Diagram
+```
+┌─────────────────┐    ┌──────────────────┐    ┌────────────────────┐
+│   TagManager    │◇──│  TagSearchEngine │◇──│   TagSearchQuery   │
+└─────────────────┘    └──────────────────┘    └────────────────────┘
+         │                        │
+         │                        │
+┌─────────┼─────────┐    ┌─────────┼─────────┐
+│         │         │    │         │         │
+▼         ▼         ▼    ▼         ▼         ▼
+┌─────┐  ┌─────┐  ┌─────┐  ┌─────────────┐  ┌─────────────┐
+│ Tag │  │HashMap│ │Vector│ │TagStatistics│ │TagUpdate    │
+└─────┘  └─────┘  └─────┘  └─────────────┘  └─────────────┘
+```
+
+### Component Relationships
+- **TagManager**: Core management component storing tags in hash maps
+- **TagSearchEngine**: Search functionality built on TagManager
+- **HashMap**: Custom hash map implementation for data storage
+- **Vector**: Dynamic array implementation for collections
+- **Tag**: Individual tag entity with metadata
+- **TagUpdate**: Builder pattern for tag modifications
+
+## Data Structures
+
+### Core Structures
+
+#### Tag Structure
+```c
+struct Tag {
+    char* id;                   // UUID identifier
+    char* name;                 // Tag name
+    char* description;          // Tag description
+    char* color;                // Color representation
+    char* category;             // Category classification
+    unsigned int usage_count;   // Usage counter
+    DateTime created_at;        // Creation timestamp
+    DateTime updated_at;        // Last update timestamp
+};
+```
+
+#### TagManager Structure
+```c
+struct TagManager {
+    HashMap* tags;              // Primary tag storage (id → Tag)
+    HashMap* tag_relationships; // Tag relationships (id → Vector<related_ids>)
+    HashMap* category_tags;     // Category organization (category → Vector<tag_ids>)
+};
+```
+
+#### Vector Structure
+```c
+typedef struct {
+    void** data;                // Array of pointers
+    size_t size;                // Current element count
+    size_t capacity;            // Current allocation size
+} Vector;
+```
+
+#### HashMap Structure
+```c
+typedef struct {
+    HashMapEntry** buckets;     // Array of linked list heads
+    size_t size;                // Number of entries
+    size_t capacity;            // Number of buckets
+} HashMap;
+```
+
+### Error Handling Enum
+```c
+typedef enum {
+    TODOZI_SUCCESS,            // Operation successful
+    TODOZI_VALIDATION_ERROR,   // Invalid input parameters
+    TODOZI_OUT_OF_MEMORY       // Memory allocation failure
+} TodoziError;
+```
+
+## API Reference
+
+### Vector Operations
+
+#### `vector_create()`
+Creates a new vector with initial capacity.
+
+**Parameters**: None  
+**Returns**: `Vector*` - New vector instance or NULL on failure  
+**Time Complexity**: O(1)  
+**Memory Complexity**: O(1)
+
+**Example**:
+```c
+Vector* vec = vector_create();
+if (!vec) {
+    // Handle allocation failure
+}
+```
+
+#### `vector_push(Vector* vec, void* item)`
+Adds an element to the end of the vector.
+
+**Parameters**:
+- `vec`: Vector to modify
+- `item`: Pointer to element to add
+
+**Returns**: void  
+**Time Complexity**: O(1) amortized  
+**Memory Complexity**: O(n)
+
+**Example**:
+```c
+Vector* vec = vector_create();
+vector_push(vec, some_data);
+```
+
+#### `vector_get(Vector* vec, size_t index)`
+Retrieves an element at the specified index.
+
+**Parameters**:
+- `vec`: Vector to access
+- `index`: Zero-based index
+
+**Returns**: `void*` - Element pointer or NULL if invalid  
+**Time Complexity**: O(1)  
+**Memory Complexity**: O(1)
+
+**Example**:
+```c
+void* data = vector_get(vec, 0);
+if (data) {
+    // Use the data
+}
+```
+
+### HashMap Operations
+
+#### `hashmap_create()`
+Creates a new hash map with default capacity.
+
+**Parameters**: None  
+**Returns**: `HashMap*` - New hash map instance  
+**Time Complexity**: O(1)  
+**Memory Complexity**: O(1)
+
+**Example**:
+```c
+HashMap* map = hashmap_create();
+```
+
+#### `hashmap_put(HashMap* map, const char* key, void* value)`
+Inserts or updates a key-value pair.
+
+**Parameters**:
+- `map`: Hash map to modify
+- `key`: String key
+- `value`: Associated value
+
+**Returns**: `TodoziError` - Operation status  
+**Time Complexity**: O(1) average, O(n) worst-case  
+**Memory Complexity**: O(1)
+
+**Example**:
+```c
+TodoziError err = hashmap_put(map, "key1", data);
+if (err != TODOZI_SUCCESS) {
+    // Handle error
+}
+```
+
+#### `hashmap_get(HashMap* map, const char* key)`
+Retrieves a value by key.
+
+**Parameters**:
+- `map`: Hash map to search
+- `key`: Key to lookup
+
+**Returns**: `void*` - Associated value or NULL  
+**Time Complexity**: O(1) average, O(n) worst-case  
+**Memory Complexity**: O(1)
+
+**Example**:
+```c
+void* value = hashmap_get(map, "key1");
+```
+
+### Tag Management Operations
+
+#### `tag_manager_create()`
+Creates a new tag manager instance.
+
+**Parameters**: None  
+**Returns**: `TagManager*` - New tag manager  
+**Time Complexity**: O(1)  
+**Memory Complexity**: O(1)
+
+**Example**:
+```c
+TagManager* manager = tag_manager_create();
+if (!manager) {
+    // Handle creation failure
+}
+```
+
+#### `tag_manager_create_tag(TagManager* manager, Tag* tag, char** out_id)`
+Creates a new tag in the system.
+
+**Parameters**:
+- `manager`: Tag manager instance
+- `tag`: Tag to create (id will be generated)
+- `out_id`: Optional output parameter for created tag ID
+
+**Returns**: `TodoziError` - Operation status  
+**Time Complexity**: O(1) average  
+**Memory Complexity**: O(1)
+
+**Example**:
+```c
+Tag* new_tag = tag_create();
+new_tag->name = string_clone("Important");
+char* tag_id = NULL;
+TodoziError err = tag_manager_create_tag(manager, new_tag, &tag_id);
+```
+
+#### `tag_manager_search_tags(TagManager* manager, const char* query)`
+Searches tags by name or description.
+
+**Parameters**:
+- `manager`: Tag manager instance
+- `query`: Search query string
+
+**Returns**: `Vector*` - Vector of matching tags  
+**Time Complexity**: O(n)  
+**Memory Complexity**: O(k) where k is number of matches
+
+**Example**:
+```c
+Vector* results = tag_manager_search_tags(manager, "important");
+```
+
+### Advanced Search Operations
+
+#### `tag_search_engine_advanced_search(TagSearchEngine* engine, TagSearchQuery* query)`
+Performs multi-criteria tag search.
+
+**Parameters**:
+- `engine`: Search engine instance
+- `query`: Search criteria object
+
+**Returns**: `Vector*` - Sorted and filtered results  
+**Time Complexity**: O(n log n) for sorting  
+**Memory Complexity**: O(n)
+
+**Example**:
+```c
+TagSearchQuery* query = tag_search_query_create();
+query->name_contains = string_clone("bug");
+query->min_usage = malloc(sizeof(unsigned int));
+*query->min_usage = 5;
+Vector* results = tag_search_engine_advanced_search(engine, query);
+```
+
+#### `tag_search_engine_fuzzy_search(TagSearchEngine* engine, const char* query, size_t max_distance)`
+Performs fuzzy string matching search.
+
+**Parameters**:
+- `engine`: Search engine instance
+- `query`: Search string
+- `max_distance`: Maximum Levenshtein distance
+
+**Returns**: `Vector*` - Results sorted by similarity  
+**Time Complexity**: O(n * m) where m is query length  
+**Memory Complexity**: O(n)
+
+**Example**:
+```c
+Vector* fuzzy_results = tag_search_engine_fuzzy_search(engine, "important", 2);
+```
+
+## Design Patterns
+
+### Builder Pattern
+**TagUpdate** structure uses builder pattern for incremental tag modification:
+```c
+TagUpdate* update = tag_update_new();
+tag_update_name(update, "New Name");
+tag_update_description(update, "New Description");
+tag_manager_update_tag(manager, tag_id, update);
+```
+
+### Factory Pattern
+**Tag** creation uses factory functions:
+```c
+Tag* tag = tag_create();  // Factory function
+```
+
+### Repository Pattern
+**TagManager** acts as a repository for tag entities, providing data access abstraction.
+
+### Strategy Pattern
+Sorting algorithms are implemented as strategy functions passed to `qsort`.
+
+## Performance Analysis
+
+### Time Complexity Analysis
+
+| Operation | Average Case | Worst Case | Notes |
+|-----------|-------------|------------|--------|
+| Tag creation | O(1) | O(n) | Hash map insertion |
+| Tag lookup by ID | O(1) | O(n) | Hash map lookup |
+| Tag search | O(n) | O(n) | Linear scan |
+| Fuzzy search | O(n*m) | O(n*m) | Levenshtein per tag |
+| Bulk operations | O(k) | O(k) | k = number of tags |
+| Sorting | O(n log n) | O(n²) | Uses qsort |
+
+### Memory Usage Analysis
+
+| Component | Base Memory | Per Element |
+|-----------|-------------|-------------|
+| TagManager | ~200 bytes | ~100 bytes/tag |
+| Vector | 24 bytes | 8 bytes/element |
+| HashMap | 24 bytes | ~40 bytes/entry |
+| Tag | 48 bytes | Variable string data |
+
+### Optimization Strategies
+1. **HashMap resizing**: Dynamic resizing with load factor management
+2. **Vector doubling**: Amortized constant time appends
+3. **String interning**: Consider for duplicate tag names
+4. **Caching**: Query result caching for repeated searches
+
+## Security Considerations
+
+### Input Validation
+- All public API functions validate NULL parameters
+- String length checks prevent buffer overflows
+- UUID validation for tag identifiers
+
+### Memory Safety
+- Comprehensive error handling for allocation failures
+- Proper cleanup functions for all resources
+- Defensive programming against memory leaks
+
+### Data Integrity
+- Atomic operations where possible
+- Consistent state maintenance
+- Transaction-like behavior for complex operations
+
+### Security Best Practices
+1. **Validation**: Always validate external inputs
+2. **Sanitization**: Escape special characters in search queries
+3. **Access Control**: Implement proper authorization (extension point)
+4. **Audit Logging**: Track tag modifications (extension point)
+
+## Testing Strategies
+
+### Unit Testing Framework
+```c
+// Example test function
+void test_tag_creation() {
+    TagManager* manager = tag_manager_create();
+    assert(manager != NULL);
+    
+    Tag* tag = tag_create();
+    tag->name = string_clone("Test Tag");
+    
+    TodoziError err = tag_manager_create_tag(manager, tag, NULL);
+    assert(err == TODOZI_SUCCESS);
+    
+    tag_manager_free(manager);
+    tag_free(tag);
+}
+```
+
+### Test Categories
+
+#### Functional Tests
+- Tag lifecycle management
+- Search functionality validation
+- Relationship management
+- Error handling verification
+
+#### Performance Tests
+- Large dataset handling
+- Memory usage profiling
+- Concurrent access patterns
+
+#### Integration Tests
+- End-to-end workflow validation
+- Data persistence integration
+- API interface testing
+
+### Test Data Generation
+```c
+// Helper function for test data
+Vector* generate_test_tags(size_t count) {
+    Vector* tags = vector_create();
+    for (size_t i = 0; i < count; i++) {
+        Tag* tag = tag_create();
+        tag->name = malloc(32);
+        sprintf(tag->name, "TestTag%zu", i);
+        vector_push(tags, tag);
+    }
+    return tags;
+}
+```
+
+## Deployment Instructions
+
+### Prerequisites
+- C99 compatible compiler (GCC, Clang)
+- UUID development library (`libuuid`)
+- Standard C library
+
+### Build Instructions
+```bash
+# Compile with GCC
+gcc -std=c99 -Wall -Wextra -pedantic -luuid todozi.c -o todozi
+
+# Compile with Clang
+clang -std=c99 -Wall -Wextra -pedantic -luuid todozi.c -o todozi
+```
+
+### Library Installation
+```bash
+# Ubuntu/Debian
+sudo apt-get install libuuid1 libuuid-dev
+
+# CentOS/RHEL
+sudo yum install libuuid libuuid-devel
+
+# macOS (Homebrew)
+brew install ossp-uuid
+```
+
+### Integration with Applications
+```c
+// Example integration
+#include "todozi.h"
+
+int main() {
+    TagManager* manager = tag_manager_create();
+    if (!manager) return 1;
+    
+    // Use tag management functionality
+    Tag* tag = tag_create();
+    tag->name = string_clone("Integration Test");
+    tag_manager_create_tag(manager, tag, NULL);
+    
+    tag_manager_free(manager);
+    return 0;
+}
+```
+
+### Production Deployment Checklist
+1. [ ] Memory leak testing completed
+2. [ ] Performance benchmarking passed
+3. [ ] Security review conducted
+4. [ ] Integration testing validated
+5. [ ] Documentation reviewed and updated
+
+## Troubleshooting Guide
+
+### Common Issues and Solutions
+
+#### Memory Leaks
+**Symptoms**: Increasing memory usage over time
+**Solutions**:
+- Use valgrind for leak detection: `valgrind --leak-check=full ./todozi`
+- Ensure all allocated memory is properly freed
+- Check vector and hashmap cleanup functions
+
+```bash
+valgrind --leak-check=full --show-leak-kinds=all ./todozi
+```
+
+#### Performance Degradation
+**Symptoms**: Slow search operations with large datasets
+**Solutions**:
+- Implement result caching
+- Use more efficient data structures for large datasets
+- Profile with `gprof` to identify bottlenecks
+
+```bash
+gcc -pg -std=c99 todozi.c -luuid -o todozi
+./todozi
+gprof todozi gmon.out > analysis.txt
+```
+
+#### UUID Generation Failures
+**Symptoms**: Tag creation fails with NULL IDs
+**Solutions**:
+- Check libuuid installation
+- Verify library linking
+- Implement fallback UUID generation
+
+#### Search Functionality Issues
+**Symptoms**: Incorrect or missing search results
+**Solutions**:
+- Verify string comparison logic
+- Check case sensitivity settings
+- Test with known data sets
+
+### Debugging Techniques
+
+#### Logging Implementation
+```c
+#ifdef DEBUG
+#define TODOZI_LOG(fmt, ...) printf("TODOZI: " fmt "\n", ##__VA_ARGS__)
+#else
+#define TODOZI_LOG(fmt, ...)
+#endif
+```
+
+#### Assertion Checking
+```c
+#include <assert.h>
+
+TodoziError tag_manager_create_tag(TagManager* manager, Tag* tag, char** out_id) {
+    assert(manager != NULL);
+    assert(tag != NULL);
+    // ... rest of implementation
+}
+```
+
+### Error Handling Patterns
+
+#### Comprehensive Error Reporting
+```c
+const char* todozi_error_string(TodoziError error) {
+    switch (error) {
+        case TODOZI_SUCCESS: return "Success";
+        case TODOZI_VALIDATION_ERROR: return "Validation error";
+        case TODOZI_OUT_OF_MEMORY: return "Out of memory";
+        default: return "Unknown error";
+    }
+}
+```
+
+#### Resource Cleanup on Failure
+```c
+TodoziError complex_operation() {
+    Resource* res1 = acquire_resource();
+    if (!res1) return TODOZI_OUT_OF_MEMORY;
+    
+    Resource* res2 = acquire_resource();
+    if (!res2) {
+        release_resource(res1);  // Cleanup on failure
+        return TODOZI_OUT_OF_MEMORY;
+    }
+    
+    // ... operation logic
+    
+    release_resource(res1);
+    release_resource(res2);
+    return TODOZI_SUCCESS;
+}
+```
+
+This documentation provides a comprehensive reference for the Todozi tag management system, covering all aspects from architecture to troubleshooting. The system demonstrates robust C programming practices with attention to memory management, error handling, and performance considerations.# Comprehensive Documentation for Todozi (TDZ) API Client Library
+
+## Table of Contents
+1. [Overview](#overview)
+2. [Architecture](#architecture)
+3. [Code Analysis](#code-analysis)
+4. [Data Structures](#data-structures)
+5. [Functions](#functions)
+6. [Usage Examples](#usage-examples)
+7. [Design Patterns](#design-patterns)
+8. [Performance Analysis](#performance-analysis)
+9. [Security Considerations](#security-considerations)
+10. [Testing Strategy](#testing-strategy)
+11. [Deployment Instructions](#deployment-instructions)
+12. [Troubleshooting Guide](#troubleshooting-guide)
+
+## Overview
+
+The Todozi (TDZ) API Client Library is a comprehensive C library for interacting with the Todozi AI assistant API. It provides functionality to parse TDZ commands embedded in text, execute them against the API, and process responses. The library handles command parsing, request building, HTTP communication, and JSON response processing.
+
+### Key Features
+- **Command Parsing**: Extracts TDZ commands from text using `<tdz>...</tdz>` tags
+- **RESTful API Integration**: Supports GET, POST, PUT, DELETE operations
+- **JSON Handling**: Comprehensive JSON request/response processing using jansson
+- **Error Handling**: Robust error management with detailed error types
+- **Memory Management**: Safe memory allocation and cleanup
+- **Thread Safety**: Uses thread-safe string operations
+
+## Architecture
+
+### System Architecture Diagram
+```
+Text Input → Parser → Command Vector → Executor → HTTP Client → API Server
+    ↓           ↓           ↓           ↓           ↓           ↓
+Error Handling ← Results Processing ← JSON Parsing ← Response ← Server Response
+```
+
+### Component Relationships
+```
++----------------+     +----------------+     +-----------------+
+|   Text Input   | --> |   Parser       | --> | Command Vector  |
++----------------+     +----------------+     +-----------------+
+                                                  |
+                                                  v
++----------------+     +----------------+     +-----------------+
+|   API Server   | <-- | HTTP Client    | <-- |   Executor      |
++----------------+     +----------------+     +-----------------+
+```
+
+### Data Flow
+1. **Input**: Text containing `<tdz>command;target;params</tdz>` tags
+2. **Parsing**: Extract and validate commands into structured format
+3. **Execution**: Convert commands to HTTP requests with proper headers/body
+4. **Communication**: Send requests to Todozi API server
+5. **Processing**: Parse JSON responses and handle errors
+
+## Code Analysis
+
+### Dependencies and Requirements
+
+#### Required Libraries
+- **libcurl**: HTTP client functionality
+- **jansson**: JSON parsing and generation
+- **Standard C Library**: Memory management, string operations
+
+#### Compilation Flags
+```bash
+gcc -std=c99 -Wall -Wextra -pedantic -D_POSIX_C_SOURCE=200809L \
+    -I/usr/local/include -L/usr/local/lib -lcurl -ljansson \
+    tdz_client.c -o tdz_client
+```
+
+### Memory Management Strategy
+The library implements careful memory management with:
+- **Ownership Semantics**: Clear ownership of allocated memory
+- **RAII-like Patterns**: Automatic cleanup functions
+- **Error Recovery**: Graceful handling of allocation failures
+- **Buffer Overflow Protection**: Safe string operations with bounds checking
+
+## Data Structures
+
+### TdzErrorType Enum
+```c
+typedef enum {
+    TDZ_ERROR_NONE,        // No error
+    TDZ_ERROR_VALIDATION,  // Input validation error
+    TDZ_ERROR_NETWORK,     // Network communication error
+    TDZ_ERROR_JSON,        // JSON parsing/generation error
+    TDZ_ERROR_OOM          // Out of memory error
+} TdzErrorType;
+```
+
+### TdzError Structure
+```c
+typedef struct {
+    TdzErrorType type;     // Error category
+    char* message;         // Human-readable error message (owned)
+} TdzError;
+```
+
+**Memory Ownership**: The `message` field is owned by the structure and must be freed with `tdz_error_free()`.
+
+### TdzCommand Structure
+```c
+typedef struct {
+    char* command;         // Action (create, list, get, update, delete, run)
+    char* target;          // Resource type (task, memory, agent, etc.)
+    char** parameters;     // Array of parameter strings
+    size_t param_count;    // Number of parameters
+    json_t* options;       // Key-value options (jansson object)
+} TdzCommand;
+```
+
+**Memory Ownership**:
+- `command`, `target`: Owned, freed by `tdz_command_free()`
+- `parameters`: Array and elements owned, freed by `tdz_command_free()`
+- `options`: jansson object, reference counted
+
+### TdzCommandVector Structure
+```c
+typedef struct {
+    TdzCommand* commands;  // Dynamic array of commands
+    size_t count;          // Current number of commands
+    size_t capacity;       // Current capacity of the array
+} TdzCommandVector;
+```
+
+**Growth Strategy**: Capacity doubles when full (initial capacity: 8)
+
+### MemoryStruct Structure (CURL)
+```c
+struct MemoryStruct {
+    char* memory;          // Dynamically allocated response buffer
+    size_t size;           // Current size of buffer
+};
+```
+
+## Functions
+
+### Core API Functions
+
+#### `parse_tdz_command`
+```c
+TdzCommandVector* parse_tdz_command(const char* text, TdzError** error);
+```
+
+**Purpose**: Parse TDZ commands from input text
+
+**Parameters**:
+- `text`: Input text containing `<tdz>...</tdz>` tags
+- `error`: Double pointer to receive error details (optional)
+
+**Returns**: 
+- `TdzCommandVector*`: Parsed commands (caller must free)
+- `NULL`: On error, with error details populated
+
+**Error Conditions**:
+- Memory allocation failure
+- Malformed command syntax
+- Invalid tag structure
+
+#### `execute_tdz_command`
+```c
+TdzError* execute_tdz_command(TdzCommand* command, const char* base_url, 
+                             const char* api_key, json_t** result);
+```
+
+**Purpose**: Execute a single TDZ command against the API
+
+**Parameters**:
+- `command`: Command to execute
+- `base_url`: Base URL of Todozi API (e.g., "https://api.todozi.com")
+- `api_key`: API key for authentication (optional)
+- `result`: Pointer to receive JSON result (optional)
+
+**Returns**:
+- `NULL`: Success
+- `TdzError*`: Error details on failure
+
+**HTTP Methods Supported**:
+- GET: list, get, search
+- POST: create, run, execute  
+- PUT: update
+- DELETE: delete
+
+#### `process_tdz_commands`
+```c
+TdzError* process_tdz_commands(const char* text, const char* base_url,
+                              const char* api_key, json_t** results);
+```
+
+**Purpose**: High-level function to parse and execute all commands in text
+
+**Parameters**:
+- `text`: Input text containing TDZ commands
+- `base_url`: API base URL
+- `api_key`: Authentication key
+- `results`: Array of JSON results from all commands
+
+**Returns**:
+- `NULL`: All commands executed successfully
+- `TdzError*`: First error encountered
+
+### Helper Functions
+
+#### Memory Management
+```c
+TdzCommand* tdz_command_new(void);
+void tdz_command_free(TdzCommand* cmd);
+
+TdzCommandVector* tdz_command_vector_new(void);
+void tdz_command_vector_free(TdzCommandVector* vec);
+
+TdzError* tdz_error_new(TdzErrorType type, const char* message);
+void tdz_error_free(TdzError* error);
+
+TdzError* tdz_command_vector_add(TdzCommandVector* vec, TdzCommand* cmd);
+```
+
+#### String Utilities
+```c
+static char* string_duplicate(const char* str);
+static void string_to_lowercase(char* str);
+```
+
+#### Path Resolution
+```c
+char* find_todozi(const char* str);
+```
+
+### Internal Helper Functions
+
+#### `get_endpoint_path`
+```c
+char* get_endpoint_path(TdzCommand* command);
+```
+
+**Purpose**: Map command/target to API endpoint path
+
+**Endpoint Mapping Examples**:
+- `list tasks` → `/tasks`
+- `get task` → `/tasks/{id}`
+- `create memory` → `/memories`
+
+#### Request Body Builders
+```c
+json_t* build_request_body(TdzCommand* command);
+json_t* build_run_body(TdzCommand* command);
+```
+
+**Supported Targets**:
+- task, memory, idea, agent, chunk, project, feeling, training
+
+#### CURL Callback
+```c
+static size_t WriteMemoryCallback(void* contents, size_t size, 
+                                 size_t nmemb, struct MemoryStruct* mem);
+```
+
+**Purpose**: Accumulate HTTP response data in memory buffer
+
+## Usage Examples
+
+### Basic Example: Single Command
+```c
+#include "tdz_client.h"
+
+int main() {
+    const char* text = "<tdz>list;tasks</tdz>";
+    const char* base_url = "https://api.todozi.com";
+    const char* api_key = "your-api-key";
+    
+    json_t* results = NULL;
+    TdzError* error = process_tdz_commands(text, base_url, api_key, &results);
+    
+    if (error) {
+        printf("Error: %s (type: %d)\n", error->message, error->type);
+        tdz_error_free(error);
+        return 1;
+    }
+    
+    // Process results
+    if (results && json_is_array(results)) {
+        size_t index;
+        json_t* value;
+        json_array_foreach(results, index, value) {
+            char* result_str = json_dumps(value, JSON_INDENT(2));
+            printf("Result %zu: %s\n", index, result_str);
+            free(result_str);
+        }
+    }
+    
+    if (results) json_decref(results);
+    return 0;
+}
+```
+
+### Advanced Example: Multiple Commands with Error Handling
+```c
+#include "tdz_client.h"
+
+void process_complex_commands() {
+    const char* text = 
+        "Here's my todo list:\n"
+        "<tdz>create;task;action=Buy groceries;priority=high</tdz>\n"
+        "<tdz>list;tasks</tdz>\n"
+        "<tdz>create;memory;moment=Lunch with team;importance=medium</tdz>";
+    
+    TdzCommandVector* commands = parse_tdz_command(text, NULL);
+    if (!commands) {
+        printf("Failed to parse commands\n");
+        return;
+    }
+    
+    for (size_t i = 0; i < commands->count; i++) {
+        TdzCommand* cmd = &commands->commands[i];
+        json_t* result = NULL;
+        TdzError* error = execute_tdz_command(cmd, "https://api.todozi.com", 
+                                            "api-key-123", &result);
+        
+        if (error) {
+            printf("Command %zu failed: %s\n", i, error->message);
+            tdz_error_free(error);
+        } else {
+            printf("Command %zu succeeded\n", i);
+            if (result) {
+                // Process result
+                json_decref(result);
+            }
+        }
+    }
+    
+    tdz_command_vector_free(commands);
+}
+```
+
+### Command Syntax Examples
+
+#### Task Management
+```c
+// Create task
+"<tdz>create;task;action=Complete project;priority=high;project=work</tdz>"
+
+// List tasks  
+"<tdz>list;tasks</tdz>"
+
+// Update task
+"<tdz>update;task;123;status=completed</tdz>"
+
+// Search tasks
+"<tdz>search;tasks;urgent</tdz>"
+```
+
+#### Memory Management
+```c
+// Create memory
+"<tdz>create;memory;moment=Team meeting;importance=high;memory_type=short</tdz>"
+
+// List memories by type
+"<tdz>list;memories_short</tdz>"
+```
+
+#### Agent Operations
+```c
+// Create agent
+"<tdz>create;agent;name=Research Bot;capabilities=search,analyze</tdz>"
+
+// Run agent
+"<tdz>run;agent;agent123;message=Research AI trends</tdz>"
+```
+
+## Design Patterns
+
+### 1. Resource Acquisition Is Initialization (RAII)
+```c
+// Pattern: Automatic cleanup with dedicated free functions
+TdzCommand* cmd = tdz_command_new();
+if (!cmd) { /* handle error */ }
+// ... use command ...
+tdz_command_free(cmd);  // Automatic cleanup
+```
+
+### 2. Factory Pattern
+```c
+// Pattern: Factory functions for object creation
+TdzError* error = tdz_error_new(TDZ_ERROR_NETWORK, "Connection failed");
+TdzCommandVector* vec = tdz_command_vector_new();
+```
+
+### 3. Strategy Pattern
+```c
+// Pattern: Different strategies for different command types
+if (strcmp(cmd->command, "create") == 0) {
+    body = build_request_body(cmd);  // Strategy for create
+} else if (strcmp(cmd->command, "run") == 0) {
+    body = build_run_body(cmd);      // Strategy for run
+}
+```
+
+### 4. Command Pattern
+```c
+// Pattern: Encapsulating operations as command objects
+TdzCommand cmd = {
+    .command = "create",
+    .target = "task",
+    .parameters = /* ... */,
+    .options = /* ... */
+};
+execute_tdz_command(&cmd, base_url, api_key, &result);
+```
+
+### 5. Iterator Pattern
+```c
+// Pattern: Iterating through command vector
+for (size_t i = 0; i < commands->count; i++) {
+    TdzCommand* cmd = &commands->commands[i];
+    process_command(cmd);
+}
+```
+
+## Performance Analysis
+
+### Time Complexity
+| Operation | Complexity | Notes |
+|-----------|------------|-------|
+| Command Parsing | O(n) | Linear to input text size |
+| Command Vector Add | O(1) amortized | Dynamic array doubling |
+| Endpoint Lookup | O(1) | Constant-time hash lookup ideal |
+| JSON Processing | O(n) | Linear to JSON size |
+
+### Memory Usage
+| Component | Memory Footprint | Notes |
+|-----------|------------------|-------|
+| Command Structure | ~100-500 bytes | Depends on parameters |
+| Command Vector | 8 + n*sizeof(TdzCommand) | Grows dynamically |
+| HTTP Response | Variable | Depends on API response size |
+
+### Optimization Opportunities
+1. **String Interning**: Reduce duplicate string allocations
+2. **Object Pooling**: Reuse command structures
+3. **Response Streaming**: Process large responses incrementally
+4. **Connection Pooling**: Reuse HTTP connections
+
+### Memory Safety Features
+- Bounds checking in string operations
+- Overflow protection in arithmetic
+- Null pointer validation
+- Resource cleanup guarantees
+
+## Security Considerations
+
+### Input Validation
+```c
+// Example: Safe string duplication with validation
+static char* string_duplicate(const char* str) {
+    if (!str) return NULL;  // Null check
+    size_t len = strlen(str);
+    char* new_str = malloc(len + 1);
+    if (!new_str) return NULL;
+    memcpy(new_str, str, len);  // Safe copy with known length
+    new_str[len] = '\0';
+    return new_str;
+}
+```
+
+### API Security
+1. **Authentication**: API key validation and header injection
+2. **HTTPS Enforcement**: Recommend TLS 1.2+ for production
+3. **Input Sanitization**: Command parameter validation
+4. **Error Message Security**: Avoid leaking sensitive information
+
+### Memory Safety
+- Buffer overflow protection
+- Integer overflow checks
+- Double-free prevention
+- Use-after-free mitigation
+
+### Security Best Practices
+```c
+// Safe string operations
+int written = snprintf(buffer, buffer_size, format, args);
+if (written < 0 || (size_t)written >= buffer_size) {
+    // Handle truncation or error
+}
+
+// Safe memory allocation with overflow check
+if (realsize / size != nmemb) {
+    return 0;  // Overflow detected
+}
+```
+
+## Testing Strategy
+
+### Unit Testing Framework
+Recommended using CUnit or Check framework:
+
+```c
+// Example test case for command parsing
+void test_parse_basic_command(void) {
+    const char* text = "<tdz>list;tasks</tdz>";
+    TdzError* error = NULL;
+    TdzCommandVector* commands = parse_tdz_command(text, &error);
+    
+    CU_ASSERT_PTR_NOT_NULL(commands);
+    CU_ASSERT(commands->count == 1);
+    CU_ASSERT_STRING_EQUAL(commands->commands[0].command, "list");
+    CU_ASSERT_STRING_EQUAL(commands->commands[0].target, "tasks");
+    
+    tdz_command_vector_free(commands);
+    if (error) tdz_error_free(error);
+}
+```
+
+### Test Categories
+
+#### 1. Parser Tests
+- Valid command extraction
+- Malformed tag handling
+- Multiple command parsing
+- Parameter/option parsing
+
+#### 2. Endpoint Mapping Tests
+- All command/target combinations
+- Parameter substitution
+- Special cases (update feeling)
+
+#### 3. HTTP Integration Tests
+- Successful requests
+- Error responses
+- Authentication failures
+- Network timeouts
+
+#### 4. Memory Safety Tests
+- Allocation failure recovery
+- Buffer overflow scenarios
+- Cleanup verification
+
+### Mock Testing Strategy
+```c
+// Mock CURL for unit testing
+typedef CURL* (*curl_easy_init_mock)(void);
+typedef CURLcode (*curl_easy_perform_mock)(CURL*);
+
+// Inject mock functions during testing
+void set_curl_mocks(curl_easy_init_mock init_mock, 
+                   curl_easy_perform_mock perform_mock);
+```
+
+## Deployment Instructions
+
+### Build Requirements
+```bash
+# Ubuntu/Debian
+sudo apt-get install libcurl4-openssl-dev libjansson-dev
+
+# CentOS/RHEL
+sudo yum install libcurl-devel jansson-devel
+
+# macOS with Homebrew
+brew install curl jansson
+```
+
+### Compilation
+```makefile
+# Makefile example
+CC = gcc
+CFLAGS = -std=c99 -Wall -Wextra -pedantic -O2
+LIBS = -lcurl -ljansson
+INCLUDES = -I/usr/local/include
+
+tdz_client: tdz_client.c
+	$(CC) $(CFLAGS) $(INCLUDES) tdz_client.c -o tdz_client $(LIBS)
+
+clean:
+	rm -f tdz_client
+```
+
+### Integration Example
+```c
+// main.c - Example integration
+#include "tdz_client.h"
+#include <stdio.h>
+
+int main(int argc, char* argv[]) {
+    if (argc < 3) {
+        fprintf(stderr, "Usage: %s <base_url> <api_key> [input_file]\n", argv[0]);
+        return 1;
+    }
+    
+    const char* base_url = argv[1];
+    const char* api_key = argv[2];
+    const char* input_file = argc > 3 ? argv[3] : NULL;
+    
+    char* text = NULL;
+    if (input_file) {
+        // Read from file
+        FILE* f = fopen(input_file, "r");
+        if (!f) {
+            perror("Failed to open input file");
+            return 1;
+        }
+        fseek(f, 0, SEEK_END);
+        long size = ftell(f);
+        fseek(f, 0, SEEK_SET);
+        text = malloc(size + 1);
+        fread(text, 1, size, f);
+        text[size] = '\0';
+        fclose(f);
+    } else {
+        // Read from stdin
+        text = read_stdin();
+    }
+    
+    json_t* results = NULL;
+    TdzError* error = process_tdz_commands(text, base_url, api_key, &results);
+    
+    if (error) {
+        fprintf(stderr, "Error: %s\n", error->message);
+        tdz_error_free(error);
+        free(text);
+        return 1;
+    }
+    
+    // Output results as JSON
+    char* output = json_dumps(results, JSON_INDENT(2));
+    printf("%s\n", output);
+    
+    free(output);
+    if (results) json_decref(results);
+    free(text);
+    return 0;
+}
+```
+
+## Troubleshooting Guide
+
+### Common Issues and Solutions
+
+#### 1. Compilation Errors
+**Problem**: Missing libraries
+```bash
+# Error: curl/curl.h: No such file or directory
+sudo apt-get install libcurl4-openssl-dev  # Ubuntu
+sudo yum install libcurl-devel            # CentOS
+```
+
+**Problem**: Linker errors
+```bash
+# Error: undefined reference to `curl_easy_init'
+# Ensure libraries are linked in correct order
+gcc program.c -lcurl -ljansson  # Correct order
+```
+
+#### 2. Runtime Errors
+
+**Memory Allocation Failures**
+```c
+// Check system memory limits
+// Use valgrind for memory leak detection
+valgrind --leak-check=full ./tdz_client
+```
+
+**Network Connection Issues**
+```c
+// Verify base_url format
+// Check API key validity
+// Test network connectivity
+curl -I https://api.todozi.com/health
+```
+
+**JSON Parsing Errors**
+```c
+// Enable jansson error reporting
+json_error_t error;
+json_t* root = json_loads(response, 0, &error);
+if (!root) {
+    fprintf(stderr, "JSON error: %s\n", error.text);
+}
+```
+
+#### 3. Performance Issues
+
+**High Memory Usage**
+- Monitor with tools like `top` or `htop`
+- Check for memory leaks with valgrind
+- Consider response size limits
+
+**Slow Execution**
+- Enable CURL verbose mode for debugging
+- Check network latency
+- Profile with `gprof` or `perf`
+
+### Debugging Techniques
+
+#### Verbose Logging
+```c
+// Enable CURL verbose output
+curl_easy_setopt(curl, CURLOPT_VERBOSE, 1L);
+
+// Add custom debug logging
+#ifdef DEBUG
+#define DBG printf
+#else
+#define DBG(...)
+#endif
+```
+
+#### Error Recovery
+```c
+// Comprehensive error handling example
+TdzError* error = execute_tdz_command(cmd, base_url, api_key, &result);
+switch (error ? error->type : TDZ_ERROR_NONE) {
+    case TDZ_ERROR_NONE:
+        // Success
+        break;
+    case TDZ_ERROR_NETWORK:
+        // Retry logic
+        break;
+    case TDZ_ERROR_VALIDATION:
+        // User input error
+        break;
+    default:
+        // Generic error handling
+        break;
+}
+```
+
+### Monitoring and Logging
+
+#### Integration with Logging Systems
+```c
+// Example syslog integration
+#include <syslog.h>
+
+void log_tdz_error(TdzError* error) {
+    syslog(LOG_ERR, "TDZ Error [%d]: %s", error->type, error->message);
+}
+
+// Example file logging
+void log_to_file(const char* message) {
+    FILE* logfile = fopen("/var/log/tdz_client.log", "a");
+    if (logfile) {
+        fprintf(logfile, "%s\n", message);
+        fclose(logfile);
+    }
+}
+```
+
+This comprehensive documentation provides complete coverage of the TDZ API client library, including architectural overview, detailed function specifications, usage examples, security considerations, and troubleshooting guidance. The library demonstrates robust C programming practices with careful attention to memory safety, error handling, and API integration.# Todozi Content Processor - Comprehensive Documentation
+
+## 1. Overview
+
+The Todozi Content Processor is a sophisticated C library designed for processing conversational content, extracting actionable items, managing checklists, and handling tool calls. It provides natural language processing capabilities with JSON integration for intelligent content management systems.
+
+## 2. Architecture
+
+### 2.1 System Architecture Diagram
+
+```
+┌─────────────────┐    ┌──────────────────┐    ┌─────────────────┐
+│   Input Content │ -> │ Content Parser   │ -> │ Data Extractor  │
+└─────────────────┘    └──────────────────┘    └─────────────────┘
+         │                       │                       │
+         │                       │                       │
+         ▼                       ▼                       ▼
+┌─────────────────┐    ┌──────────────────┐    ┌─────────────────┐
+│  Tool Processor │ -> │ State Manager    │ -> │ Response Gen    │
+└─────────────────┘    └──────────────────┘    └─────────────────┘
+         │                       │                       │
+         │                       │                       │
+         ▼                       ▼                       ▼
+┌─────────────────┐    ┌──────────────────┐    ┌─────────────────┐
+│   Output/Store  │    │  Session Mgmt    │    │ Final Response  │
+└─────────────────┘    └──────────────────┘    └─────────────────┘
+```
+
+### 2.2 Component Relationships
+
+```
+tdz_cnt() (Main Entry Point)
+    ├── parse_raw_content()
+    │   ├── parse_json_content()
+    │   └── parse_text_content()
+    ├── extract_todozi_data()
+    │   ├── regex pattern matching
+    │   └── natural language extraction
+    ├── process_tool_calls()
+    │   ├── task creation
+    │   ├── search operations
+    │   ├── memory creation
+    │   └── idea generation
+    ├── clean_content()
+    └── generate_response()
+        └── state-aware formatting
+```
+
+## 3. Data Structures
+
+### 3.1 Primary Structures
+
+#### ChecklistItem
+```c
+struct ChecklistItem {
+    char* id;           // UUID identifier
+    char* content;      // Task description
+    char* priority;     // Priority level
+    int completed;      // Completion status
+    time_t created_at;  // Creation timestamp
+    char* source;       // Source of the item
+};
+```
+
+#### ProcessedContent
+```c
+struct ProcessedContent {
+    char* id;                           // Unique identifier
+    char* session_id;                   // Session context
+    char* raw_content;                  // Original content
+    char* cleaned_content;              // Processed content
+    time_t timestamp;                   // Processing time
+    ExtractedAction* extracted_items;   // Extracted actions
+    size_t extracted_items_count;       // Action count
+    ChecklistItem* checklist_items;     // Generated checklist
+    size_t checklist_items_count;       // Checklist item count
+    ProcessedAction* tool_calls;        // Processed tool calls
+    size_t tool_calls_count;            // Tool call count
+    ProcessingStats processing_stats;   // Performance metrics
+};
+```
+
+#### TodoziProcessorState
+```c
+struct TodoziProcessorState {
+    HashMap* active_sessions;           // Session management
+    ProcessedAction* recent_actions;    // Action history
+    size_t recent_actions_count;        // Action count
+    size_t recent_actions_capacity;     // Storage capacity
+    ChecklistItem* checklist_items;     // Global checklist
+    size_t checklist_items_count;       // Item count
+    size_t checklist_items_capacity;    // Storage capacity
+    ProcessedContent* processed_contents; // Content history
+    size_t processed_contents_count;    // Content count
+    size_t processed_contents_capacity; // Storage capacity
+};
+```
+
+### 3.2 Support Structures
+
+#### HashMap Implementation
+Simple hash map for session management with chaining collision resolution.
+
+```c
+typedef struct HashMapEntry {
+    char* key;
+    void* value;
+    struct HashMapEntry* next;
+} HashMapEntry;
+
+typedef struct {
+    HashMapEntry** buckets;
+    size_t size;
+} HashMap;
+```
+
+## 4. Core Functions & API Reference
+
+### 4.1 Initialization Functions
+
+#### `todozi_processor_state_new()`
+```c
+TodoziProcessorState* todozi_processor_state_new(void)
+```
+**Purpose**: Create and initialize a new processor state instance
+
+**Parameters**: None
+
+**Returns**: 
+- `TodoziProcessorState*` - Pointer to newly allocated state
+- `NULL` - If memory allocation fails
+
+**Memory Management**: Caller must free with `todozi_processor_state_free()`
+
+**Usage Example**:
+```c
+TodoziProcessorState* state = todozi_processor_state_new();
+if (!state) {
+    // Handle initialization error
+}
+```
+
+#### `tdz_content_processor_tool_new()`
+```c
+TdzContentProcessorTool* tdz_content_processor_tool_new(TodoziProcessorState* state)
+```
+**Purpose**: Create a content processing tool with associated state
+
+**Parameters**:
+- `state` - Pre-initialized processor state
+
+**Returns**: 
+- `TdzContentProcessorTool*` - New tool instance
+- `NULL` - If allocation fails or state is invalid
+
+**Usage Example**:
+```c
+TdzContentProcessorTool* tool = tdz_content_processor_tool_new(state);
+```
+
+### 4.2 Content Processing Functions
+
+#### `tdz_cnt()` - Main Processing Function
+```c
+char* tdz_cnt(const char* content, const char* session_id)
+```
+**Purpose**: Primary content processing entry point
+
+**Parameters**:
+- `content` - Input content to process (text or JSON)
+- `session_id` - Session identifier for context
+
+**Returns**: Processed response string (caller must free)
+
+**Processing Flow**:
+1. Parse content (JSON or text)
+2. Extract todozi-specific data
+3. Process tool calls
+4. Clean and format content
+5. Generate comprehensive response
+
+**Usage Example**:
+```c
+const char* input = "{"content": "We need to fix the bug", "tool_calls": []}";
+char* result = tdz_cnt(input, "session_123");
+printf("Processed: %s\n", result);
+free(result);
+```
+
+#### `parse_raw_content()`
+```c
+ParsedContent* parse_raw_content(const char* content)
+```
+**Purpose**: Parse input content, automatically detecting JSON or text format
+
+**Parameters**: `content` - Input string
+
+**Returns**: `ParsedContent*` structure containing parsed data
+
+**Algorithm**:
+- Attempt JSON parsing first
+- Fall back to text parsing if JSON invalid
+- Extract content and tool calls from JSON structure
+
+#### `extract_todozi_data()`
+```c
+ExtractionResult* extract_todozi_data(TdzContentProcessorTool* tool, ParsedContent* parsed)
+```
+**Purpose**: Extract todozi-specific patterns and tags from content
+
+**Parameters**:
+- `tool` - Processing tool with pattern database
+- `parsed` - Pre-parsed content
+
+**Extraction Patterns**:
+- XML-like tags: `<todozi>`, `<memory>`, `<idea>`
+- Natural language patterns: "we should", "I need to", "don't forget"
+- Tool calls from JSON structure
+
+### 4.3 Tool Call Processing
+
+#### `process_tool_calls()`
+```c
+ProcessingResult* process_tool_calls(TdzContentProcessorTool* tool, json_object* tool_calls)
+```
+**Purpose**: Process JSON tool call arrays
+
+**Supported Tool Types**:
+- `create_task` / `add_task` - Task creation
+- `search` / `list` - Information retrieval
+- `update` / `complete` - Status updates
+- `memory` - Memory creation
+- `idea` - Idea generation
+
+**Tool Call JSON Structure**:
+```json
+{
+    "function": {
+        "name": "create_task",
+        "parameters": {...}
+    }
+}
+```
+
+### 4.4 Memory Management Functions
+
+#### Resource Cleanup Functions
+```c
+void todozi_processor_state_free(TodoziProcessorState* state);
+void tdz_content_processor_tool_free(TdzContentProcessorTool* tool);
+void parsed_content_free(ParsedContent* parsed);
+void extraction_result_free(ExtractionResult* result);
+void processing_result_free(ProcessingResult* result);
+void checklist_items_free(ChecklistItem* items, size_t count);
+```
+
+## 5. Design Patterns Used
+
+### 5.1 Factory Pattern
+- `todozi_processor_state_new()` - State object factory
+- `tdz_content_processor_tool_new()` - Tool object factory
+
+### 5.2 Strategy Pattern
+- Content parsing strategy (JSON vs Text)
+- Tool call processing strategies
+
+### 5.3 Observer Pattern (Implicit)
+- Session state tracking
+- Recent actions history
+
+### 5.4 Composite Pattern
+- Nested content structures
+- Hierarchical data extraction
+
+## 6. Performance Analysis
+
+### 6.1 Time Complexity
+| Operation | Complexity | Notes |
+|-----------|------------|-------|
+| Content Parsing | O(n) | Linear to content length |
+| Regex Extraction | O(n*m) | n=content length, m=pattern count |
+| Hash Map Operations | O(1) avg, O(n) worst | With good hash distribution |
+| Tool Call Processing | O(k) | k=number of tool calls |
+
+### 6.2 Space Complexity
+| Component | Memory Usage | Notes |
+|-----------|--------------|-------|
+| Processor State | O(s + a + c) | s=sessions, a=actions, c=contents |
+| Content Processing | O(n) | n=content length |
+| Extraction Results | O(t + p) | t=tags, p=patterns |
+
+### 6.3 Optimization Strategies
+- Dynamic array resizing (geometric progression)
+- UUID caching for frequent item creation
+- Pattern pre-compilation
+- Memory pooling for frequent allocations
+
+## 7. Security Considerations
+
+### 7.1 Input Validation
+- NULL pointer checks throughout
+- Buffer length validation
+- JSON structure validation
+
+### 7.2 Memory Safety
+- Comprehensive cleanup functions
+- Deep copying for state persistence
+- Bounds checking on dynamic arrays
+
+### 7.3 Command Execution Safety
+- `execute_binary_command()` uses fork/exec with argument validation
+- Pipe-based output capture prevents shell injection
+- Process isolation with proper cleanup
+
+### 7.4 Session Security
+- UUID-based session identification
+- Session activity tracking
+- Automatic session cleanup in state destruction
+
+## 8. Error Handling
+
+### 8.1 Error Types
+```c
+typedef enum {
+    TODOZI_SUCCESS = 0,
+    TODOZI_ERROR_VALIDATION,    // Input validation failed
+    TODOZI_ERROR_STORAGE,       // Memory allocation failed
+    TODOZI_ERROR_PARSE          // Content parsing failed
+} TodoziError;
+```
+
+### 8.2 Error Recovery Strategies
+- Graceful degradation on parsing failures
+- Fallback to text processing when JSON invalid
+- NULL-safe memory operations
+- Comprehensive cleanup on error conditions
+
+## 9. Testing Strategies
+
+### 9.1 Unit Test Categories
+
+#### Content Parsing Tests
+```c
+// Test JSON parsing
+void test_json_parsing() {
+    const char* json_content = "{\"content\": \"test\", \"tool_calls\": []}";
+    ParsedContent* parsed = parse_raw_content(json_content);
+    assert(parsed != NULL);
+    assert(parsed->json_content != NULL);
+    parsed_content_free(parsed);
+}
+
+// Test text parsing fallback
+void test_text_parsing() {
+    const char* text_content = "Simple text content";
+    ParsedContent* parsed = parse_raw_content(text_content);
+    assert(parsed != NULL);
+    assert(parsed->text_content != NULL);
+    parsed_content_free(parsed);
+}
+```
+
+#### Extraction Tests
+```c
+void test_tag_extraction() {
+    const char* content = "Content with <todozi>tag</todozi> inside";
+    ParsedContent* parsed = parse_text_content(content);
+    ExtractionResult* result = extract_todozi_data(tool, parsed);
+    assert(result->extracted_tags_count == 1);
+    extraction_result_free(result);
+    parsed_content_free(parsed);
+}
+```
+
+### 9.2 Integration Tests
+- End-to-end processing pipeline
+- State persistence across operations
+- Session management continuity
+
+### 9.3 Performance Tests
+- Large content processing benchmarks
+- Memory usage profiling
+- Concurrent access patterns
+
+## 10. Deployment Instructions
+
+### 10.1 Build Dependencies
+```bash
+# Required libraries
+sudo apt-get install libjson-c-dev libuuid-dev
+
+# Compilation flags
+gcc -o todozi_processor todozi_processor.c -ljson-c -luuid
+```
+
+### 10.2 Integration Steps
+
+#### Basic Integration
+```c
+#include "todozi_processor.h"
+
+// Initialize processor
+TodoziProcessorState* state = initialize_tdz_content_processor();
+
+// Process content
+char* result = tdz_cnt(user_content, session_id);
+
+// Use result
+process_result(result);
+
+// Cleanup
+free(result);
+todozi_processor_state_free(state);
+```
+
+#### Advanced Configuration
+```c
+// Custom pattern initialization
+TdzContentProcessorTool* tool = tdz_content_processor_tool_new(state);
+// Add custom patterns if needed
+```
+
+### 10.3 Platform Considerations
+- POSIX-compliant systems required
+- UUID library availability
+- JSON-C library version compatibility
+- Fork/exec functionality for command execution
+
+## 11. Usage Examples
+
+### 11.1 Basic Content Processing
+```c
+#include "todozi_processor.h"
+
+int main() {
+    const char* content = "We need to fix the database connection issue.";
+    char* processed = tdz_cnt(content, "tech_support_session");
+    
+    printf("Input: %s\n", content);
+    printf("Processed: %s\n", processed);
+    
+    free(processed);
+    return 0;
+}
+```
+
+### 11.2 JSON Tool Call Processing
+```c
+const char* json_content = 
+    "{\"content\": \"Create a task for documentation\", "
+    "\"tool_calls\": [{\"function\": {\"name\": \"create_task\"}}]}";
+
+char* result = tdz_cnt(json_content, "doc_session");
+```
+
+### 11.3 Session Management
+```c
+TodoziProcessorState* state = todozi_processor_state_new();
+
+// Process multiple messages in same session
+tdz_cnt("First message", "session_1");
+tdz_cnt("Follow up message", "session_1");
+tdz_cnt("Different topic", "session_2");
+
+// State maintains session context and history
+```
+
+## 12. Troubleshooting Guide
+
+### 12.1 Common Issues
+
+#### Memory Leaks
+**Symptoms**: Increasing memory usage over time
+**Solution**: Ensure proper cleanup sequence:
+```c
+// Correct cleanup order
+processing_result_free(processing);
+extraction_result_free(extraction);
+tdz_content_processor_tool_free(tool);
+todozi_processor_state_free(state);
+```
+
+#### JSON Parsing Failures
+**Symptoms**: Content processed as plain text when JSON expected
+**Debugging**: 
+```c
+// Check JSON validity before processing
+json_object* test_json = json_tokener_parse(content);
+if (!test_json) {
+    printf("Invalid JSON, will use text processing\n");
+}
+```
+
+#### Pattern Extraction Issues
+**Symptoms**: Expected patterns not being extracted
+**Debugging**: Verify pattern initialization and content formatting
+
+### 12.2 Debugging Techniques
+
+#### Runtime Debugging
+```c
+// Enable debug output
+#define TODOZI_DEBUG 1
+
+#ifdef TODOZI_DEBUG
+    printf("Processing content: %s\n", content);
+    printf("Extracted %zu tags\n", extraction->extracted_tags_count);
+#endif
+```
+
+#### Memory Debugging
+Use tools like Valgrind:
+```bash
+valgrind --leak-check=full ./todozi_processor
+```
+
+### 12.3 Performance Optimization
+
+#### For High-Volume Processing
+- Pre-initialize processor state
+- Reuse sessions for related content
+- Implement custom memory pools
+- Batch process related content
+
+## 13. API Reference Summary
+
+### Core Functions
+| Function | Purpose | Memory Responsibility |
+|----------|---------|----------------------|
+| `tdz_cnt()` | Main processing entry | Caller frees result |
+| `initialize_tdz_content_processor()` | State initialization | Caller frees state |
+| `parse_raw_content()` | Content parsing | Caller frees result |
+
+### Support Functions
+| Function Category | Examples | Purpose |
+|-------------------|----------|---------|
+| Memory Management | `*_free()` functions | Resource cleanup |
+| Extraction | `extract_*()` functions | Data pattern extraction |
+| Processing | `process_*()` functions | Content transformation |
+
+## 14. Future Enhancements
+
+### Planned Features
+- Thread-safe operations for concurrent access
+- Plugin architecture for custom processors
+- Persistent storage backends
+- Advanced NLP integration
+- Real-time streaming processing
+
+### Compatibility Roadmap
+- Additional JSON library support
+- Windows compatibility layer
+- WebAssembly compilation target
+- Mobile platform adaptations
+
+This documentation provides comprehensive coverage of the Todozi Content Processor system. The implementation demonstrates robust content processing capabilities with extensible architecture and thorough error handling.# Comprehensive Documentation for Todozi Task Management System
+
+## Overview
+
+Todozi is a comprehensive C-based task management system designed to handle project organization, task tracking, and configuration management. The system provides robust data structures and functionality for managing tasks, projects, and system configurations with support for various statuses, priorities, and assignee types.
+
+## Table of Contents
+1. [Architecture Overview](#architecture-overview)
+2. [Data Structures](#data-structures)
+3. [Function API Documentation](#function-api-documentation)
+4. [Design Patterns](#design-patterns)
+5. [Performance Analysis](#performance-analysis)
+6. [Security Considerations](#security-considerations)
+7. [Testing Strategies](#testing-strategies)
+8. [Deployment Instructions](#deployment-instructions)
+9. [Troubleshooting Guide](#troubleshooting-guide)
+10. [Usage Examples](#usage-examples)
+
+## Architecture Overview
+
+### System Architecture Diagram
+```
+┌─────────────────┐    ┌─────────────────┐    ┌─────────────────┐
+│   TaskManager   │───▶│  TaskCollection │───▶│      Config     │
+└─────────────────┘    └─────────────────┘    └─────────────────┘
+         │                       │                       │
+         ▼                       ▼                       ▼
+┌─────────────────┐    ┌─────────────────┐    ┌─────────────────┐
+│      Task       │    │     Project     │    │  Error Handler  │
+└─────────────────┘    └─────────────────┘    └─────────────────┘
+```
+
+### Core Component Relationships
+- **Task**: Individual task unit with metadata
+- **Project**: Container for related tasks
+- **TaskCollection**: Manager for multiple tasks
+- **Config**: System configuration settings
+
+## Data Structures
+
+### Enumerations
+
+#### Priority Enum
+```c
+typedef enum {
+    PRIORITY_LOW,      // Low priority tasks
+    PRIORITY_MEDIUM,   // Medium priority tasks  
+    PRIORITY_HIGH,     // High priority tasks
+    PRIORITY_CRITICAL, // Critical priority tasks
+    PRIORITY_URGENT    // Urgent priority tasks
+} Priority;
+```
+
+#### Status Enum
+```c
+typedef enum {
+    STATUS_TODO,        // Task not started
+    STATUS_IN_PROGRESS, // Task in progress
+    STATUS_BLOCKED,     // Task blocked by dependencies
+    STATUS_REVIEW,      // Task under review
+    STATUS_DONE,        // Task completed
+    STATUS_CANCELLED,   // Task cancelled
+    STATUS_DEFERRED     // Task deferred to later
+} Status;
+```
+
+#### Assignee Enum
+```c
+typedef enum {
+    ASSIGNEE_AI,            // AI-assigned task
+    ASSIGNEE_HUMAN,         // Human-assigned task
+    ASSIGNEE_COLLABORATIVE  // Collaborative task
+} Assignee;
+```
+
+### Structures
+
+#### Task Structure
+```c
+struct Task {
+    char* id;                // Unique identifier (auto-generated)
+    char* action;            // Task description (required)
+    char* time;              // Time estimation (required)
+    Priority priority;       // Task priority level
+    char* parent_project;    // Parent project reference (required)
+    Status status;           // Current status
+    char* assignee;          // Assignee type string or NULL
+    char** tags;             // NULL-terminated tag array
+    int tags_count;          // Number of tags
+    char** dependencies;     // NULL-terminated dependency array
+    int dependencies_count;  // Number of dependencies
+    char* context_notes;     // Additional context or NULL
+    int* progress;           // Progress percentage (0-100) or NULL
+};
+```
+
+#### Project Structure
+```c
+struct Project {
+    char* name;           // Project name (required)
+    char* description;    // Project description or NULL
+    ProjectStatus status; // Current project status
+    char** tasks;         // NULL-terminated task ID array
+    int tasks_count;      // Number of tasks in project
+};
+```
+
+#### Configuration Structure
+```c
+struct Config {
+    char* version;           // System version string
+    char* default_project;   // Default project name
+    int auto_backup;         // Auto-backup enabled flag
+    char* backup_interval;   // Backup interval setting
+    int ai_enabled;          // AI features enabled flag
+    Assignee* default_assignee; // Default task assignee
+    char* date_format;       // Date format string
+    char* timezone;          // Timezone setting
+};
+```
+
+## Function API Documentation
+
+### Memory Management Functions
+
+#### `string_clone()`
+```c
+/**
+ * Creates a deep copy of a string
+ * 
+ * @param str: Source string to clone (can be NULL)
+ * @return: New allocated string copy or NULL if allocation fails
+ * @note: Returns NULL if input is NULL
+ */
+char* string_clone(const char* str);
+```
+
+#### `string_array_clone()`
+```c
+/**
+ * Creates a deep copy of a string array
+ * 
+ * @param array: Source string array to clone
+ * @param count: Number of strings in array
+ * @return: New allocated string array or NULL if allocation fails
+ * @note: Returns NULL if input is NULL or count is 0
+ */
+char** string_array_clone(char** array, int count);
+```
+
+#### `string_array_free()`
+```c
+/**
+ * Frees a string array and all contained strings
+ * 
+ * @param array: String array to free
+ * @note: Safe to call with NULL input
+ */
+void string_array_free(char** array);
+```
+
+### Task Management Functions
+
+#### `task_new()`
+```c
+/**
+ * Creates a new basic task with minimal required fields
+ * 
+ * @param user_id: User identifier (currently unused, for API compatibility)
+ * @param action: Task description (required, cannot be NULL)
+ * @param time: Time estimation (required, cannot be NULL)
+ * @param priority: Task priority level
+ * @param parent_project: Parent project name (required, cannot be NULL)
+ * @param status: Initial task status
+ * @return: New Task object or NULL if allocation fails
+ * @error: Returns NULL if required parameters are NULL
+ */
+Task* task_new(const char* user_id, const char* action, const char* time,
+               Priority priority, const char* parent_project, Status status);
+```
+
+#### `task_new_full()`
+```c
+/**
+ * Creates a new task with all optional fields
+ * 
+ * @param action: Task description (required)
+ * @param time: Time estimation (required)
+ * @param priority: Task priority level
+ * @param parent_project: Parent project name (required)
+ * @param status: Initial task status
+ * @param assignee: Task assignee type (can be NULL)
+ * @param tags: Array of tag strings (can be NULL)
+ * @param tags_count: Number of tags in array
+ * @param dependencies: Array of dependency task IDs (can be NULL)
+ * @param dependencies_count: Number of dependencies
+ * @param context_notes: Additional context notes (can be NULL)
+ * @param progress: Progress percentage pointer (0-100, can be NULL)
+ * @return: New Task object or NULL if allocation/validation fails
+ * @error: Returns NULL for invalid progress values or allocation failures
+ */
+Task* task_new_full(const char* action, const char* time, Priority priority,
+                    const char* parent_project, Status status, Assignee* assignee,
+                    char** tags, int tags_count, char** dependencies, int dependencies_count,
+                    const char* context_notes, int* progress);
+```
+
+#### `task_update()`
+```c
+/**
+ * Updates task properties with validation
+ * 
+ * @param task: Task to update (cannot be NULL)
+ * @param new_action: New task description (can be NULL to keep current)
+ * @param new_priority: New priority level (can be NULL to keep current)
+ * @param new_status: New status (can be NULL to keep current)
+ * @param new_progress: New progress value (0-100, can be NULL to keep current)
+ * @note: Progress validation ensures values between 0-100
+ */
+void task_update(Task* task, const char* new_action, Priority* new_priority,
+                 Status* new_status, int* new_progress);
+```
+
+#### `task_complete()`
+```c
+/**
+ * Marks a task as completed with 100% progress
+ * 
+ * @param task: Task to complete (cannot be NULL)
+ * @effect: Sets status to STATUS_DONE and progress to 100
+ */
+void task_complete(Task* task);
+```
+
+#### `task_is_completed()`
+```c
+/**
+ * Checks if a task is completed
+ * 
+ * @param task: Task to check (can be NULL)
+ * @return: 1 if task is completed (STATUS_DONE), 0 otherwise
+ */
+int task_is_completed(Task* task);
+```
+
+#### `task_is_active()`
+```c
+/**
+ * Checks if a task is active (not completed or cancelled)
+ * 
+ * @param task: Task to check (can be NULL)
+ * @return: 1 if task is active, 0 otherwise
+ * @note: Active means status is not DONE or CANCELLED
+ */
+int task_is_active(Task* task);
+```
+
+#### `task_free()`
+```c
+/**
+ * Frees all memory associated with a task
+ * 
+ * @param task: Task to free (safe to call with NULL)
+ */
+void task_free(Task* task);
+```
+
+### Project Management Functions
+
+#### `project_new()`
+```c
+/**
+ * Creates a new project
+ * 
+ * @param name: Project name (required, cannot be NULL)
+ * @param description: Project description (can be NULL)
+ * @return: New Project object or NULL if allocation fails
+ */
+Project* project_new(const char* name, const char* description);
+```
+
+#### `project_add_task()`
+```c
+/**
+ * Adds a task ID to a project
+ * 
+ * @param project: Project to modify (cannot be NULL)
+ * @param task_id: Task ID to add (cannot be NULL)
+ * @note: Prevents duplicate task IDs
+ */
+void project_add_task(Project* project, const char* task_id);
+```
+
+#### `project_remove_task()`
+```c
+/**
+ * Removes a task ID from a project
+ * 
+ * @param project: Project to modify (cannot be NULL)
+ * @param task_id: Task ID to remove (cannot be NULL)
+ */
+void project_remove_task(Project* project, const char* task_id);
+```
+
+#### `project_archive()`
+```c
+/**
+ * Archives a project
+ * 
+ * @param project: Project to archive (cannot be NULL)
+ * @effect: Sets project status to PROJECT_STATUS_ARCHIVED
+ */
+void project_archive(Project* project);
+```
+
+#### `project_complete()`
+```c
+/**
+ * Marks a project as completed
+ * 
+ * @param project: Project to complete (cannot be NULL)
+ * @effect: Sets project status to PROJECT_STATUS_COMPLETED
+ */
+void project_complete(Project* project);
+```
+
+### Task Collection Functions
+
+#### `task_collection_new()`
+```c
+/**
+ * Creates a new task collection
+ * 
+ * @return: New TaskCollection object or NULL if allocation fails
+ */
+TaskCollection* task_collection_new();
+```
+
+#### `task_collection_add_task()`
+```c
+/**
+ * Adds a task to the collection
+ * 
+ * @param collection: Collection to modify (cannot be NULL)
+ * @param task: Task to add (cannot be NULL)
+ */
+void task_collection_add_task(TaskCollection* collection, Task* task);
+```
+
+#### `task_collection_get_task()`
+```c
+/**
+ * Retrieves a task by ID from the collection
+ * 
+ * @param collection: Collection to search (cannot be NULL)
+ * @param task_id: Task ID to find (cannot be NULL)
+ * @return: Task object if found, NULL otherwise
+ */
+Task* task_collection_get_task(TaskCollection* collection, const char* task_id);
+```
+
+#### `task_collection_get_filtered_tasks()`
+```c
+/**
+ * Retrieves tasks matching filter criteria
+ * 
+ * @param collection: Collection to search (cannot be NULL)
+ * @param priority_filter: Priority filter (can be NULL)
+ * @param project_filter: Project name filter (can be NULL)
+ * @param status_filter: Status filter (can be NULL)
+ * @param count: Output parameter for number of matches
+ * @return: Array of matching tasks (caller must free) or NULL if allocation fails
+ */
+Task** task_collection_get_filtered_tasks(TaskCollection* collection, 
+                                          Priority* priority_filter,
+                                          const char* project_filter,
+                                          Status* status_filter,
+                                          int* count);
+```
+
+### Configuration Functions
+
+#### `config_default()`
+```c
+/**
+ * Creates default system configuration
+ * 
+ * @return: New Config object with default values or NULL if allocation fails
+ * @defaults: version="1.2.0", default_project="general", auto_backup=1,
+ *            backup_interval="daily", ai_enabled=1, 
+ *            default_assignee=ASSIGNEE_COLLABORATIVE,
+ *            date_format="%Y-%m-%d %H:%M:%S", timezone="UTC"
+ */
+Config* config_default();
+```
+
+### Parsing Functions
+
+#### `parse_priority()`
+```c
+/**
+ * Parses priority string to enum value
+ * 
+ * @param str: String to parse ("low", "medium", "high", "critical", "urgent")
+ * @param result: Output parameter for parsed priority
+ * @return: 1 if successful, 0 if parsing failed
+ */
+int parse_priority(const char* str, Priority* result);
+```
+
+## Design Patterns
+
+### 1. Factory Pattern
+- **`task_new()`** and **`task_new_full()`** act as factory methods for Task creation
+- **`project_new()`** acts as factory for Project creation
+- **`config_default()`** provides default configuration factory
+
+### 2. Collection Pattern
+- **`TaskCollection`** implements a collection pattern for task management
+- Provides filtering, retrieval, and management operations
+
+### 3. Builder Pattern (Partial)
+- **`task_new_full()`** provides a builder-like interface for complex Task creation
+
+### 4. RAII (Resource Acquisition Is Initialization)
+- Memory management follows RAII principles with proper cleanup functions
+
+## Performance Analysis
+
+### Time Complexity
+| Operation | Complexity | Notes |
+|-----------|------------|-------|
+| Task Creation | O(1) | Constant time allocation |
+| Task Lookup | O(n) | Linear search in collection |
+| Task Filtering | O(n) | Linear scan with filtering |
+| Project Task Management | O(n) | Linear search for duplicates |
+| String Operations | O(k) | Proportional to string length |
+
+### Space Complexity
+| Structure | Memory Usage | Notes |
+|-----------|--------------|-------|
+| Task | O(n + t + d) | n=action length, t=tags, d=dependencies |
+| Project | O(m + k) | m=name length, k=task count |
+| TaskCollection | O(p) | p=number of tasks |
+| Config | O(1) | Fixed size with string pointers |
+
+### Memory Management
+- **Allocations**: Manual memory management with malloc/free
+- **Fragmentation**: Proper cleanup reduces fragmentation
+- **Leak Prevention**: Comprehensive free functions provided
+
+## Security Considerations
+
+### Input Validation
+- **Null Checks**: All functions validate NULL inputs
+- **String Length**: Bounded string operations with MAX_ASSIGNEE_LEN
+- **Progress Validation**: Ensures 0-100 range for progress values
+- **Duplicate Prevention**: Project task addition prevents duplicates
+
+### Memory Safety
+- **Buffer Overflow Protection**: strncpy with length limits
+- **Memory Allocation Checks**: All malloc calls verified
+- **Cleanup on Failure**: Proper rollback on allocation failures
+
+### Data Integrity
+- **Immutable IDs**: Task IDs are generated automatically
+- **Consistent State**: Validation maintains data consistency
+- **Error Handling**: Graceful handling of invalid operations
+
+## Testing Strategies
+
+### Unit Testing Framework
+The code includes comprehensive test functions covering:
+
+#### Test Categories
+1. **Task Creation Tests**: Basic and full task creation
+2. **Task Operation Tests**: Update, complete, status checks
+3. **Parsing Tests**: String-to-enum conversion
+4. **Project Tests**: Creation and task management
+5. **Collection Tests**: Filtering and management
+6. **Configuration Tests**: Default config creation
+
+#### Test Coverage
+- **Function Coverage**: 100% of public functions tested
+- **Edge Cases**: Invalid inputs, boundary conditions
+- **Memory Tests**: Allocation failure scenarios
+- **Integration Tests**: Multi-component interactions
+
+### Testing Methodology
+```c
+// Example test structure
+void test_functionality() {
+    // Setup
+    Object* obj = function_under_test(params);
+    
+    // Assertions
+    assert(condition);
+    assert(another_condition);
+    
+    // Cleanup
+    cleanup_function(obj);
+    
+    printf("test_functionality passed\n");
+}
+```
+
+### Test Execution
+```bash
+# Compile with tests
+gcc -o todozi_test todozi.c -DNDEBUG
+
+# Run tests
+./todozi_test
+```
+
+## Deployment Instructions
+
+### Compilation Requirements
+- **C Compiler**: GCC or Clang (C99 standard)
+- **Standard Libraries**: stdio, stdlib, string, assert, time, errno, stdint
+- **Platform**: Cross-platform (Linux, macOS, Windows with MinGW)
+
+### Build Instructions
+
+#### Basic Compilation
+```bash
+gcc -o todozi main.c todozi.c -Wall -Wextra -std=c99
+```
+
+#### Production Build (Optimized)
+```bash
+gcc -o todozi main.c todozi.c -O2 -DNDEBUG -std=c99
+```
+
+#### Debug Build
+```bash
+gcc -o todozi_debug main.c todozi.c -g -O0 -std=c99
+```
+
+### Integration Steps
+
+1. **Include Header**: Copy function declarations to header file
+2. **Link Object**: Compile as library or include directly
+3. **Initialize**: Call setup functions before use
+4. **Cleanup**: Ensure proper cleanup on application exit
+
+### Memory Management Guidelines
+- Always pair allocations with corresponding free calls
+- Use provided free functions for structured objects
+- Validate allocation success before use
+- Implement error handling for allocation failures
+
+## Troubleshooting Guide
+
+### Common Issues
+
+#### Memory Allocation Failures
+**Symptom**: Functions return NULL unexpectedly
+**Solution**: Check system memory, implement fallback strategies
+
+```c
+Task* task = task_new(...);
+if (task == NULL) {
+    // Handle allocation failure
+    fprintf(stderr, "Failed to allocate task\n");
+    return ERROR_MEMORY;
+}
+```
+
+#### Invalid Parameter Errors
+**Symptom**: Functions return NULL or behave unexpectedly
+**Solution**: Validate inputs before calling functions
+
+```c
+if (action == NULL || time == NULL) {
+    return ERROR_INVALID_PARAM;
+}
+```
+
+#### Memory Leaks
+**Symptom**: Increasing memory usage over time
+**Solution**: Ensure proper cleanup calls
+
+```c
+// Correct usage pattern
+Task* task = task_new(...);
+// Use task...
+task_free(task); // Always call free
+```
+
+### Debugging Techniques
+
+#### Memory Debugging
+```bash
+# Valgrind memory check
+valgrind --leak-check=full ./todozi_test
+```
+
+#### Assertion Debugging
+```c
+// Enable assertions for debugging
+#ifndef NDEBUG
+#include <assert.h>
+#endif
+```
+
+### Error Codes and Handling
+
+The system defines error codes for common failure scenarios:
+
+```c
+typedef enum {
+    ERROR_TASK_NOT_FOUND,
+    ERROR_INVALID_PRIORITY,
+    ERROR_INVALID_STATUS,
+    // ... additional error codes
+} ErrorCode;
+```
+
+## Usage Examples
+
+### Basic Task Management
+
+#### Creating a Simple Task
+```c
+Task* task = task_new("user123", "Write documentation", "2 hours", 
+                     PRIORITY_HIGH, "project-alpha", STATUS_TODO);
+if (task == NULL) {
+    // Handle error
+}
+
+// Use the task...
+task_free(task);
+```
+
+#### Creating a Complex Task
+```c
+char* tags[] = {"documentation", "high-priority", NULL};
+char* dependencies[] = {"task_research", NULL};
+int progress = 0;
+Assignee assignee = ASSIGNEE_HUMAN;
+
+Task* task = task_new_full("Write comprehensive docs", "4 hours", 
+                          PRIORITY_CRITICAL, "project-beta", STATUS_IN_PROGRESS,
+                          &assignee, tags, 2, dependencies, 1,
+                          "Include all API endpoints", &progress);
+```
+
+#### Task Lifecycle Management
+```c
+// Create task
+Task* task = task_new(...);
+
+// Update progress
+int new_progress = 50;
+task_update(task, NULL, NULL, NULL, &new_progress);
+
+// Complete task
+task_complete(task);
+
+// Check status
+if (task_is_completed(task)) {
+    printf("Task completed!\n");
+}
+
+// Cleanup
+task_free(task);
+```
+
+### Project Management
+
+#### Creating and Managing Projects
+```c
+// Create project
+Project* project = project_new("Mobile App", "iOS and Android development");
+
+// Add tasks
+project_add_task(project, "task_design");
+project_add_task(project, "task_development");
+
+// Archive when done
+project_archive(project);
+
+project_free(project);
+```
+
+### Collection Usage
+
+#### Managing Task Collections
+```c
+TaskCollection* collection = task_collection_new();
+
+// Add multiple tasks
+task_collection_add_task(collection, task1);
+task_collection_add_task(collection, task2);
+
+// Filter tasks
+Priority high_prio = PRIORITY_HIGH;
+int count;
+Task** high_priority_tasks = task_collection_get_filtered_tasks(
+    collection, &high_prio, NULL, NULL, &count);
+
+// Use filtered tasks...
+free(high_priority_tasks);
+
+task_collection_free(collection);
+```
+
+### Configuration Management
+
+#### System Configuration
+```c
+Config* config = config_default();
+if (config == NULL) {
+    // Handle configuration error
+}
+
+// Modify configuration if needed
+// ...
+
+config_free(config);
+```
+
+## Conclusion
+
+This documentation provides comprehensive coverage of the Todozi task management system. The system offers robust task and project management capabilities with proper memory management, error handling, and testing support. The modular design allows for easy integration into larger applications while maintaining data integrity and security.
+
+For additional support or to report issues, refer to the troubleshooting guide and ensure all usage follows the patterns demonstrated in the examples section.# Comprehensive Documentation: Todozi Library
+
+## Table of Contents
+1. [Overview](#overview)
+2. [Architecture](#architecture)
+3. [Data Structures](#data-structures)
+4. [Functions](#functions)
+5. [Usage Examples](#usage-examples)
+6. [Design Patterns](#design-patterns)
+7. [Performance Analysis](#performance-analysis)
+8. [Security Considerations](#security-considerations)
+9. [Testing Strategies](#testing-strategies)
+10. [Deployment Instructions](#deployment-instructions)
+11. [Troubleshooting Guide](#troubleshooting-guide)
+12. [Error Handling](#error-handling)
+
+## Overview
+
+The Todozi library is a comprehensive C library designed for parsing and processing structured content from chat messages. It supports multiple data types including tasks, memories, ideas, agent assignments, errors, training data, and feelings. The system uses XML-like tags to identify and parse different content types within unstructured text.
+
+### Key Features
+- Multi-format content parsing (tasks, memories, ideas, errors, etc.)
+- Shorthand tag transformation system
+- Comprehensive error handling
+- Memory-safe resource management
+- UUID generation for all entities
+- Flexible tag and dependency processing
+
+## Architecture
+
+### System Architecture Diagram
+```
+┌─────────────────┐    ┌──────────────────┐    ┌─────────────────┐
+│   Input Message │───▶│ Tag Transformer  │───▶│ Parser Engine   │
+└─────────────────┘    └──────────────────┘    └─────────────────┘
+                                                            │
+                                                            ▼
+┌─────────────────────────────────────────────────────────────────┐
+│                     Content Extractors                          │
+│  ┌──────────┐  ┌──────────┐  ┌──────────┐  ┌─────────────────┐  │
+│  │ Task     │  │ Memory   │  │ Idea     │  │ Error Parser    │  │
+│  │ Parser   │  │ Parser   │  │ Parser   │  │                 │  │
+│  └──────────┘  └──────────┘  └──────────┘  └─────────────────┘  │
+└─────────────────────────────────────────────────────────────────┘
+                                                            │
+                                                            ▼
+┌─────────────────────────────────────────────────────────────────┐
+│                 Structured Content Output                       │
+└─────────────────────────────────────────────────────────────────┘
+```
+
+### Component Relationships
+```
+ChatContent (Container)
+├── Tasks[]
+├── Memories[]
+├── Ideas[]
+├── AgentAssignments[]
+├── Errors[]
+├── TrainingData[]
+└── Feelings[]
+```
+
+## Data Structures
+
+### Enum Types
+
+#### TodoziError
+```c
+typedef enum {
+    TODOZI_SUCCESS = 0,
+    TODOZI_VALIDATION_ERROR,   // Format validation failed
+    TODOZI_STORAGE_ERROR,      // Memory allocation error
+    TODOZI_PARSE_ERROR         // General parsing error
+} TodoziError;
+```
+
+#### Priority Levels
+```c
+typedef enum {
+    PRIORITY_LOW,      // Low priority tasks
+    PRIORITY_MEDIUM,   // Medium priority (default)
+    PRIORITY_HIGH,     // High priority
+    PRIORITY_CRITICAL  // Critical priority
+} Priority;
+```
+
+#### Status Levels
+```c
+typedef enum {
+    STATUS_TODO,        // Task not started
+    STATUS_IN_PROGRESS, // Task in progress
+    STATUS_DONE,        // Task completed
+    STATUS_BLOCKED,     // Task blocked
+    STATUS_DEFERRED     // Task deferred
+} Status;
+```
+
+### Core Structures
+
+#### Task Structure
+```c
+typedef struct Task {
+    char* id;                     // UUID identifier
+    char* user_id;                // User identifier
+    char* action;                 // Task description
+    char* time;                   // Time specification
+    Priority priority;            // Priority level
+    char* parent_project;         // Parent project ID
+    Status status;                // Current status
+    AssigneeType assignee_type;   // Assignment type
+    char* assignee_name;          // Specific agent name
+    char** tags;                  // Tag array
+    size_t tags_count;           // Number of tags
+    char** dependencies;          // Dependency IDs
+    size_t dependencies_count;   // Number of dependencies
+    char* context_notes;          // Context information
+    int progress;                 // Progress percentage (0-100)
+    int has_progress;            // Progress flag
+    double* embedding_vector;     // Vector embedding
+    size_t embedding_size;       // Embedding dimensions
+    time_t created_at;           // Creation timestamp
+    time_t updated_at;           // Last update timestamp
+} Task;
+```
+
+#### Memory Structure
+```c
+typedef struct Memory {
+    char* id;                    // UUID identifier
+    char* user_id;               // User identifier
+    char* project_id;            // Associated project
+    ItemStatus status;           // Active/Inactive/Archived
+    char* moment;                // Memory context
+    char* meaning;               // Memory significance
+    char* reason;                // Reason for memory
+    MemoryImportance importance; // Importance level
+    MemoryTerm term;             // Short/Long term
+    MemoryType memory_type;      // Memory classification
+    char** tags;                 // Tag array
+    size_t tags_count;          // Number of tags
+    time_t created_at;          // Creation timestamp
+    time_t updated_at;          // Last update timestamp
+    char* emotion;               // Emotional context
+} Memory;
+```
+
+#### ChatContent Container
+```c
+typedef struct ChatContent {
+    Task* tasks;                        // Extracted tasks
+    size_t tasks_count;                // Task count
+    Memory* memories;                  // Extracted memories
+    size_t memories_count;            // Memory count
+    Idea* ideas;                       // Extracted ideas
+    size_t ideas_count;               // Idea count
+    AgentAssignment* agent_assignments; // Agent assignments
+    size_t agent_assignments_count;   // Assignment count
+    CodeChunk* code_chunks;            // Code chunks
+    size_t code_chunks_count;         // Code chunk count
+    Error* errors;                     // Error records
+    size_t errors_count;              // Error count
+    TrainingData* training_data;       // Training data
+    size_t training_data_count;       // Training data count
+    Feeling* feelings;                 // Emotional feelings
+    size_t feelings_count;            // Feeling count
+    Summary* summaries;                // Summaries
+    size_t summaries_count;           // Summary count
+    Reminder* reminders;               // Reminders
+    size_t reminders_count;           // Reminder count
+} ChatContent;
+```
+
+## Functions
+
+### Memory Management Functions
+
+#### `string_copy`
+```c
+/**
+ * Creates a deep copy of a string
+ * 
+ * @param source: Source string to copy
+ * @return: Newly allocated string copy, or NULL on failure
+ * @warning: Caller must free the returned string
+ */
+char* string_copy(const char* source);
+```
+
+#### `free_string_array`
+```c
+/**
+ * Frees an array of strings and the array itself
+ * 
+ * @param array: Array of strings to free
+ * @param count: Number of elements in the array
+ */
+void free_string_array(char** array, size_t count);
+```
+
+#### `free_task_contents`
+```c
+/**
+ * Frees all internal resources of a Task structure
+ * 
+ * @param task: Task structure to clean up
+ * @note: Does not free the Task structure itself
+ */
+static void free_task_contents(Task* task);
+```
+
+### Parsing Functions
+
+#### `transform_shorthand_tags`
+```c
+/**
+ * Transforms shorthand tags to full XML tags
+ * 
+ * @param message: Input message with shorthand tags
+ * @return: New string with transformed tags, or NULL on error
+ * 
+ * Supported transformations:
+ * <tz> → <todozi>, </tz> → </todozi>
+ * <mm> → <memory>, </mm> → </memory>
+ * <id> → <idea>, </id> → </idea>
+ * <ch> → <chunk>, </ch> → </chunk>
+ * <fe> → <feel>, </fe> → </feel>
+ * <tn> → <train>, </tn> → </train>
+ * <er> → <error>, </er> → </error>
+ * <sm> → <summary>, </sm> → </summary>
+ * <rd> → <reminder>, </rd> → </reminder>
+ */
+char* transform_shorthand_tags(const char* message);
+```
+
+#### `parse_todozi_format`
+```c
+/**
+ * Parses a todozi formatted string into a Task structure
+ * 
+ * @param todozi_text: Text between <todozi> tags
+ * @param task: Output Task structure (must be allocated)
+ * @return: TodoziError code indicating success/failure
+ * 
+ * Format: action;time;priority;project;status[;assignee;tags;dependencies;context;progress]
+ */
+TodoziError parse_todozi_format(const char* todozi_text, Task* task);
+```
+
+#### `process_chat_message`
+```c
+/**
+ * Processes a chat message to extract Task elements
+ * 
+ * @param message: Input chat message
+ * @param tasks: Output array of Tasks (allocated by function)
+ * @param tasks_count: Output number of tasks found
+ * @return: TodoziError code indicating success/failure
+ * 
+ * @note: Caller must free the tasks array using free_task_contents
+ */
+TodoziError process_chat_message(const char* message, Task** tasks, size_t* tasks_count);
+```
+
+#### `process_chat_message_extended`
+```c
+/**
+ * Extended message processing for all content types
+ * 
+ * @param message: Input chat message
+ * @param user_id: User identifier for content attribution
+ * @param content: Output ChatContent structure (must be allocated)
+ * @return: TodoziError code indicating success/failure
+ * 
+ * @note: Caller must free content using free_chat_content
+ */
+TodoziError process_chat_message_extended(const char* message, const char* user_id, ChatContent* content);
+```
+
+### Type Parsing Functions
+
+#### `parse_priority`
+```c
+/**
+ * Parses priority string to enum value (case-insensitive)
+ * 
+ * @param str: Priority string ("low", "medium", "high", "critical")
+ * @return: Corresponding Priority enum value
+ * @default: PRIORITY_MEDIUM for unrecognized values
+ */
+Priority parse_priority(const char* str);
+```
+
+#### `parse_status`
+```c
+/**
+ * Parses status string to enum value (case-insensitive)
+ * 
+ * @param str: Status string ("todo", "in_progress", "done", etc.)
+ * @return: Corresponding Status enum value
+ * @default: STATUS_TODO for unrecognized values
+ */
+Status parse_status(const char* str);
+```
+
+#### `parse_assignee`
+```c
+/**
+ * Parses assignee specification string
+ * 
+ * @param str: Assignee string ("ai", "human", "collaborative", "agent=name")
+ * @param assignee_name: Output agent name for ASSIGNEE_AGENT type
+ * @return: Corresponding AssigneeType enum value
+ * @default: ASSIGNEE_HUMAN for unrecognized values
+ */
+AssigneeType parse_assignee(const char* str, char** assignee_name);
+```
+
+## Usage Examples
+
+### Basic Task Extraction
+```c
+#include "todozi.h"
+#include <stdio.h>
+
+int main() {
+    const char* message = "I need to <todozi>Finish report;tomorrow;high;project_x;todo;ai;urgent,important;task123;Finish by EOD;50</todozi>";
+    
+    Task* tasks = NULL;
+    size_t tasks_count = 0;
+    
+    TodoziError err = process_chat_message(message, &tasks, &tasks_count);
+    
+    if (err == TODOZI_SUCCESS && tasks_count > 0) {
+        printf("Extracted %zu tasks\n", tasks_count);
+        printf("Task ID: %s\n", tasks[0].id);
+        printf("Action: %s\n", tasks[0].action);
+        printf("Priority: %d\n", tasks[0].priority);
+        
+        // Clean up
+        for (size_t i = 0; i < tasks_count; i++) {
+            free_task_contents(&tasks[i]);
+        }
+        free(tasks);
+    }
+    
+    return 0;
+}
+```
+
+### Full Content Processing
+```c
+#include "todozi.h"
+#include <stdio.h>
+
+int main() {
+    const char* message = 
+        "User: <tz>Buy groceries;today;medium;personal;todo</tz> "
+        "<mm>standard;Morning breakfast;Important meal;Health reason;high;short;nutrition</mm> "
+        "<id>New feature idea;share;high;Implement dark mode</id>";
+    
+    ChatContent content;
+    const char* user_id = "user123";
+    
+    TodoziError err = process_chat_message_extended(message, user_id, &content);
+    
+    if (err == TODOZI_SUCCESS) {
+        printf("Tasks: %zu\n", content.tasks_count);
+        printf("Memories: %zu\n", content.memories_count);
+        printf("Ideas: %zu\n", content.ideas_count);
+        
+        // Process extracted content...
+        
+        // Clean up
+        free_chat_content(&content);
+    }
+    
+    return 0;
+}
+```
+
+### Shorthand Tag Usage
+```c
+// Shorthand tags are automatically expanded
+const char* message = 
+    "<tz>Quick task;now;low;test;todo</tz> "
+    "<mm>emotional;happy;Good moment;Success;medium;long;celebration</mm>";
+
+// Equivalent to:
+// "<todozi>Quick task;now;low;test;todo</todozi> "
+// "<memory>emotional;happy;Good moment;Success;medium;long;celebration</memory>"
+```
+
+## Design Patterns
+
+### 1. Parser Factory Pattern
+Each content type has its own parser function following a consistent interface:
+- `parse_[type]_format()` functions
+- Unified error handling
+- Consistent memory management
+
+### 2. Resource Acquisition Is Initialization (RAII)
+- All allocated resources are properly freed
+- Cleanup functions for each structure type
+- Consistent memory management patterns
+
+### 3. Strategy Pattern
+Different parsing strategies for different content types:
+- Regular expression-based extraction
+- Semantic parsing for different formats
+- Flexible tag processing
+
+### 4. Composite Pattern
+`ChatContent` acts as a composite container for various content types:
+- Unified interface for content extraction
+- Consistent processing pipeline
+- Modular content handling
+
+## Performance Analysis
+
+### Time Complexity
+| Operation | Complexity | Notes |
+|-----------|------------|-------|
+| Tag transformation | O(n*m) | n = message length, m = tag mappings |
+| Regex extraction | O(n) | n = message length |
+| String splitting | O(n) | n = string length |
+| Content parsing | O(k) | k = number of content elements |
+
+### Memory Usage
+| Component | Memory Footprint | Notes |
+|-----------|------------------|-------|
+| Task structure | ~200-500 bytes | Depends on string lengths |
+| Memory structure | ~150-400 bytes | Emotional memories larger |
+| ChatContent | Variable | Depends on extracted content |
+| String arrays | O(n) | n = number of elements |
+
+### Optimization Strategies
+1. **Regex Pre-compilation**: Regular expressions are compiled once per content type
+2. **Memory Pooling**: Consider implementing memory pools for frequent allocations
+3. **Lazy Parsing**: Parse only required content types on demand
+4. **String Interning**: Reduce duplicate string allocations
+
+## Security Considerations
+
+### Input Validation
+```c
+// All input strings are validated:
+- Null pointer checks
+- Empty string handling
+- Buffer length validation
+- Regular expression safety
+```
+
+### Memory Safety
+```c
+// Comprehensive memory management:
+- All allocations checked for success
+- Consistent freeing patterns
+- Zeroing of structures after free
+- Protection against double-free
+```
+
+### Data Integrity
+- UUID generation for all entities
+- Timestamp validation
+- Enum value range checking
+- String length limitations
+
+### Security Best Practices
+1. **Bounds Checking**: All array operations include bounds checks
+2. **Input Sanitization**: Tag content is properly trimmed and validated
+3. **Resource Limits**: Consider implementing max content limits
+4. **Error Containment**: Failures are contained and don't leak information
+
+## Testing Strategies
+
+### Unit Test Framework
+```c
+// Example test structure
+typedef struct {
+    const char* test_name;
+    const char* input;
+    TodoziError expected_error;
+    size_t expected_elements;
+} TestCase;
+
+// Test cases for different scenarios
+TestCase test_cases[] = {
+    {"Valid Task", "<todozi>Test;now;medium;project;todo</todozi>", TODOZI_SUCCESS, 1},
+    {"Invalid Format", "<todozi>Incomplete</todozi>", TODOZI_VALIDATION_ERROR, 0},
+    {"Memory Error", NULL, TODOZI_STORAGE_ERROR, 0},
+    // ... more test cases
+};
+```
+
+### Test Categories
+1. **Functional Tests**: Valid input parsing
+2. **Boundary Tests**: Edge cases and limits
+3. **Error Tests**: Invalid input handling
+4. **Memory Tests**: Allocation and cleanup
+5. **Performance Tests**: Large input processing
+
+### Test Coverage Goals
+- 100% function coverage
+- 90% branch coverage
+- All error paths tested
+- Memory leak detection
+
+## Deployment Instructions
+
+### Build Requirements
+```bash
+# Required libraries
+sudo apt-get install libuuid-dev  # UUID support
+
+# Compilation flags
+gcc -o todozi_app main.c todozi.c -luuid -lregex
+```
+
+### CMake Configuration
+```cmake
+cmake_minimum_required(VERSION 3.10)
+project(Todozi)
+
+find_package(PkgConfig REQUIRED)
+pkg_check_modules(UUID REQUIRED uuid)
+
+add_library(todozi STATIC todozi.c)
+target_link_libraries(todozi ${UUID_LIBRARIES})
+target_include_directories(todozi PUBLIC ${UUID_INCLUDE_DIRS})
+
+add_executable(todozi_app main.c)
+target_link_libraries(todozi_app todozi)
+```
+
+### Docker Deployment
+```dockerfile
+FROM gcc:latest
+
+RUN apt-get update && apt-get install -y libuuid-dev
+
+COPY . /app
+WORKDIR /app
+
+RUN gcc -o todozi_app main.c todozi.c -luuid -lregex
+
+CMD ["./todozi_app"]
+```
+
+## Troubleshooting Guide
+
+### Common Issues
+
+#### Memory Leaks
+**Symptoms**: Increasing memory usage, application slowdown
+**Solution**: Use Valgrind to detect leaks:
+```bash
+valgrind --leak-check=full ./todozi_app
+```
+
+#### Parsing Failures
+**Symptoms**: Tasks not extracted, error codes returned
+**Debugging Steps**:
+1. Check input format compliance
+2. Verify tag nesting and closure
+3. Test with minimal valid input
+4. Check regular expression patterns
+
+#### Compilation Errors
+**Issue**: Missing UUID library
+**Solution**: Install development package:
+```bash
+# Ubuntu/Debian
+sudo apt-get install libuuid-dev
+
+# CentOS/RHEL
+sudo yum install libuuid-devel
+```
+
+### Debug Mode
+Compile with debugging symbols:
+```bash
+gcc -g -DDEBUG -o todozi_app main.c todozi.c -luuid -lregex
+```
+
+### Logging Integration
+Add debug logging:
+```c
+#ifdef DEBUG
+#define DEBUG_LOG(fmt, ...) fprintf(stderr, "DEBUG: " fmt "\n", ##__VA_ARGS__)
+#else
+#define DEBUG_LOG(fmt, ...)
+#endif
+```
+
+## Error Handling
+
+### Error Recovery Strategies
+1. **Graceful Degradation**: Continue processing after partial failures
+2. **Resource Cleanup**: Ensure proper cleanup on error paths
+3. **Error Reporting**: Provide detailed error information
+4. **Retry Mechanisms**: For transient failures
+
+### Error Code Meanings
+| Error Code | Meaning | Recovery Action |
+|------------|---------|-----------------|
+| `TODOZI_SUCCESS` | Operation completed successfully | Continue normal processing |
+| `TODOZI_VALIDATION_ERROR` | Input format invalid | Check input format, retry with corrected input |
+| `TODOZI_STORAGE_ERROR` | Memory allocation failed | Reduce input size, check system memory |
+| `TODOZI_PARSE_ERROR` | General parsing error | Validate input, check for corruption |
+
+### Best Practices
+- Always check return codes
+- Implement comprehensive cleanup
+- Provide meaningful error messages
+- Consider error logging for production use
+
+---
+
+This documentation provides comprehensive coverage of the Todozi library. For additional support, refer to the source code comments and test suite implementations.# Todozi C Executor - Comprehensive Documentation
+
+## Overview
+
+The Todozi C Executor is a comprehensive C library for interacting with the Todozi productivity and organization system. It provides a rich API for task management, memory storage, idea generation, and AI-assisted planning through HTTP API integration.
+
+## Table of Contents
+
+1. [Architecture Overview](#architecture-overview)
+2. [Data Structures](#data-structures)
+3. [Core Functions](#core-functions)
+4. [Usage Examples](#usage-examples)
+5. [Design Patterns](#design-patterns)
+6. [Performance Analysis](#performance-analysis)
+7. [Security Considerations](#security-considerations)
+8. [Testing Strategies](#testing-strategies)
+9. [Deployment Instructions](#deployment-instructions)
+10. [Troubleshooting Guide](#troubleshooting-guide)
+
+---
+
+## Architecture Overview
+
+### System Architecture Diagram
+
+```
+┌─────────────────┐    ┌──────────────────┐    ┌─────────────────┐
+│   Application   │────│  Todozi Executor │────│  Todozi API     │
+│    Layer        │    │    (C Library)   │    │   (HTTP/REST)   │
+└─────────────────┘    └──────────────────┘    └─────────────────┘
+         │                       │                       │
+         │                       │                       │
+┌─────────────────┐    ┌──────────────────┐    ┌─────────────────┐
+│   JSON-C        │    │   libcurl        │    │   Environment   │
+│  (Parsing)      │    │  (HTTP Client)   │    │   Variables     │
+└─────────────────┘    └──────────────────┘    └─────────────────┘
+```
+
+### Component Flow
+
+```
+User Request → Parameter Validation → Action Routing → API Call → Response Processing → Result Packaging
+```
+
+## Data Structures
+
+### ExecutorErrorType Enum
+
+**Purpose**: Defines error categories for the executor system
+
+```c
+typedef enum {
+    EXECUTOR_ERROR_EXECUTION,        // General execution failure
+    EXECUTOR_ERROR_BASH_TOOL,        // Bash tool execution error
+    EXECUTOR_ERROR_MISSING_PARAMETER, // Required parameter missing
+    EXECUTOR_ERROR_UNKNOWN_ACTION    // Unrecognized action type
+} ExecutorErrorType;
+```
+
+### ExecutorError Structure
+
+**Purpose**: Encapsulates error information with type and message
+
+```c
+typedef struct {
+    ExecutorErrorType type;  // Error category
+    char* message;           // Human-readable error description
+} ExecutorError;
+```
+
+**Memory Management**: Requires explicit freeing using `free_executor_error()`
+
+### ExecutionResult Structure
+
+**Purpose**: Contains the outcome of executed operations
+
+```c
+typedef struct {
+    bool success;           // Operation success status
+    char* output;           // Primary result/output data
+    char* error;            // Error message (if any)
+    char* tool_used;        // Tool/interface identifier
+    char* execution_type;   // Type of execution performed
+} ExecutionResult;
+```
+
+**Memory Management**: Requires explicit freeing using `free_execution_result()`
+
+## Core Functions
+
+### Memory Management Functions
+
+#### `free_execution_result(ExecutionResult* result)`
+
+**Purpose**: Safely deallocates an ExecutionResult structure and all its string fields
+
+**Parameters**:
+- `result`: Pointer to ExecutionResult to free (nullable)
+
+**Return**: void
+
+**Usage**:
+```c
+ExecutionResult* res = execute_simple_task(params);
+// ... use result ...
+free_execution_result(res);  // Clean up
+```
+
+#### `create_executor_error(ExecutorErrorType type, const char* message)`
+
+**Purpose**: Creates a new ExecutorError instance with specified type and message
+
+**Parameters**:
+- `type`: Error category from ExecutorErrorType enum
+- `message`: Error description string
+
+**Return**: Pointer to allocated ExecutorError, or NULL on allocation failure
+
+**Memory**: Caller must free with `free_executor_error()`
+
+#### `free_executor_error(ExecutorError* error)`
+
+**Purpose**: Deallocates an ExecutorError structure
+
+**Parameters**:
+- `error`: Pointer to ExecutorError to free (nullable)
+
+**Return**: void
+
+### Helper Functions
+
+#### `create_execution_result(void)`
+
+**Purpose**: Creates and initializes a new ExecutionResult with safe defaults
+
+**Return**: Pointer to zero-initialized ExecutionResult, or NULL on failure
+
+**Internal Use**: Used internally by execution functions
+
+#### `set_result_string(char** dest, const char* src)`
+
+**Purpose**: Safely sets string fields in ExecutionResult with memory management
+
+**Parameters**:
+- `dest`: Pointer to destination string pointer
+- `src`: Source string to copy (nullable)
+
+**Return**: bool indicating success
+
+**Features**:
+- Handles NULL source strings
+- Frees existing destination memory before assignment
+- Returns false on allocation failure
+
+### System Initialization Functions
+
+#### `ensure_todozi_system()`
+
+**Purpose**: Initializes the Todozi system and required dependencies
+
+**Return**: ExecutorError* on failure, NULL on success
+
+**Responsibilities**:
+- Initializes libcurl globally (thread-safe)
+- Sets system initialization flag
+- Returns error if curl initialization fails
+
+#### `get_todozi_api_key()`
+
+**Purpose**: Retrieves API key from environment variable with caching
+
+**Return**: const char* pointing to cached API key, or NULL if not set
+
+**Environment Variable**: `TODOZI_API_KEY`
+
+**Caching**: First call caches the key for subsequent use
+
+### HTTP Communication Functions
+
+#### `write_callback(void* contents, size_t size, size_t nmemb, struct http_response* response)`
+
+**Purpose**: libcurl write callback for accumulating HTTP response data
+
+**Parameters**:
+- `contents`: Incoming data buffer
+- `size`: Size of each data element
+- `nmemb`: Number of elements
+- `response`: http_response structure to accumulate data
+
+**Return**: size_t of bytes processed
+
+#### `make_todozi_request(const char* endpoint, json_object* payload)`
+
+**Purpose**: Makes authenticated HTTP request to Todozi API
+
+**Parameters**:
+- `endpoint`: API endpoint path (e.g., "/api/todozi/extract")
+- `payload`: JSON object containing request data
+
+**Return**: json_object* containing parsed response, or NULL on error
+
+**Features**:
+- Automatic authentication header construction
+- 30-second timeout, 10-second connect timeout
+- JSON response parsing
+- Error handling for various failure scenarios
+
+### Parameter Extraction Function
+
+#### `get_string_param(json_object* params, const char* key)`
+
+**Purpose**: Extracts string parameter from JSON object
+
+**Parameters**:
+- `params`: JSON object containing parameters
+- `key`: Parameter key to extract
+
+**Return**: const char* to string value, or NULL if not found/invalid type
+
+### Action Execution Functions
+
+The library provides 20+ action-specific execution functions, each following this pattern:
+
+#### Pattern Template
+```c
+ExecutionResult* execute_[action](json_object* params) {
+    // 1. Parameter validation
+    // 2. Business logic execution
+    // 3. Result packaging
+    // 4. Memory-safe return
+}
+```
+
+#### Available Actions:
+- **Task Management**: `execute_simple_task`, `execute_urgent_task`, `execute_high_task`, `execute_low_task`
+- **Assignment Types**: `execute_ai_task`, `execute_human_task`, `execute_collab_task`
+- **Search Operations**: `execute_find`, `execute_ai_search`, `execute_fast_search`, `execute_smart_search`
+- **Memory Operations**: `execute_remember`, `execute_important_memory`
+- **Idea Management**: `execute_idea`, `execute_breakthrough_idea`
+- **Task Lifecycle**: `execute_complete`, `execute_start`
+- **System Operations**: `execute_stats`, `execute_queue`, `execute_chat`
+- **AI APIs**: `execute_extract_api`, `execute_expand_api`, `execute_plan_api`, `execute_strategy_api`
+
+### Main Dispatcher Function
+
+#### `execute_todozi_tool_delegated(json_object* params)`
+
+**Purpose**: Main entry point that routes actions to appropriate execution functions
+
+**Parameters**:
+- `params`: JSON object containing "action" and other parameters
+
+**Return**: ExecutionResult* with operation outcome
+
+**Routing Logic**: Uses string comparison on "action" parameter to select handler
+
+### Cleanup Function
+
+#### `cleanup_todozi_executor()`
+
+**Purpose**: Global cleanup of system resources
+
+**Responsibilities**:
+- Frees cached API key
+- Cleans up libcurl global state
+- Resets initialization flags
+
+**Usage**: Should be called once at application shutdown
+
+## Usage Examples
+
+### Basic Example: Creating a Simple Task
+
+```c
+#include "todozi_executor.h"
+#include <stdio.h>
+
+int main() {
+    // Create parameters JSON
+    json_object* params = json_object_new_object();
+    json_object_object_add(params, "action", json_object_new_string("task"));
+    json_object_object_add(params, "content", json_object_new_string("Finish documentation"));
+    
+    // Execute the action
+    ExecutionResult* result = execute_todozi_tool_delegated(params);
+    
+    if (result && result->success) {
+        printf("Success: %s\n", result->output);
+        printf("Tool: %s, Type: %s\n", result->tool_used, result->execution_type);
+    } else {
+        printf("Operation failed\n");
+    }
+    
+    // Cleanup
+    if (result) free_execution_result(result);
+    json_object_put(params);
+    cleanup_todozi_executor();
+    
+    return 0;
+}
+```
+
+### Advanced Example: AI Task Extraction
+
+```c
+#include "todozi_executor.h"
+#include <stdio.h>
+
+int main() {
+    // Set API key (should be in environment)
+    setenv("TODOZI_API_KEY", "your-api-key-here", 1);
+    
+    // Create extraction parameters
+    json_object* params = json_object_new_object();
+    json_object_object_add(params, "action", json_object_new_string("extract"));
+    json_object_object_add(params, "content", 
+        json_object_new_string("I need to buy groceries and finish the report by Friday"));
+    json_object_object_add(params, "extra", 
+        json_object_new_string("Personal task management"));
+    
+    // Execute extraction
+    ExecutionResult* result = execute_todozi_tool_delegated(params);
+    
+    if (result) {
+        if (result->success) {
+            printf("Extraction Results:\n%s\n", result->output);
+        } else {
+            printf("Error: %s\n", result->error ? result->error : "Unknown error");
+        }
+        free_execution_result(result);
+    }
+    
+    json_object_put(params);
+    cleanup_todozi_executor();
+    return 0;
+}
+```
+
+### Error Handling Example
+
+```c
+#include "todozi_executor.h"
+#include <stdio.h>
+
+void handle_executor_error(ExecutorError* error) {
+    if (error) {
+        switch (error->type) {
+            case EXECUTOR_ERROR_MISSING_PARAMETER:
+                printf("Parameter error: %s\n", error->message);
+                break;
+            case EXECUTOR_ERROR_UNKNOWN_ACTION:
+                printf("Unknown action: %s\n", error->message);
+                break;
+            default:
+                printf("Execution error: %s\n", error->message);
+        }
+        free_executor_error(error);
+    }
+}
+
+int main() {
+    // Test missing parameter
+    json_object* params = json_object_new_object();
+    json_object_object_add(params, "action", json_object_new_string("task"));
+    // Missing "content" parameter
+    
+    ExecutionResult* result = execute_todozi_tool_delegated(params);
+    
+    if (!result) {
+        printf("Operation returned NULL (likely parameter error)\n");
+    }
+    
+    json_object_put(params);
+    cleanup_todozi_executor();
+    return 0;
+}
+```
+
+### Batch Operations Example
+
+```c
+#include "todozi_executor.h"
+#include <stdio.h>
+
+void process_multiple_actions(const char* actions[], int count) {
+    for (int i = 0; i < count; i++) {
+        json_object* params = json_object_new_object();
+        json_object_object_add(params, "action", json_object_new_string(actions[i]));
+        json_object_object_add(params, "content", 
+            json_object_new_string("Sample content for action"));
+        
+        ExecutionResult* result = execute_todozi_tool_delegated(params);
+        
+        if (result && result->success) {
+            printf("Action %d (%s): SUCCESS\n", i+1, actions[i]);
+        } else {
+            printf("Action %d (%s): FAILED\n", i+1, actions[i]);
+        }
+        
+        if (result) free_execution_result(result);
+        json_object_put(params);
+    }
+}
+
+int main() {
+    const char* actions[] = {"task", "urgent", "remember", "idea"};
+    process_multiple_actions(actions, 4);
+    cleanup_todozi_executor();
+    return 0;
+}
+```
+
+## Design Patterns
+
+### 1. Factory Pattern
+
+**Implementation**: Action routing in `execute_todozi_tool_delegated()`
+**Purpose**: Creates appropriate execution objects based on action type
+**Benefits**: Easy extension, separation of concerns
+
+### 2. Strategy Pattern
+
+**Implementation**: Each action has its own execution function
+**Purpose**: Encapsulates different algorithms for different actions
+**Benefits**: Modularity, easier testing and maintenance
+
+### 3. Resource Acquisition Is Initialization (RAII)
+
+**Implementation**: Memory management helper functions
+**Purpose**: Ensures proper cleanup of allocated resources
+**Benefits**: Prevents memory leaks, consistent resource management
+
+### 4. Facade Pattern
+
+**Implementation**: `execute_todozi_tool_delegated()` as unified interface
+**Purpose**: Simplifies complex subsystem interaction
+**Benefits**: Easy-to-use API, hides implementation complexity
+
+### 5. Singleton Pattern (Global State)
+
+**Implementation**: Global flags (`tdz_system_initialized`, `curl_initialized`)
+**Purpose**: Single instance management of system resources
+**Benefits**: Resource optimization, consistent state
+
+## Performance Analysis
+
+### Time Complexity
+
+| Operation | Complexity | Notes |
+|-----------|------------|-------|
+| Action Routing | O(n) | Linear search through action strings |
+| Parameter Extraction | O(1) | HashMap lookup in JSON object |
+| HTTP Request | O(1) | Constant time relative to data size |
+| Memory Operations | O(n) | Linear with string length |
+
+### Space Complexity
+
+| Component | Complexity | Notes |
+|-----------|------------|-------|
+| ExecutionResult | O(n) | Proportional to output size |
+| HTTP Response | O(n) | Proportional to response data |
+| JSON Parsing | O(n) | Proportional to JSON size |
+
+### Memory Usage Patterns
+
+- **Stack Usage**: Minimal (function calls, small locals)
+- **Heap Usage**: Significant (strings, JSON objects, HTTP buffers)
+- **Peak Memory**: During large API responses
+
+### Optimization Opportunities
+
+1. **String Pooling**: Reuse common strings (tool names, types)
+2. **JSON Recycling**: Reuse JSON objects for similar requests
+3. **Connection Pooling**: Reuse HTTP connections (currently not implemented)
+4. **Buffer Reuse**: Reuse memory buffers for similar operations
+
+## Security Considerations
+
+### Authentication Security
+
+**API Key Management**:
+- Stored in environment variable `TODOZI_API_KEY`
+- Cached in memory after first retrieval
+- Zeroed on cleanup
+- Never logged or exposed in error messages
+
+**HTTP Security**:
+- Bearer token authentication
+- HTTPS mandatory (hardcoded)
+- No sensitive data in URLs
+
+### Input Validation
+
+**JSON Parameter Validation**:
+- Type checking for all parameters
+- Null checks for required parameters
+- Length limits on string parameters
+- Malformed JSON handling
+
+**Buffer Safety**:
+- Bounded string operations using `snprintf()`
+- Dynamic buffer allocation with size checks
+- Overflow protection in all string operations
+
+### Memory Security
+
+**Allocation Safety**:
+- Null checks after all malloc operations
+- Proper cleanup on allocation failure
+- No double-free vulnerabilities
+
+**Sensitive Data Handling**:
+- API key stored in secure memory
+- No persistence of sensitive data
+- Secure cleanup on shutdown
+
+### Network Security
+
+**TLS/SSL**: 
+- libcurl handles TLS automatically
+- Certificate verification enabled by default
+- No custom certificate bypass
+
+**Timeout Protection**:
+- 30-second operation timeout
+- 10-second connection timeout
+- Prevents hanging requests
+
+## Testing Strategies
+
+### Unit Testing Framework
+
+```c
+// Example test structure
+typedef struct {
+    const char* test_name;
+    bool (*test_function)(void);
+    bool expected_result;
+} TestCase;
+
+bool test_simple_task_creation() {
+    json_object* params = json_object_new_object();
+    json_object_object_add(params, "action", json_object_new_string("task"));
+    json_object_object_add(params, "content", json_object_new_string("test"));
+    
+    ExecutionResult* result = execute_simple_task(params);
+    bool success = result != NULL && result->success;
+    
+    if (result) free_execution_result(result);
+    json_object_put(params);
+    return success;
+}
+```
+
+### Test Categories
+
+#### 1. Functional Tests
+- Parameter validation tests
+- Action routing tests
+- Success/failure path tests
+
+#### 2. Integration Tests
+- HTTP API interaction tests
+- JSON parsing tests
+- End-to-end workflow tests
+
+#### 3. Performance Tests
+- Memory usage under load
+- Response time measurements
+- Concurrent operation tests
+
+#### 4. Security Tests
+- Input validation tests
+- Authentication failure tests
+- Memory safety tests
+
+### Test Data Management
+
+**Mock HTTP Responses**:
+```c
+// Mock curl easy perform for testing
+CURLcode mock_curl_easy_perform(CURL* curl) {
+    // Return mock response data
+    return CURLE_OK;
+}
+```
+
+**Test Fixtures**:
+```c
+typedef struct {
+    json_object* valid_params;
+    json_object* invalid_params;
+    const char* expected_output;
+} TestFixture;
+```
+
+## Deployment Instructions
+
+### Prerequisites
+
+#### Required Libraries
+```bash
+# Ubuntu/Debian
+sudo apt-get install libcurl4-openssl-dev libjson-c-dev
+
+# CentOS/RHEL
+sudo yum install libcurl-devel json-c-devel
+
+# macOS with Homebrew
+brew install curl json-c
+```
+
+#### Development Tools
+- GCC or Clang compiler
+- Make or CMake
+- Git for version control
+
+### Build Instructions
+
+#### Simple Makefile
+```makefile
+CC = gcc
+CFLAGS = -Wall -Wextra -std=c99 -O2
+LIBS = -lcurl -ljson-c
+SRC = todozi_executor.c
+OBJ = $(SRC:.c=.o)
+TARGET = libtodozi.a
+
+$(TARGET): $(OBJ)
+	ar rcs $(TARGET) $(OBJ)
+
+%.o: %.c
+	$(CC) $(CFLAGS) -c $< -o $@
+
+clean:
+	rm -f $(OBJ) $(TARGET)
+
+.PHONY: clean
+```
+
+#### CMake Build
+```cmake
+cmake_minimum_required(VERSION 3.10)
+project(todozi_executor)
+
+set(CMAKE_C_STANDARD 99)
+set(CMAKE_C_FLAGS "-Wall -Wextra")
+
+find_package(PkgConfig REQUIRED)
+pkg_check_modules(CURL REQUIRED libcurl)
+pkg_check_modules(JSON_C REQUIRED json-c)
+
+add_library(todozi_executor STATIC todozi_executor.c)
+target_link_libraries(todozi_executor ${CURL_LIBRARIES} ${JSON_C_LIBRARIES})
+target_include_directories(todozi_executor PUBLIC ${CURL_INCLUDE_DIRS} ${JSON_C_INCLUDE_DIRS})
+```
+
+### Installation Steps
+
+1. **Clone or Download Source**
+```bash
+git clone <repository-url>
+cd todozi-executor
+```
+
+2. **Build Library**
+```bash
+make
+```
+
+3. **Install Headers and Library**
+```bash
+sudo cp todozi_executor.h /usr/local/include/
+sudo cp libtodozi.a /usr/local/lib/
+```
+
+4. **Verify Installation**
+```bash
+# Create test program
+echo '#include "todozi_executor.h"
+int main() { return 0; }' > test.c
+gcc test.c -ltodozi -lcurl -ljson-c -o test
+./test
+```
+
+### Configuration
+
+#### Environment Setup
+```bash
+# Set API key
+export TODOZI_API_KEY="your-secret-api-key"
+
+# Optional: Set custom API endpoint
+export TODOZI_API_BASE="https://api.todozi.com"
+```
+
+#### Integration with Applications
+```c
+// In your application code
+#include <todozi_executor.h>
+
+// Link with: -ltodozi -lcurl -ljson-c
+```
+
+## Troubleshooting Guide
+
+### Common Issues and Solutions
+
+#### 1. Compilation Errors
+
+**Issue**: Missing library headers
+```
+error: curl/curl.h: No such file or directory
+```
+**Solution**: Install development packages
+```bash
+sudo apt-get install libcurl4-openssl-dev libjson-c-dev
+```
+
+**Issue**: Linker errors
+```
+undefined reference to `curl_global_init'
+```
+**Solution**: Ensure proper linking order
+```bash
+gcc program.c -ltodozi -lcurl -ljson-c -o program
+```
+
+#### 2. Runtime Errors
+
+**Issue**: API key not found
+```
+Error: API key required but not set
+```
+**Solution**: Set environment variable
+```bash
+export TODOZI_API_KEY="your-key"
+```
+
+**Issue**: Network connectivity
+```
+Timeout or connection refused
+```
+**Solution**: Check network, verify API endpoint
+
+#### 3. Memory Issues
+
+**Issue**: Memory leaks
+**Detection**: Use valgrind
+```bash
+valgrind --leak-check=full ./your_program
+```
+**Solution**: Ensure all allocated memory is properly freed
+
+**Issue**: Segmentation faults
+**Debugging**: Use gdb with debug symbols
+```bash
+gcc -g program.c -ltodozi -lcurl -ljson-c -o program
+gdb ./program
+```
+
+### Debugging Techniques
+
+#### Logging Support
+```c
+// Add debug logging
+#define TODOZI_DEBUG 1
+
+#if TODOZI_DEBUG
+#define DEBUG_PRINT(fmt, ...) printf("DEBUG: " fmt, ##__VA_ARGS__)
+#else
+#define DEBUG_PRINT(fmt, ...)
+#endif
+```
+
+#### Error Tracing
+```c
+void trace_execution(const char* function, json_object* params) {
+    DEBUG_PRINT("Entering %s\n", function);
+    if (params) {
+        DEBUG_PRINT("Params: %s\n", json_object_to_json_string(params));
+    }
+}
+```
+
+### Performance Monitoring
+
+#### Memory Profiling
+```bash
+# Monitor memory usage
+valgrind --tool=massif ./your_program
+ms_print massif.out.*
+```
+
+#### Execution Timing
+```c
+#include <time.h>
+
+clock_t start = clock();
+ExecutionResult* result = execute_todozi_tool_delegated(params);
+clock_t end = clock();
+double elapsed = ((double)(end - start)) / CLOCKS_PER_SEC;
+printf("Execution time: %f seconds\n", elapsed);
+```
+
+### Recovery Strategies
+
+#### Graceful Degradation
+```c
+ExecutionResult* execute_with_fallback(json_object* params) {
+    ExecutionResult* result = execute_todozi_tool_delegated(params);
+    if (!result || !result->success) {
+        // Implement fallback logic
+        return create_fallback_result(params);
+    }
+    return result;
+}
+```
+
+#### Retry Mechanism
+```c
+ExecutionResult* execute_with_retry(json_object* params, int max_retries) {
+    for (int i = 0; i < max_retries; i++) {
+        ExecutionResult* result = execute_todozi_tool_delegated(params);
+        if (result && result->success) {
+            return result;
+        }
+        if (result) free_execution_result(result);
+        sleep(1 << i); // Exponential backoff
+    }
+    return NULL; // All retries failed
+}
+```
+
+This comprehensive documentation provides complete coverage of the Todozi C Executor library, including architecture, usage, security, testing, deployment, and troubleshooting. The library offers a robust foundation for integrating Todozi functionality into C applications with proper error handling, memory management, and security considerations.# Todozi C Framework - Comprehensive Documentation
+
+## Overview
+
+Todozi is a comprehensive task management and AI collaboration framework written in C. The system implements a polymorphic tool architecture with shared state management, supporting various AI-powered capabilities including task management, memory synthesis, idea refinement, error prevention, and learning analytics.
+
+## Table of Contents
+
+1. [Architecture Overview](#architecture-overview)
+2. [Core Data Structures](#core-data-structures)
+3. [Tool System Design](#tool-system-design)
+4. [Utility Functions](#utility-functions)
+5. [Memory Management](#memory-management)
+6. [Thread Safety](#thread-safety)
+7. [Design Patterns](#design-patterns)
+8. [Performance Analysis](#performance-analysis)
+9. [Security Considerations](#security-considerations)
+10. [Testing Strategies](#testing-strategies)
+11. [Deployment Instructions](#deployment-instructions)
+12. [Troubleshooting Guide](#troubleshooting-guide)
+13. [API Reference](#api-reference)
+
+---
+
+## Architecture Overview
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│                        Todozi Framework                         │
+├─────────────┬─────────────┬─────────────┬───────────────────────┤
+│   Utility   │   Storage   │   Memory    │     AI Services       │
+│  Functions  │   Layer     │ Management  │   (Embedding, etc.)   │
+├─────────────┼─────────────┼─────────────┼───────────────────────┤
+│  HashMap    │  Storage    │  Shared-    │ TodoziEmbedding-      │
+│    Vec      │   Struct    │   Todozi    │   Service             │
+│ ToolResult  │             │             │                       │
+└─────────────┴─────────────┴─────────────┴───────────────────────┘
+                              │
+        ┌─────────────────────┼─────────────────────┐
+        │                     │                     │
+        ▼                     ▼                     ▼
+┌─────────────┐       ┌─────────────┐       ┌─────────────┐
+│ Basic Data  │       │    Tool     │       │   Advanced  │
+│   Types     │       │  System     │       │    Tools    │
+├─────────────┤       ├─────────────┤       ├─────────────┤
+│ Task        │       │ Tool        │       │ Predictive  │
+│ Memory      │       │ ToolDefini- │       │  Error      │
+│ Idea        │       │   tion      │       │ Memory      │
+│ Error       │       │ ToolPara-   │       │  Synthesis  │
+│ CodeChunk   │       │   meter     │       │ AI Agent    │
+└─────────────┘       └─────────────┘       │ Orchestrator│
+                                            │ etc.        │
+                                            └─────────────┘
+```
+
+### System Flow
+
+```
+User Input → Parameter Validation → Tool Selection → Resource Locking → 
+Execution → Result Processing → Response Generation → Cleanup
+```
+
+---
+
+## Core Data Structures
+
+### Enumeration Types
+
+```c
+// Priority levels for tasks
+typedef enum {
+    PRIORITY_LOW,       // Low priority tasks
+    PRIORITY_MEDIUM,    // Medium priority tasks  
+    PRIORITY_HIGH,      // High priority tasks
+    PRIORITY_CRITICAL,  // Critical priority tasks
+    PRIORITY_URGENT     // Urgent priority tasks
+} Priority;
+
+// Task status states
+typedef enum {
+    STATUS_TODO,        // Task is pending
+    STATUS_IN_PROGRESS, // Task is being worked on
+    STATUS_BLOCKED,     // Task is blocked
+    STATUS_REVIEW,      // Task is under review
+    STATUS_DONE         // Task is completed
+} Status;
+
+// Assignee types for task assignment
+typedef enum {
+    ASSIGN_TYPE_AI,           // AI agent assignment
+    ASSIGN_TYPE_HUMAN,        // Human user assignment
+    ASSIGN_TYPE_COLLABORATIVE // Collaborative assignment
+} AssigneeType;
+```
+
+### Main Data Structures
+
+#### HashMap Structure
+```c
+struct HashMap {
+    char** keys;        // Array of key strings
+    char** values;      // Array of value strings
+    int size;           // Current number of entries
+    int capacity;       // Maximum capacity before reallocation
+};
+```
+
+**Purpose**: Provides key-value storage for configuration and parameters
+**Memory Layout**: Dynamic arrays with geometric growth
+**Thread Safety**: Not thread-safe by default
+
+#### Vec Structure
+```c
+struct Vec {
+    char** data;        // Array of string pointers
+    int size;           // Current number of elements
+    int capacity;       // Maximum capacity before reallocation
+};
+```
+
+**Purpose**: Dynamic string array implementation
+**Growth Factor**: Doubles capacity when full
+**Memory Efficiency**: Amortized O(1) insertion
+
+#### Task Structure
+```c
+struct Task {
+    char* id;                   // Unique task identifier (UUID)
+    char* user_id;              // Associated user ID
+    char* action;               // Task description/action
+    char* time;                 // Time estimate string
+    Priority priority;          // Priority level
+    char* parent_project;       // Parent project name
+    Status status;              // Current status
+    AssigneeType* assignee;     // Assigned entity type
+    Vec tags;                   // Categorization tags
+    Vec dependencies;           // Dependent task IDs
+    char* context_notes;        // Additional context
+    int* progress;              // Completion percentage (0-100)
+    Vec* embedding_vector;      // AI embedding for semantic search
+    time_t created_at;          // Creation timestamp
+    time_t updated_at;          // Last update timestamp
+};
+```
+
+**Constraints**: 
+- `id`, `user_id`, `action` are required fields
+- Maximum action length: 500 characters
+- Progress range: 0-100
+
+#### SharedTodozi Structure
+```c
+struct SharedTodozi {
+    Storage* storage;           // Backing storage implementation
+    pthread_mutex_t mutex;      // Thread synchronization mutex
+};
+```
+
+**Thread Safety**: Uses pthread mutex for synchronization
+**Memory Management**: Owns storage reference
+
+---
+
+## Tool System Design
+
+### Tool Polymorphism Interface
+
+```c
+// Function pointer types for polymorphic behavior
+typedef ToolDefinition* (*tool_def_fn)(const Tool* self);
+typedef ToolResult* (*tool_exec_fn)(const Tool* self, const HashMap* kwargs);
+typedef void (*tool_destroy_fn)(Tool* self);
+
+// Base Tool structure
+struct Tool {
+    tool_def_fn definition;     // Returns tool metadata
+    tool_exec_fn execute;       // Executes tool functionality
+    tool_destroy_fn destroy;    // Cleans up tool resources
+    void* impl;                 // Tool-specific implementation data
+};
+```
+
+### ToolDefinition Structure
+```c
+struct ToolDefinition {
+    char* name;                 // Tool identifier name
+    char* description;          // Human-readable description
+    ToolParameter* parameters;  // Required/optional parameters
+    size_t parameters_count;    // Number of parameters
+    char* category;             // Tool categorization
+    Vec resource_locks;         // Required resource locks
+};
+```
+
+### ToolResult Structure
+```c
+struct ToolResult {
+    bool success;               // Execution success status
+    char* message;              // Result message/error
+    int confidence;             // Confidence level (0-1000 scale)
+};
+```
+
+## Utility Functions
+
+### HashMap Functions
+
+#### `hashmap_new()`
+```c
+HashMap* hashmap_new();
+```
+**Purpose**: Creates a new empty HashMap
+**Return**: Pointer to allocated HashMap or NULL on failure
+**Memory**: Allocates initial capacity of 10 entries
+**Time Complexity**: O(1)
+
+#### `hashmap_set()`
+```c
+void hashmap_set(HashMap* map, const char* key, const char* value);
+```
+**Parameters**:
+- `map`: Target HashMap (non-NULL)
+- `key`: String key (non-NULL, duplicated)
+- `value`: String value (non-NULL, duplicated)
+
+**Behavior**:
+- Updates existing key if present
+- Inserts new key-value pair if not present
+- Automatically resizes if capacity exceeded
+- Silent failure on memory allocation errors
+
+**Time Complexity**: O(n) worst-case, O(1) amortized
+
+### Vec Functions
+
+#### `vec_push()`
+```c
+void vec_push(Vec* vec, const char* item);
+```
+**Parameters**:
+- `vec`: Target vector (non-NULL)
+- `item`: String to add (non-NULL, duplicated)
+
+**Growth Strategy**: Doubles capacity when full
+**Memory**: Amortized O(1) allocation cost
+
+## Tool Implementations
+
+### CreateTaskTool
+
+**Purpose**: Creates new tasks with AI assignment capabilities
+**Category**: Task Management
+**Resource Locks**: FilesystemWrite
+
+#### Parameters:
+```c
+ToolParameter params[7] = {
+    {"action", "string", "Task description/action to perform", true},
+    {"time", "string", "Time estimate (e.g., '2 hours', '1 day')", false},
+    {"priority", "string", "Priority level", false},
+    {"project", "string", "Project name association", false},
+    {"assignee", "string", "Assignee type", false},
+    {"tags", "string", "Comma-separated tags", false},
+    {"context", "string", "Additional context", false}
+};
+```
+
+#### Validation Rules:
+- Action length: 1-500 characters
+- Default assignee: "human"
+- Automatic ID generation: "task-{timestamp}"
+
+### IntelligentTaskPlannerTool
+
+**Purpose**: AI-powered task planning with predictive analytics
+**Category**: Intelligent Planning
+**Resource Locks**: FilesystemRead, Memory
+**Confidence Scale**: 0-1000
+
+#### Implementation Details:
+```c
+typedef struct {
+    SharedTodozi* todozi;
+    HashMap* context_memory; // conversation_id → Vec<String>
+} IntelligentTaskPlannerTool;
+```
+
+**Features**:
+- Context-aware planning with conversation memory
+- Resource optimization algorithms
+- Intelligent scheduling based on complexity
+- Predictive timeline estimation
+
+---
+
+## Design Patterns
+
+### 1. Strategy Pattern (Tool System)
+Each tool implements a common interface (`tool_def_fn`, `tool_exec_fn`, `tool_destroy_fn`) allowing runtime selection and execution.
+
+### 2. Factory Pattern (Tool Creation)
+Tool factory functions (`create_*_tool_new`) encapsulate object creation logic and initialization.
+
+### 3. Polymorphism (Tool Behavior)
+Base `Tool` structure with function pointers enables polymorphic behavior without C++-style inheritance.
+
+### 4. Resource Management (RAII-like)
+Each tool provides destruction function for proper cleanup of implementation-specific resources.
+
+### 5. Observer Pattern (Memory Synthesis)
+Learning pattern tracking and analytics provide observation capabilities for system behavior.
+
+## Memory Management
+
+### Allocation Strategy
+- **Small objects**: Direct `calloc()` for individual structures
+- **Arrays**: Geometric growth (double capacity when full)
+- **Strings**: Always duplicated with `strdup()` for ownership
+
+### Memory Safety Rules
+1. All allocated memory must be freed
+2. String parameters are always duplicated
+3. NULL checks before all operations
+4. Cleanup on allocation failure
+
+### Leak Prevention
+```c
+// Example safe allocation pattern
+Tool* tool = calloc(1, sizeof(Tool));
+if (!tool) {
+    free(impl);  // Cleanup previous allocation
+    return NULL;
+}
+```
+
+## Thread Safety
+
+### Mutex-based Synchronization
+```c
+// SharedTodozi locking mechanism
+void shared_todozi_lock(SharedTodozi* todozi) {
+    if (todozi) pthread_mutex_lock(&todozi->mutex);
+}
+
+void shared_todozi_unlock(SharedTodozi* todozi) {
+    if (todozi) pthread_mutex_unlock(&todozi->mutex);
+}
+```
+
+### Concurrency Rules
+1. Tools must lock SharedTodozi before storage operations
+2. Resource locks declared in ToolDefinition guide locking strategy
+3. No thread safety for individual HashMap/Vec objects
+
+## Performance Analysis
+
+### Time Complexity
+| Operation | Best Case | Worst Case | Amortized |
+|-----------|-----------|------------|-----------|
+| HashMap set | O(1) | O(n) | O(1) |
+| HashMap get | O(1) | O(n) | O(1) |
+| Vec push | O(1) | O(n) | O(1) |
+| Tool execution | O(1) | O(n) | - |
+
+### Memory Usage
+- **Base overhead**: ~50KB for framework structures
+- **Per tool**: 1-5KB depending on internal state
+- **String storage**: Dynamic based on content size
+- **Cache structures**: Grow with usage patterns
+
+### Optimization Opportunities
+1. **HashMap**: Implement hash-based lookup for O(1) performance
+2. **Vec**: Pre-allocate based on expected size
+3. **String pooling**: Reduce duplication overhead
+4. **Cache warming**: Pre-load frequent patterns
+
+## Security Considerations
+
+### Input Validation
+```c
+// Parameter length validation example
+if (!action || strlen(action) == 0 || strlen(action) > 500) {
+    return tool_result_error("Action must be 1-500 characters", 100);
+}
+```
+
+### Security Measures
+1. **Bounds checking**: All string operations have length limits
+2. **NULL safety**: Comprehensive pointer validation
+3. **Injection prevention**: Parameter sanitization in tool execution
+4. **Resource limits**: Maximum sizes for all user inputs
+
+### Potential Vulnerabilities
+1. **Buffer overflows**: Mitigated by length checking
+2. **Memory exhaustion**: Limited by allocation bounds
+3. **Race conditions**: Addressed by mutex locking
+4. **Information leakage**: Minimal sensitive data storage
+
+## Testing Strategies
+
+### Unit Testing Approach
+```c
+// Example test structure
+void test_create_task_tool() {
+    SharedTodozi* todozi = shared_todozi_new(NULL);
+    Tool* tool = create_task_tool_new(todozi);
+    
+    HashMap* params = hashmap_new();
+    hashmap_set(params, "action", "Test task");
+    
+    ToolResult* result = tool->execute(tool, params);
+    assert(result->success == true);
+    
+    // Cleanup
+    tool_result_free(result);
+    hashmap_free(params);
+    tool->destroy(tool);
+    shared_todozi_free(todozi);
+}
+```
+
+### Test Categories
+1. **Unit Tests**: Individual function validation
+2. **Integration Tests**: Tool interaction testing
+3. **Concurrency Tests**: Thread safety verification
+4. **Memory Tests**: Leak detection and cleanup
+5. **Performance Tests**: Load and stress testing
+
+### Testing Tools Recommended
+- **Valgrind**: Memory leak detection
+- **Google Test**: C++ testing framework (with C interface)
+- **pthread testing**: Concurrency validation
+- **Custom harness**: Framework-specific testing
+
+## Deployment Instructions
+
+### Build Requirements
+```bash
+# Required libraries
+sudo apt-get install build-essential
+sudo apt-get install libuuid-dev  # UUID generation
+
+# Compilation flags
+gcc -std=c99 -D_POSIX_C_SOURCE=200809L -pedantic -Wall -Wextra \
+    -O2 -pthread todozi.c -luuid -o todozi
+```
+
+### Platform Support
+- **Linux**: Primary supported platform
+- **macOS**: Should work with minor adjustments
+- **Windows**: Requires pthreads-w32 library
+
+### Deployment Steps
+1. **Compilation**: Use provided build flags
+2. **Library linking**: Ensure uuid and pthread libraries available
+3. **Testing**: Run comprehensive test suite
+4. **Integration**: Incorporate into larger application
+5. **Monitoring**: Implement logging and metrics
+
+## Troubleshooting Guide
+
+### Common Issues
+
+#### 1. Memory Leaks
+**Symptoms**: Increasing memory usage over time
+**Solution**: Run with Valgrind to identify leaks
+```bash
+valgrind --leak-check=full ./todozi
+```
+
+#### 2. Thread Deadlocks
+**Symptoms**: Application hangs during concurrent access
+**Solution**: Ensure proper lock/unlock pairing in tools
+```c
+shared_todozi_lock(todozi);
+// Critical section
+shared_todozi_unlock(todozi);
+```
+
+#### 3. Parameter Validation Failures
+**Symptoms**: Tools return error results unexpectedly
+**Solution**: Check parameter lengths and required fields
+```c
+// Ensure all required parameters are provided
+if (!required_param) {
+    return tool_result_error("Missing required parameter", confidence);
+}
+```
+
+### Debugging Techniques
+
+1. **Logging**: Add printf statements for execution flow
+2. **Assertions**: Use assert for invariant checking
+3. **GDB debugging**: Step through tool execution
+4. **Resource monitoring**: Track memory and lock usage
+
+## API Reference
+
+### Core Functions
+
+#### `tool_result_success()`
+```c
+ToolResult* tool_result_success(const char* message, int confidence);
+```
+**Parameters**:
+- `message`: Success message (required)
+- `confidence`: Confidence level (0-1000)
+
+**Returns**: New ToolResult indicating success
+**Memory**: Caller must free with `tool_result_free()`
+
+#### `shared_todozi_new()`
+```c
+SharedTodozi* shared_todozi_new(Storage* storage);
+```
+**Parameters**:
+- `storage`: Backing storage implementation
+
+**Returns**: New SharedTodozi instance with initialized mutex
+**Thread Safety**: Creates thread-safe shared context
+
+### Tool Factory Functions
+
+Each tool follows the same pattern:
+```c
+Tool* tool_name_new(SharedTodozi* todozi);
+```
+
+**Parameters**: SharedTodozi context for storage access
+**Returns**: New Tool instance ready for use
+**Memory**: Must be destroyed with tool's destroy function
+
+## Example Usage
+
+### Basic Tool Creation and Execution
+```c
+#include "todozi.h"
+
+int main() {
+    // Initialize framework
+    Storage storage = {0};
+    SharedTodozi* todozi = shared_todozi_new(&storage);
+    
+    // Create task tool
+    Tool* task_tool = create_task_tool_new(todozi);
+    
+    // Prepare parameters
+    HashMap* params = hashmap_new();
+    hashmap_set(params, "action", "Write comprehensive documentation");
+    hashmap_set(params, "priority", "high");
+    hashmap_set(params, "time", "4 hours");
+    
+    // Execute tool
+    ToolResult* result = task_tool->execute(task_tool, params);
+    if (result->success) {
+        printf("Success: %s\n", result->message);
+    } else {
+        printf("Error: %s\n", result->message);
+    }
+    
+    // Cleanup
+    tool_result_free(result);
+    hashmap_free(params);
+    task_tool->destroy(task_tool);
+    shared_todozi_free(todozi);
+    
+    return 0;
+}
+```
+
+### Advanced Tool Usage
+```c
+// Intelligent planning with context
+Tool* planner = intelligent_task_planner_tool_new(todozi);
+
+HashMap* plan_params = hashmap_new();
+hashmap_set(plan_params, "goal", "Develop new AI feature");
+hashmap_set(plan_params, "complexity", "complex");
+hashmap_set(plan_params, "timeline", "2 weeks");
+
+ToolResult* plan = planner->execute(planner, plan_params);
+// Process comprehensive planning result
+```
+
+## Conclusion
+
+The Todozi framework provides a robust, extensible foundation for AI-powered task management and collaboration systems. Its polymorphic tool architecture, comprehensive memory management, and thread-safe design make it suitable for production deployment in various environments.
+
+The documentation above covers all aspects of the codebase from architecture and design patterns to security considerations and deployment instructions. This comprehensive coverage ensures developers can effectively understand, extend, and maintain the Todozi framework.# TodoziApp - Comprehensive Documentation
+
+## Table of Contents
+1. [Overview](#overview)
+2. [Architecture](#architecture)
+3. [Data Structures](#data-structures)
+4. [Function Reference](#function-reference)
+5. [Usage Examples](#usage-examples)
+6. [Design Patterns](#design-patterns)
+7. [Performance Analysis](#performance-analysis)
+8. [Security Considerations](#security-considerations)
+9. [Testing Strategies](#testing-strategies)
+10. [Deployment Instructions](#deployment-instructions)
+11. [Troubleshooting Guide](#troubleshooting-guide)
+
+## Overview
+
+TodoziApp is a comprehensive task management application written in C. It provides a modular architecture for managing tasks with multiple statuses, priorities, and organization features. The application features a tab-based interface with filtering, sorting, and search capabilities.
+
+### Key Features
+- Multi-tab interface (Projects, Tasks, Done, Find, API, Feed, Bye)
+- Advanced task filtering and sorting
+- Real-time search functionality
+- Task editing with validation
+- Project-based organization
+- API endpoint management
+- Progress tracking and analytics
+
+## Architecture
+
+### System Architecture Diagram
+```
+┌─────────────────┐    ┌─────────────────┐    ┌─────────────────┐
+│   Main Module   │───▶│   TodoziApp     │───▶│    Task Model   │
+└─────────────────┘    └─────────────────┘    └─────────────────┘
+         │                       │                       │
+         ▼                       ▼                       ▼
+┌─────────────────┐    ┌─────────────────┐    ┌─────────────────┐
+│  UI Rendering   │◄──▶│  Event Handler  │◄──▶│ Data Management │
+└─────────────────┘    └─────────────────┘    └─────────────────┘
+         │                       │                       │
+         ▼                       ▼                       ▼
+┌─────────────────┐    ┌─────────────────┐    ┌─────────────────┐
+│  Tab System     │    │ Filter Engine   │    │ Storage Layer   │
+└─────────────────┘    └─────────────────┘    └─────────────────┘
+```
+
+### Component Relationships
+- **TodoziApp**: Main application controller
+- **Task**: Core data structure for task management
+- **TaskFilters**: Filter configuration for task views
+- **EditSession**: Manages task editing operations
+- **Renderer Modules**: Handle UI display for different tabs
+
+## Data Structures
+
+### Enum Definitions
+
+#### Priority
+```c
+typedef enum {
+    PRIORITY_CRITICAL,    // Highest priority
+    PRIORITY_URGENT,      // Urgent tasks
+    PRIORITY_HIGH,        // High importance
+    PRIORITY_MEDIUM,      // Medium importance
+    PRIORITY_LOW          // Low importance
+} Priority;
+```
+
+#### Status
+```c
+typedef enum {
+    STATUS_TODO,          // Task to be done
+    STATUS_PENDING,       // Awaiting action
+    STATUS_IN_PROGRESS,   // Currently working on
+    STATUS_BLOCKED,       // Blocked by dependencies
+    STATUS_REVIEW,        // Needs review
+    STATUS_DONE,          // Completed
+    STATUS_COMPLETED,     // Fully completed
+    STATUS_CANCELLED,     // Cancelled task
+    STATUS_DEFERRED       // Postponed to later
+} Status;
+```
+
+#### Assignee
+```c
+typedef enum {
+    ASSIGNEE_HUMAN,       // Assigned to human
+    ASSIGNEE_AI,          // AI-assisted task
+    ASSIGNEE_COLLABORATIVE // Collaborative effort
+} Assignee;
+```
+
+### Struct Definitions
+
+#### Task Structure
+```c
+struct Task {
+    char* id;                    // Unique identifier
+    char* user_id;               // User owner
+    char* action;                // Task description
+    char* time;                  // Time estimation
+    Priority priority;           // Priority level
+    Status status;               // Current status
+    Assignee* assignee;          // Assignee type
+    char* parent_project;        // Project association
+    char** tags;                 // Categorization tags
+    int tags_count;              // Number of tags
+    char** dependencies;         // Task dependencies
+    int dependencies_count;      // Dependency count
+    char* context_notes;         // Additional context
+    int* progress;               // Progress percentage
+    double* embedding_vector;    // AI embedding for similarity
+    int embedding_vector_size;   // Vector dimension
+    time_t created_at;           // Creation timestamp
+    time_t updated_at;           // Last update timestamp
+};
+```
+
+#### TodoziApp Structure
+```c
+struct TodoziApp {
+    // Navigation and State
+    AppTab current_tab;
+    int selected_task_index;
+    int selected_project_index;
+    int should_quit;
+    
+    // Data Storage
+    Task* tasks;
+    int tasks_count;
+    Task* filtered_tasks;
+    int filtered_tasks_count;
+    Task* search_results;
+    int search_results_count;
+    char** projects;
+    int projects_count;
+    
+    // Configuration
+    TaskFilters task_filters;
+    TaskSortBy done_sort_by;
+    SortOrder done_sort_order;
+    TaskFilters done_filters;
+    
+    // Editor System
+    EditSession* editor;
+    EditorField editor_field;
+    char* editor_input;
+    int editor_selected_field;
+    
+    // Analytics
+    unsigned long* completion_data;
+    int completion_data_size;
+    unsigned long* priority_distribution;
+    int priority_distribution_size;
+    
+    // System Status
+    char* server_status;
+    int server_running;
+    
+    // Extended counters
+    int ideas_count, memories_count, feelings_count;
+    int errors_count, training_data_count, queue_items_count;
+    int reminders_count;
+    
+    // UI State
+    int more_tab_section, more_tab_selected_index;
+    int more_scroll_offset, feed_scroll_offset;
+    int api_keys_count, api_selected_index;
+    int api_endpoints_scroll, api_keys_scroll;
+    int toast_notifications_count;
+};
+```
+
+## Function Reference
+
+### Core Application Functions
+
+#### `todozi_app_new()`
+**Purpose**: Initialize a new TodoziApp instance
+**Parameters**: None
+**Returns**: `TodoziApp*` - New application instance or NULL on failure
+**Complexity**: O(1)
+```c
+TodoziApp* app = todozi_app_new();
+if (app == NULL) {
+    // Handle allocation failure
+}
+```
+
+#### `todozi_app_free()`
+**Purpose**: Clean up application resources
+**Parameters**: `TodoziApp* app` - Application instance to free
+**Returns**: void
+**Complexity**: O(n) where n is number of tasks
+```c
+todozi_app_free(app);
+```
+
+#### `todozi_app_run()`
+**Purpose**: Main application loop
+**Parameters**: `TodoziApp* app` - Application instance
+**Returns**: void
+**Complexity**: O(n) per iteration
+```c
+todozi_app_run(app);
+```
+
+### Task Management Functions
+
+#### `task_clone()`
+**Purpose**: Create a deep copy of a task
+**Parameters**: `Task* task` - Source task to clone
+**Returns**: `Task` - Cloned task
+**Complexity**: O(n + m) where n=tags, m=dependencies
+```c
+Task original = {0};
+Task copy = task_clone(&original);
+```
+
+#### `task_free()`
+**Purpose**: Free task resources
+**Parameters**: `Task* task` - Task to free
+**Returns**: void
+**Complexity**: O(n + m) where n=tags, m=dependencies
+```c
+task_free(&task);
+```
+
+### Filtering and Sorting Functions
+
+#### `todozi_app_apply_filters()`
+**Purpose**: Apply current filters to task list
+**Parameters**: `TodoziApp* app` - Application instance
+**Returns**: void
+**Complexity**: O(n) where n is number of tasks
+```c
+todozi_app_apply_filters(app);
+```
+
+#### `todozi_app_sort_done_tasks()`
+**Purpose**: Sort completed tasks based on current configuration
+**Parameters**: 
+- `TodoziApp* app` - Application instance
+- `Task** tasks` - Array of task pointers to sort
+- `int count` - Number of tasks
+**Returns**: void
+**Complexity**: O(n²) - uses bubble sort
+```c
+Task** done_tasks;
+int count;
+todozi_app_sort_done_tasks(app, done_tasks, count);
+```
+
+### UI Rendering Functions
+
+#### `todozi_app_draw()`
+**Purpose**: Render complete application UI
+**Parameters**: `TodoziApp* app` - Application instance
+**Returns**: void
+**Complexity**: O(n) where n is visible items
+```c
+todozi_app_draw(app);
+```
+
+#### `todozi_app_draw_tabs()`
+**Purpose**: Render tab navigation header
+**Parameters**: `TodoziApp* app` - Application instance
+**Returns**: void
+**Complexity**: O(1)
+```c
+todozi_app_draw_tabs(app);
+```
+
+### Helper Functions
+
+#### `string_clone()`
+**Purpose**: Create a duplicate string
+**Parameters**: `const char* str` - String to clone
+**Returns**: `char*` - New string or NULL on failure
+**Complexity**: O(n) where n is string length
+```c
+char* copy = string_clone("original");
+```
+
+#### `string_array_free()`
+**Purpose**: Free array of strings
+**Parameters**: 
+- `char** array` - String array to free
+- `int count` - Number of strings
+**Returns**: void
+**Complexity**: O(n) where n is array size
+```c
+string_array_free(strings, count);
+```
+
+## Usage Examples
+
+### Basic Application Setup
+```c
+#include "todozi.h"
+
+int main() {
+    // Initialize application
+    TodoziApp* app = todozi_app_new();
+    if (!app) {
+        fprintf(stderr, "Failed to initialize TodoziApp\n");
+        return 1;
+    }
+    
+    // Run main loop
+    todozi_app_run(app);
+    
+    // Cleanup
+    todozi_app_free(app);
+    return 0;
+}
+```
+
+### Task Creation and Management
+```c
+// Create a sample task
+Task sample_task = {0};
+sample_task.id = string_clone("task_001");
+sample_task.action = string_clone("Implement new feature");
+sample_task.priority = PRIORITY_HIGH;
+sample_task.status = STATUS_TODO;
+sample_task.created_at = time(NULL);
+
+// Clone the task
+Task cloned_task = task_clone(&sample_task);
+
+// Free resources when done
+task_free(&sample_task);
+task_free(&cloned_task);
+```
+
+### Filter Configuration
+```c
+// Configure task filters
+app->task_filters.priority_filter = malloc(sizeof(Priority) * 2);
+app->task_filters.priority_filter[0] = PRIORITY_HIGH;
+app->task_filters.priority_filter[1] = PRIORITY_CRITICAL;
+
+app->task_filters.status_filter = malloc(sizeof(Status) * 3);
+app->task_filters.status_filter[0] = STATUS_TODO;
+app->task_filters.status_filter[1] = STATUS_IN_PROGRESS;
+app->task_filters.status_filter[2] = STATUS_REVIEW;
+
+// Apply filters
+todozi_app_apply_filters(app);
+```
+
+### Custom Rendering Example
+```c
+void custom_render_function(TodoziApp* app) {
+    printf("Custom Task View\n");
+    printf("================\n");
+    
+    for (int i = 0; i < app->filtered_tasks_count; i++) {
+        Task* task = &app->filtered_tasks[i];
+        printf("%d. %s [Priority: %d, Status: %d]\n", 
+               i + 1, task->action, task->priority, task->status);
+    }
+}
+```
+
+## Design Patterns
+
+### 1. Model-View-Controller (MVC)
+- **Model**: `Task` structure and data management functions
+- **View**: `todozi_app_draw_*` functions for UI rendering
+- **Controller**: `TodoziApp` structure and event handling functions
+
+### 2. Singleton Pattern
+- Single `TodoziApp` instance manages entire application state
+- Centralized resource management and cleanup
+
+### 3. Observer Pattern
+- Filter system observes task changes and updates views accordingly
+- Search results update dynamically based on query changes
+
+### 4. Strategy Pattern
+- Multiple sorting strategies (`TASK_SORT_BY_*`) for different views
+- Configurable filter strategies for task organization
+
+### 5. Factory Pattern
+- `todozi_app_new()` acts as factory for application instances
+- `task_clone()` provides controlled object creation
+
+## Performance Analysis
+
+### Time Complexity
+| Operation | Best Case | Average Case | Worst Case |
+|-----------|-----------|--------------|------------|
+| App Initialization | O(1) | O(1) | O(1) |
+| Task Filtering | O(n) | O(n) | O(n) |
+| Task Sorting | O(n log n) | O(n²)* | O(n²) |
+| Search | O(n) | O(n) | O(n) |
+| UI Rendering | O(k) | O(k) | O(k) |
+
+*Note: Current implementation uses bubble sort O(n²), could be optimized
+
+### Space Complexity
+| Component | Memory Usage |
+|-----------|--------------|
+| TodoziApp Base | O(1) |
+| Task Storage | O(n × m) where n=tasks, m=avg fields |
+| Filter Results | O(k) where k=filtered tasks |
+| UI State | O(1) |
+
+### Optimization Recommendations
+1. **Replace bubble sort** with quicksort or mergesort (O(n log n))
+2. **Implement pagination** for large task lists
+3. **Add caching** for frequent filter operations
+4. **Use more efficient string handling** (string interning)
+5. **Implement lazy loading** for task details
+
+## Security Considerations
+
+### Memory Safety
+```c
+// Always check malloc results
+char* clone = malloc(strlen(str) + 1);
+if (clone == NULL) {
+    // Handle allocation failure
+    return NULL;
+}
+
+// Proper string copying with bounds checking
+strncpy(clone, str, strlen(str) + 1);
+```
+
+### Input Validation
+```c
+// Validate task field inputs
+int validate_task_input(const Task* task) {
+    if (task == NULL) return 0;
+    if (task->action == NULL || strlen(task->action) == 0) return 0;
+    if (task->priority < PRIORITY_CRITICAL || task->priority > PRIORITY_LOW) return 0;
+    // Additional validation checks...
+    return 1;
+}
+```
+
+### Resource Management
+- Always free allocated memory using corresponding free functions
+- Use `calloc` for sensitive data to avoid information leakage
+- Implement proper error handling for allocation failures
+
+### API Security
+- Validate all API inputs before processing
+- Implement rate limiting for search operations
+- Sanitize search queries to prevent injection attacks
+
+## Testing Strategies
+
+### Unit Testing Framework
+```c
+// Example test case for task cloning
+void test_task_clone() {
+    Task original = {0};
+    original.id = string_clone("test_id");
+    original.action = string_clone("Test action");
+    original.priority = PRIORITY_MEDIUM;
+    
+    Task cloned = task_clone(&original);
+    
+    // Assertions
+    assert(strcmp(original.id, cloned.id) == 0);
+    assert(strcmp(original.action, cloned.action) == 0);
+    assert(original.priority == cloned.priority);
+    assert(original.id != cloned.id); // Should be different pointers
+    
+    // Cleanup
+    task_free(&original);
+    task_free(&cloned);
+}
+```
+
+### Integration Testing
+```c
+void test_app_workflow() {
+    TodoziApp* app = todozi_app_new();
+    assert(app != NULL);
+    
+    // Test tab navigation
+    AppTab initial_tab = app->current_tab;
+    todozi_app_next_tab(app);
+    assert(app->current_tab != initial_tab);
+    
+    // Test filter application
+    todozi_app_apply_filters(app);
+    assert(app->filtered_tasks_count >= 0);
+    
+    todozi_app_free(app);
+}
+```
+
+### Test Categories
+1. **Unit Tests**: Individual function testing
+2. **Integration Tests**: Component interaction testing
+3. **Performance Tests**: Load and stress testing
+4. **Security Tests**: Input validation and boundary testing
+5. **UI Tests**: Rendering and interaction testing
+
+### Test Coverage Goals
+- 90%+ line coverage for core functions
+- 100% error path testing
+- Memory leak detection in all tests
+- Performance regression testing
+
+## Deployment Instructions
+
+### Build Configuration
+```makefile
+# Makefile example
+CC = gcc
+CFLAGS = -Wall -Wextra -Werror -std=c99 -O2
+SOURCES = todozi.c
+TARGET = todozi_app
+
+$(TARGET): $(SOURCES)
+	$(CC) $(CFLAGS) -o $(TARGET) $(SOURCES)
+
+clean:
+	rm -f $(TARGET)
+
+.PHONY: clean
+```
+
+### Compilation Options
+```bash
+# Debug build with sanitizers
+gcc -g -fsanitize=address -fsanitize=undefined -o todozi_debug todozi.c
+
+# Release build
+gcc -O3 -DNDEBUG -o todozi_release todozi.c
+
+# Static analysis
+scan-build gcc -o todozi todozi.c
+```
+
+### Platform-Specific Considerations
+
+#### Linux
+```bash
+# Install dependencies (if any)
+sudo apt-get install build-essential
+
+# Build and run
+make
+./todozi_app
+```
+
+#### Windows (MinGW)
+```cmd
+# Using MinGW
+gcc -o todozi_app.exe todozi.c
+todozi_app.exe
+```
+
+#### macOS
+```bash
+# Install Xcode command line tools
+xcode-select --install
+
+# Build and run
+make
+./todozi_app
+```
+
+### Docker Deployment
+```dockerfile
+FROM alpine:latest
+
+# Install build dependencies
+RUN apk add --no-cache gcc musl-dev
+
+# Copy source code
+COPY todozi.c /app/
+WORKDIR /app
+
+# Compile application
+RUN gcc -static -O3 -o todozi_app todozi.c
+
+# Run application
+CMD ["./todozi_app"]
+```
+
+## Troubleshooting Guide
+
+### Common Issues and Solutions
+
+#### Memory Leaks
+**Problem**: Application memory usage grows over time
+**Solution**: Use valgrind to detect leaks
+```bash
+valgrind --leak-check=full ./todozi_app
+```
+
+#### Segmentation Faults
+**Problem**: Application crashes with segfault
+**Solution**: Enable core dumps and debug symbols
+```bash
+ulimit -c unlimited
+gcc -g -o todozi_app todozi.c
+gdb todozi_app core
+```
+
+#### Performance Issues
+**Problem**: Slow response with large task lists
+**Solution**: Implement pagination and optimize sorting
+```c
+// Replace bubble sort with more efficient algorithm
+void optimized_sort(Task** tasks, int count, TaskSortBy sort_by) {
+    // Implement quicksort or mergesort
+}
+```
+
+### Debugging Techniques
+
+#### Logging System
+```c
+#define DEBUG 1
+
+void debug_log(const char* format, ...) {
+    #ifdef DEBUG
+    va_list args;
+    va_start(args, format);
+    vprintf(format, args);
+    va_end(args);
+    #endif
+}
+```
+
+#### Runtime Assertions
+```c
+#include <assert.h>
+
+void todozi_app_apply_filters(TodoziApp* app) {
+    assert(app != NULL);
+    assert(app->tasks_count >= 0);
+    // ... implementation
+}
+```
+
+### Error Recovery Strategies
+
+#### Graceful Degradation
+```c
+TodoziApp* todozi_app_new() {
+    TodoziApp* app = calloc(1, sizeof(TodoziApp));
+    if (app == NULL) {
+        fprintf(stderr, "Critical: Failed to allocate application memory\n");
+        return NULL;
+    }
+    
+    // Initialize with safe defaults if allocations fail
+    app->search_query = string_clone("");
+    if (app->search_query == NULL) {
+        app->search_query = string_clone("default");
+    }
+    
+    return app;
+}
+```
+
+#### Resource Cleanup on Failure
+```c
+void initialize_component(TodoziApp* app) {
+    char* resource1 = malloc(100);
+    if (resource1 == NULL) goto cleanup;
+    
+    char* resource2 = malloc(100);
+    if (resource2 == NULL) goto cleanup;
+    
+    // ... more initialization
+    
+    return;
+    
+cleanup:
+    free(resource1);
+    free(resource2);
+    // Handle error
+}
+```
+
+### Monitoring and Diagnostics
+
+#### Performance Metrics
+```c
+typedef struct {
+    time_t startup_time;
+    unsigned long tasks_processed;
+    unsigned long memory_used;
+    double average_render_time;
+} AppMetrics;
+
+void collect_metrics(TodoziApp* app, AppMetrics* metrics) {
+    // Collect runtime metrics for monitoring
+}
+```
+
+This documentation provides a comprehensive reference for understanding, using, and maintaining the TodoziApp codebase. The modular architecture and clear separation of concerns make it suitable for extension and customization while maintaining stability and performance.# TODOZI Types - Comprehensive Documentation
+
+## Overview
+
+This header file (`todoz_types.h`) defines the core type system for a sophisticated task management and AI agent system called TODOZI. It provides comprehensive type definitions, enumerations, and structures that form the foundation of the application's command system, data models, and API contracts.
+
+## Table of Contents
+1. [Header Protection and Includes](#header-protection)
+2. [Forward Declarations](#forward-declarations)
+3. [Type Definitions](#type-definitions)
+4. [Optional Field Macros](#optional-macros)
+5. [Enumeration Definitions](#enum-definitions)
+6. [Structure Definitions](#structure-definitions)
+7. [Command Hierarchy System](#command-hierarchy)
+8. [Search Engine API](#search-engine-api)
+9. [Architecture](#architecture)
+10. [Design Patterns](#design-patterns)
+11. [Performance Analysis](#performance-analysis)
+12. [Security Considerations](#security-considerations)
+13. [Testing Strategies](#testing-strategies)
+14. [Deployment Instructions](#deployment-instructions)
+15. [Troubleshooting Guide](#troubleshooting)
+
+## Header Protection and Includes {#header-protection}
+
+### Header Guard
+```c
+#ifndef TODOZI_TYPES_H
+#define TODOZI_TYPES_H
+// ... content ...
+#endif // TODOZI_TYPES_H
+```
+- **Purpose**: Prevents multiple inclusion of the header file
+- **Mechanism**: Standard C header guard pattern
+- **Identifier**: `TODOZI_TYPES_H` (project-specific naming convention)
+
+### Included Headers
+```c
+#include <stdio.h>      // Standard I/O functions
+#include <stdlib.h>     // Memory allocation, process control
+#include <string.h>     // String manipulation functions
+#include <stdbool.h>    // Boolean type support
+#include <time.h>       // Time and date functions
+#include <stddef.h>     // Standard definitions (size_t, etc.)
+```
+- **Dependencies**: Standard C library headers only
+- **Portability**: Highly portable across different C implementations
+- **Memory Management**: Relies on standard library for memory operations
+
+## Forward Declarations {#forward-declarations}
+
+```c
+typedef struct CodeChunk CodeChunk;
+typedef struct AgentAssignment AgentAssignment;
+typedef struct Error Error;
+typedef struct Feeling Feeling;
+typedef struct Idea Idea;
+typedef struct Memory Memory;
+typedef struct Task Task;
+typedef struct TrainingData TrainingData;
+```
+- **Purpose**: Enable references to types defined in other files
+- **Design Pattern**: Incomplete type declarations for modularity
+- **File Organization**: Suggests a multi-file architecture with specialized modules
+
+## Type Definitions {#type-definitions}
+
+### DateTime Type
+```c
+typedef time_t DateTime;
+```
+- **Base Type**: `time_t` from `<time.h>`
+- **Representation**: Seconds since Unix epoch (January 1, 1970)
+- **Usage**: Timestamping for all temporal data in the system
+- **Portability**: Standard POSIX time representation
+- **Limitations**: Year 2038 problem on 32-bit systems
+
+## Optional Field Macros {#optional-macros}
+
+### OPTIONAL_PTR Macro
+```c
+#define OPTIONAL_PTR(type, name) \
+    type name; \
+    bool has_##name;
+```
+- **Purpose**: Create optional pointer fields with presence tracking
+- **Usage**: `OPTIONAL_PTR(char*, tags)` creates `char* tags` and `bool has_tags`
+- **Memory Layout**: Adds boolean flag for each optional field
+- **Memory Overhead**: 1 byte per optional field + pointer size
+
+### OPTIONAL_VALUE Macro
+```c
+#define OPTIONAL_VALUE(type, name) \
+    struct { type value; bool present; } name;
+```
+- **Purpose**: Create optional value fields with presence tracking
+- **Usage**: `OPTIONAL_VALUE(unsigned char, progress)` creates struct with `value` and `present`
+- **Memory Layout**: Inline struct containing value and presence flag
+- **Memory Overhead**: sizeof(type) + 1 byte padding
+
+### Consistency Note
+The code contains an inconsistency between `TaskUpdate` using `OPTIONAL_VALUE` for progress and `UpdateCommand` using a pointer. This should be unified for consistency.
+
+## Enumeration Definitions {#enum-definitions}
+
+### CommandType Enum (Primary Command Categories)
+```c
+typedef enum {
+    CMD_INIT,                    // System initialization
+    CMD_ADD,                     // Add new entities
+    CMD_LIST,                    // List entities
+    CMD_SHOW,                    // Show entity details
+    CMD_UPDATE,                  // Update entities
+    CMD_COMPLETE,                // Mark as complete
+    CMD_FIX_CONSISTENCY,         // Data consistency operations
+    CMD_CHECK_STRUCTURE,         // Structure validation
+    CMD_ENSURE_STRUCTURE,        // Structure enforcement
+    CMD_REGISTER,                // System registration
+    CMD_REGISTRATION_STATUS,     // Registration status check
+    CMD_CLEAR_REGISTRATION,      // Clear registration
+    CMD_DELETE,                  // Delete entities
+    CMD_PROJECT,                 // Project management
+    CMD_SEARCH,                  // Search operations
+    CMD_STATS,                   // Statistics display
+    CMD_BACKUP,                  // Backup operations
+    CMD_LIST_BACKUPS,            // List available backups
+    CMD_RESTORE,                 // Restore from backup
+    CMD_MEMORY,                  // Memory management
+    CMD_IDEA,                    // Idea management
+    CMD_AGENT,                   // AI agent management
+    CMD_EMB,                     // Embedding operations
+    CMD_ERROR_CMD,               // Error management
+    CMD_TRAIN,                   // Training operations
+    CMD_CHAT,                    // Chat functionality
+    CMD_SEARCH_ALL,              // Comprehensive search
+    CMD_MAESTRO,                 // Maestro system (orchestration)
+    CMD_SERVER,                  // Server operations
+    CMD_ML,                      // Machine learning operations
+    CMD_IND_DEMO,                // Individual demonstration
+    CMD_QUEUE,                   // Queue management
+    CMD_API,                     // API management
+    CMD_TDZ_CNT,                 // TODOZI content processing
+    CMD_EXPORT_EMBEDDINGS,       // Embedding export
+    CMD_MIGRATE,                 // Data migration
+    CMD_TUI,                     // Text User Interface
+    CMD_EXTRACT,                 // Data extraction
+    CMD_STRATEGY,                // Strategy operations
+    CMD_STEPS                    // Step management
+} CommandType;
+```
+
+### Specialized Command Enums
+The system uses a hierarchical enum structure where each primary command category has specialized sub-commands:
+
+**Add Operations:**
+```c
+typedef enum {
+    CMD_ADD_TASK
+} AddCommandType;
+```
+
+**List Operations:**
+```c
+typedef enum {
+    CMD_LIST_TASKS
+} ListCommandType;
+```
+
+**Project Management:**
+```c
+typedef enum {
+    CMD_PROJECT_CREATE,
+    CMD_PROJECT_LIST,
+    CMD_PROJECT_SHOW,
+    CMD_PROJECT_ARCHIVE,
+    CMD_PROJECT_DELETE,
+    CMD_PROJECT_UPDATE
+} ProjectCommandType;
+```
+
+**Queue Status:**
+```c
+typedef enum {
+    QUEUE_STATUS_BACKLOG,
+    QUEUE_STATUS_ACTIVE,
+    QUEUE_STATUS_COMPLETE
+} QueueStatus;
+```
+
+## Structure Definitions {#structure-definitions}
+
+### Task Management Structures
+
+#### TaskUpdate Structure
+```c
+typedef struct {
+    char* id;                           // Required: Task identifier
+    OPTIONAL_PTR(char*, action);        // Optional: Action description
+    OPTIONAL_PTR(char*, time);          // Optional: Time specification
+    OPTIONAL_PTR(char*, priority);      // Optional: Priority level
+    OPTIONAL_PTR(char*, project);       // Optional: Project association
+    OPTIONAL_PTR(char*, status);        // Optional: Status value
+    OPTIONAL_PTR(char*, assignee);      // Optional: Assignee information
+    OPTIONAL_PTR(char*, tags);          // Optional: Tags list
+    OPTIONAL_PTR(char*, dependencies);  // Optional: Dependency list
+    OPTIONAL_PTR(char*, context);       // Optional: Context information
+    OPTIONAL_VALUE(unsigned char, progress); // Optional: Progress percentage (0-100)
+} TaskUpdate;
+```
+
+**Field Specifications:**
+- `id`: Unique identifier (required, non-null)
+- All other fields: Optional with presence tracking
+- `progress`: Unsigned char (0-255 range, typically 0-100 for percentages)
+
+#### UpdateCommand Structure
+```c
+typedef struct {
+    char* id;                    // Required: Task identifier
+    char* action;                // Required: Action description  
+    char* time;                  // Required: Time specification
+    char* priority;              // Required: Priority level
+    char* project;               // Required: Project association
+    char* status;                // Required: Status value
+    char* assignee;              // Required: Assignee information
+    char* tags;                  // Required: Tags list
+    char* dependencies;          // Required: Dependency list
+    char* context;               // Required: Context information
+    unsigned char* progress;     // Required: Progress pointer (inconsistent design)
+} UpdateCommand;
+```
+
+**Design Issue**: Inconsistent use of pointer for progress vs TaskUpdate's value approach.
+
+### AI Agent Management Structures
+
+#### AgentCreateCommand Structure
+```c
+typedef struct {
+    char* id;                                // Required: Agent identifier
+    char* name;                              // Required: Agent name
+    char* description;                       // Required: Agent description
+    char* category;                          // Required: Category classification
+    OPTIONAL_PTR(char*, capabilities);       // Optional: Capabilities list
+    OPTIONAL_PTR(char*, specializations);    // Optional: Specializations
+    char* model_provider;                    // Required: AI model provider
+    char* model_name;                        // Required: Model name
+    float temperature;                       // Required: Creativity parameter (0.0-1.0)
+    unsigned int max_tokens;                 // Required: Maximum tokens per response
+    OPTIONAL_PTR(char*, tags);               // Optional: Tags for categorization
+    OPTIONAL_PTR(char*, system_prompt);      // Optional: System prompt template
+    OPTIONAL_PTR(char*, prompt_template);    // Optional: User prompt template
+    OPTIONAL_VALUE(bool, auto_format_code);  // Optional: Code formatting flag
+    OPTIONAL_VALUE(bool, include_examples);  // Optional: Example inclusion flag
+    OPTIONAL_VALUE(bool, explain_complexity);// Optional: Complexity explanation flag
+    OPTIONAL_VALUE(bool, suggest_tests);     // Optional: Test suggestion flag
+    OPTIONAL_PTR(char*, tools);              // Optional: Available tools
+    OPTIONAL_VALUE(unsigned int, max_response_length); // Optional: Response length limit
+    OPTIONAL_VALUE(unsigned int, timeout_seconds);     // Optional: Timeout in seconds
+    OPTIONAL_VALUE(unsigned int, requests_per_minute); // Optional: Rate limiting
+    OPTIONAL_VALUE(unsigned int, tokens_per_hour);     // Optional: Token budget
+} AgentCreateCommand;
+```
+
+### Machine Learning Structures
+
+#### MLProcessCommand Structure
+```c
+typedef struct {
+    char* text;        // Required: Text to process
+    bool use_ml;       // Required: Use ML processing flag
+    char* model;       // Required: Model identifier
+} MLProcessCommand;
+```
+
+#### MLAdvancedProcessCommand Structure
+```c
+typedef struct {
+    char* text;        // Required: Text to process
+    bool analytics;    // Required: Analytics flag
+} MLAdvancedProcessCommand;
+```
+
+### Data Collection Structures
+
+#### MaestroCollectConversationCommand Structure
+```c
+typedef struct {
+    char* session_id;                  // Required: Session identifier
+    char* conversation;                // Required: Conversation content
+    size_t context_length;             // Required: Context length
+    OPTIONAL_PTR(char*, tool_calls);   // Optional: Tool calls data
+    char* response;                    // Required: AI response
+    unsigned long long response_time_ms; // Required: Response time in milliseconds
+} MaestroCollectConversationCommand;
+```
+
+## Command Hierarchy System {#command-hierarchy}
+
+The system implements a comprehensive command hierarchy using union types:
+
+### Hierarchical Command Structure
+
+```c
+// Base command structure with type and union
+typedef struct {
+    CommandType type;
+    union {
+        // Direct command structures
+        UpdateCommand update;
+        CompleteCommand complete;
+        // ... other direct commands
+        
+        // Hierarchical command structures
+        AddCommand add;
+        ListCommand list;
+        ShowCommand show;
+        // ... other hierarchical commands
+    } data;
+} Command;
+```
+
+### Example: AddCommand Hierarchy
+```c
+typedef struct {
+    AddCommandType type;
+    union {
+        AddTaskCommand task;
+    } data;
+} AddCommand;
+```
+
+### Example: ProjectCommand Hierarchy
+```c
+typedef struct {
+    ProjectCommandType type;
+    union {
+        ProjectCreateCommand create;
+        ProjectUpdateCommand update;
+        char* name;  // For simple operations like show/delete
+    } data;
+} ProjectCommand;
+```
+
+## Search Engine API {#search-engine-api}
+
+### SearchOptions Structure
+```c
+typedef struct {
+    OPTIONAL_VALUE(size_t, limit);      // Optional: Result limit
+    OPTIONAL_PTR(char*, data_types);    // Optional: Data types to search
+    OPTIONAL_PTR(char*, since);         // Optional: Start datetime
+    OPTIONAL_PTR(char*, until);         // Optional: End datetime
+} SearchOptions;
+```
+
+### SearchResults Structure
+```c
+typedef struct {
+    Task* task_results;
+    Memory* memory_results;
+    Idea* idea_results;
+    Error* error_results;
+    TrainingData* training_results;
+    size_t task_results_count;
+    size_t memory_results_count;
+    size_t idea_results_count;
+    size_t error_results_count;
+    size_t training_results_count;
+} SearchResults;
+```
+
+### ChatContent Structure
+```c
+typedef struct {
+    Task* tasks;
+    Memory* memories;
+    Idea* ideas;
+    AgentAssignment* agent_assignments;
+    CodeChunk* code_chunks;
+    Error* errors;
+    TrainingData* training_data;
+    Feeling* feelings;
+    size_t tasks_count;
+    size_t memories_count;
+    size_t ideas_count;
+    size_of agent_assignments_count;
+    size_t code_chunks_count;
+    size_t errors_count;
+    size_t training_data_count;
+    size_t feelings_count;
+} ChatContent;
+```
+
+## Architecture {#architecture}
+
+### System Architecture Diagram
+
+```
+TODOZI System Architecture
+=================================
+
+Application Layer
+├── Command Parser
+├── Command Dispatcher
+├── User Interface (TUI/CLI)
+└── API Server
+
+Core System Layer
+├── Task Management Engine
+├── Project Management
+├── AI Agent Orchestrator
+├── Machine Learning Pipeline
+├── Search Engine
+├── Data Persistence
+└── Backup/Restore System
+
+Data Layer
+├── Task Repository
+├── Project Repository  
+├── Agent Repository
+├── Memory Store
+├── Training Data Store
+└── Embedding Database
+
+External Integration Layer
+├── ML Model Providers
+├── Embedding Services
+└── External APIs
+```
+
+### Module Interaction Flow
+
+```
+User Input → Command Parser → Command Dispatcher → Specific Handler → Data Repository → Response Generator → User Output
+```
+
+### Data Flow Architecture
+
+```
+Raw Data → Extraction → Processing → Storage → Search Index → Query Processing → Results
+```
+
+## Design Patterns {#design-patterns}
+
+### 1. Command Pattern
+**Implementation**: Hierarchical command structure with unions
+**Purpose**: Encapsulate requests as objects, allowing parameterization and queuing
+**Benefits**: 
+- Easy extension of new command types
+- Uniform command processing interface
+- Command history and undo capability
+
+### 2. Builder Pattern (implied)
+**Implementation**: Command structures with optional fields
+**Purpose**: Step-by-step construction of complex objects
+**Benefits**:
+- Flexible object creation
+- Clear parameter specification
+- Validation during construction
+
+### 3. Strategy Pattern
+**Implementation**: Different command handlers for each command type
+**Purpose**: Define family of algorithms, make them interchangeable
+**Benefits**:
+- Easy addition of new functionality
+- Clean separation of concerns
+- Runtime algorithm selection
+
+### 4. Composite Pattern
+**Implementation**: Hierarchical command structure
+**Purpose**: Treat individual and composite objects uniformly
+**Benefits**:
+- Unified interface for simple and complex commands
+- Recursive command processing
+
+### 5. Observer Pattern (implied)
+**Implementation**: Event-based system for command execution
+**Purpose**: Define one-to-many dependencies between objects
+**Benefits**:
+- Loose coupling between components
+- Event-driven architecture
+
+## Performance Analysis {#performance-analysis}
+
+### Memory Usage Analysis
+
+**Structure Sizes (64-bit system):**
+- `TaskUpdate`: ~100 bytes + string lengths
+- `AgentCreateCommand`: ~200 bytes + string lengths  
+- `Command` union: Largest member determines size (~200 bytes)
+
+**Memory Optimization Techniques:**
+- Optional field macros minimize memory for unused fields
+- Pointer-based string storage reduces structure size
+- Union-based command hierarchy saves memory
+
+### Time Complexity
+
+**Command Processing:**
+- Parsing: O(n) where n is command length
+- Dispatch: O(1) via jump table/switch statement
+- Execution: Varies by command type (O(1) to O(n))
+
+**Search Operations:**
+- Indexed search: O(log n) to O(1)
+- Full-text search: O(n) without indexing
+
+### Scalability Considerations
+
+**Memory Scaling:**
+- Linear growth with number of entities
+- Pointer-based design reduces memory overhead
+
+**Processing Scaling:**
+- Command processing scales linearly with input size
+- Search operations may require indexing for large datasets
+
+## Security Considerations {#security-considerations}
+
+### Input Validation
+
+**String Handling:**
+```c
+// Safe string copying example
+char* safe_strdup(const char* src) {
+    if (!src) return NULL;
+    size_t len = strlen(src);
+    char* dest = malloc(len + 1);
+    if (dest) {
+        strncpy(dest, src, len);
+        dest[len] = '\0';
+    }
+    return dest;
+}
+```
+
+**Pointer Validation:**
+- All pointer parameters should be validated before use
+- Optional pointers require `has_field` checks before access
+
+### API Security
+
+**Authentication:**
+- `ApiRegisterCommand` and `ApiCheckCommand` suggest API key management
+- Public/private key pairs for API authentication
+
+**Data Protection:**
+- `MemoryCreateCommand` has `secret` type for sensitive data
+- Proper encryption for stored sensitive information
+
+### Security Best Practices
+
+1. **Input Sanitization**: Validate all command parameters
+2. **Memory Safety**: Use bounds-checked string functions
+3. **Access Control**: Implement proper authentication/authorization
+4. **Data Encryption**: Encrypt sensitive data at rest and in transit
+5. **Audit Logging**: Track all command executions
+
+## Testing Strategies {#testing-strategies}
+
+### Unit Testing
+
+**Test Structure Validation:**
+```c
+// Example test for TaskUpdate structure
+void test_task_update_creation() {
+    TaskUpdate update = {
+        .id = strdup("task123"),
+        .has_action = true,
+        .action = strdup("Test action")
+    };
+    
+    assert(update.id != NULL);
+    assert(update.has_action == true);
+    assert(update.action != NULL);
+    
+    // Test optional field absence
+    assert(update.has_tags == false);
+    assert(update.tags == NULL);
+}
+```
+
+**Command Parsing Tests:**
+- Test each command type parsing
+- Validate optional field handling
+- Test error conditions and edge cases
+
+### Integration Testing
+
+**Command Execution Flow:**
+```c
+// Test complete command flow
+void test_command_execution() {
+    Command cmd = parse_user_input("add task 'Test'");
+    CommandResult result = execute_command(cmd);
+    assert(result.success == true);
+    assert(result.entity_id != NULL);
+}
+```
+
+**Data Persistence Tests:**
+- Test backup/restore functionality
+- Verify data consistency after operations
+- Test migration procedures
+
+### Performance Testing
+
+**Load Testing:**
+- Test with large numbers of entities
+- Measure memory usage growth
+- Benchmark search performance
+
+**Stress Testing:**
+- Test under high concurrent load
+- Verify system stability under stress
+- Test error recovery mechanisms
+
+## Deployment Instructions {#deployment-instructions}
+
+### Build Requirements
+
+**Compiler Requirements:**
+- C99 compliant compiler (GCC, Clang, MSVC)
+- Standard C library support
+- POSIX compliance for time functions
+
+**Build Configuration:**
+```makefile
+CC = gcc
+CFLAGS = -std=c99 -Wall -Wextra -Werror
+LDFLAGS = -lm
+SRCS = main.c command.c search.c storage.c
+OBJS = $(SRCS:.c=.o)
+TARGET = todozi
+
+$(TARGET): $(OBJS)
+	$(CC) $(OBJS) -o $(TARGET) $(LDFLAGS)
+
+%.o: %.c
+	$(CC) $(CFLAGS) -c $< -o $@
+```
+
+### Installation Steps
+
+1. **Clone Repository:**
+   ```bash
+   git clone https://github.com/todozi/todozi.git
+   cd todozi
+   ```
+
+2. **Build System:**
+   ```bash
+   make release
+   ```
+
+3. **Install Binary:**
+   ```bash
+   sudo make install
+   ```
+
+4. **Configure Environment:**
+   ```bash
+   export TODOZI_HOME=/opt/todozi
+   export PATH=$PATH:$TODOZI_HOME/bin
+   ```
+
+### Configuration Management
+
+**Configuration File Example:**
+```json
+{
+  "database": {
+    "path": "/var/lib/todozi/data.db",
+    "backup_interval": 3600
+  },
+  "ai": {
+    "default_model": "gpt-4",
+    "temperature": 0.7,
+    "max_tokens": 2000
+  },
+  "security": {
+    "api_key_rotation": 30,
+    "encryption_enabled": true
+  }
+}
+```
+
+## Troubleshooting Guide {#troubleshooting}
+
+### Common Issues and Solutions
+
+**Memory Leaks:**
+```c
+// Proper cleanup function
+void cleanup_command(Command* cmd) {
+    if (!cmd) return;
+    
+    switch(cmd->type) {
+        case CMD_ADD:
+            if (cmd->data.add.data.task.id) free(cmd->data.add.data.task.id);
+            // ... cleanup other fields
+            break;
+        // ... other command types
+    }
+}
+```
+
+**Command Parsing Errors:**
+- Symptom: Invalid command execution
+- Solution: Validate command structure before processing
+- Debug: Use command validation function
+
+**Performance Issues:**
+- Symptom: Slow response times
+- Solution: Implement search indexing
+- Debug: Profile command execution times
+
+### Debugging Techniques
+
+**Logging Implementation:**
+```c
+typedef enum {
+    LOG_DEBUG,
+    LOG_INFO,
+    LOG_WARNING,
+    LOG_ERROR
+} LogLevel;
+
+void log_message(LogLevel level, const char* format, ...) {
+    va_list args;
+    va_start(args, format);
+    vprintf(format, args);
+    va_end(args);
+}
+```
+
+**Memory Debugging:**
+- Use valgrind or address sanitizer
+- Implement memory allocation tracking
+- Test with different allocation patterns
+
+### Recovery Procedures
+
+**Data Corruption:**
+1. Identify corrupted data structures
+2. Use `CMD_FIX_CONSISTENCY` command
+3. Restore from backup if necessary
+
+**System Crash:**
+1. Check system logs for error details
+2. Verify data file integrity
+3. Use backup restoration procedure
+
+**Performance Degradation:**
+1. Analyze search query patterns
+2. Rebuild search indexes
+3. Optimize database queries
+
+## Conclusion
+
+This comprehensive type system forms the backbone of a sophisticated task management and AI orchestration platform. The design demonstrates careful consideration of extensibility, memory efficiency, and command processing efficiency. The hierarchical command structure allows for flexible system evolution while maintaining backward compatibility.
+
+The system's architecture supports complex AI agent management, machine learning integration, and comprehensive search capabilities, making it suitable for advanced productivity and automation scenarios. Proper implementation of the security, testing, and deployment strategies outlined will ensure a robust and reliable system.
+
+---
+*Documentation generated for TODOZI Types System - Version 1.0*
