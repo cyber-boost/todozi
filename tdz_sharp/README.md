@@ -1,120 +1,169 @@
-# TodoziSharp - .NET Wrapper for Todozi
+# TodoziSharp
 
-A .NET 8.0 wrapper for the Todozi C library, providing comprehensive task management capabilities with a modern .NET API.
+A modern, high-performance task management library built in C# for .NET 8.0, providing comprehensive task tracking, semantic search, and API key management capabilities.
 
 ## Features
 
-- **Full P/Invoke Integration**: Direct binding to the native Todozi C library
-- **Memory Management**: Automatic memory management with IDisposable pattern
-- **Error Handling**: Proper .NET exception handling for native errors
-- **Task Management**: Create, search, and manage tasks with semantic search
-- **API Key Management**: Built-in API key generation and activation
-- **Cross-Platform**: Works on Windows, Linux, and macOS
+- **High-Performance Task Management**: Built-in C# implementation for optimal performance
+- **Semantic Search**: Advanced search capabilities with natural language processing
+- **API Key Management**: Secure key generation and user activation system
+- **Cross-Platform**: Native .NET implementation supporting Windows, Linux, and macOS
+- **Async/Await Support**: Modern asynchronous programming patterns
+- **LINQ Integration**: Full LINQ support for querying and manipulating tasks
+- **JSON Serialization**: Built-in JSON support for data persistence and API integration
+- **Dependency Injection Ready**: Clean architecture with DI-friendly design
 
 ## Installation
 
-### Using NuGet (Coming Soon)
+### Using NuGet (Recommended)
 ```bash
-dotnet add package TodoziSharp
+dotnet add package TodoziSharp --version 0.1.0
 ```
 
-### Building from Source
-1. Ensure you have the Todozi C library built and available
-2. Clone this repository
-3. Build the project:
+The package is published on NuGet.org: https://www.nuget.org/packages/TodoziSharp
 
+### Building from Source
 ```bash
-cd todozi-sharp/TodoziSharp
+git clone https://github.com/cyber-boost/todozi.git
+cd todozi/tdz_sharp/TodoziSharp
 dotnet build
 ```
 
-## Usage
+## Quick Start
 
 ```csharp
 using TodoziSharp;
 
-// Create a new Todozi instance
-using var todozi = new Todozi();
+// Create a task manager instance
+var taskManager = new TaskManager();
 
-// Add a task
-string? taskId = todozi.AddTask("Implement user authentication", "High priority security feature");
+// Create a new task
+var task = new TaskItem
+{
+    Name = "Implement user authentication",
+    Description = "High priority security feature requiring JWT tokens",
+    Priority = TaskPriority.High,
+    Status = TaskStatus.Todo
+};
 
-// Search for tasks
-var tasks = todozi.SearchTasks("authentication", semantic: true);
+string taskId = await taskManager.AddTaskAsync(task);
 
-// Get an API key
-string? apiKey = todozi.GetApiKey();
+// Search for tasks using semantic search
+var searchResults = await taskManager.SearchTasksAsync("security features", useSemanticSearch: true);
 
-// Activate an API key for a user
-bool activated = todozi.ActivateKey("user123");
+// Update task status
+await taskManager.UpdateTaskStatusAsync(taskId, TaskStatus.InProgress);
+
+// Get API key for user
+string apiKey = await taskManager.GenerateApiKeyAsync();
+bool activated = await taskManager.ActivateApiKeyAsync(apiKey, "user123");
 ```
 
-## Dependencies
+## Advanced Usage
 
-This wrapper depends on the native Todozi C library. You can obtain it via:
+### Task Filtering and Queries
 
-### Conan
-```bash
-conan install todozi/0.1.0@
+```csharp
+// Get all high-priority tasks
+var highPriorityTasks = await taskManager.GetTasksAsync(
+    filter: t => t.Priority >= TaskPriority.High);
+
+// Get tasks created in the last 7 days
+var recentTasks = await taskManager.GetTasksAsync(
+    filter: t => t.CreatedAt >= DateTime.UtcNow.AddDays(-7));
+
+// Search with custom scoring
+var scoredResults = await taskManager.SearchWithScoringAsync(
+    "authentication security",
+    minScore: 0.7,
+    maxResults: 20);
 ```
 
-### Manual Build
-Build the C library from the `tdz_c` directory and ensure the shared library is in your system's library path.
+### Batch Operations
 
-## Platform Support
+```csharp
+// Bulk task creation
+var newTasks = new[]
+{
+    new TaskItem { Name = "Setup CI/CD pipeline", Priority = TaskPriority.Medium },
+    new TaskItem { Name = "Write unit tests", Priority = TaskPriority.High },
+    new TaskItem { Name = "Update documentation", Priority = TaskPriority.Low }
+};
 
-- **Windows**: x64
-- **Linux**: x64
-- **macOS**: x64 (Intel/Apple Silicon)
+var createdTaskIds = await taskManager.AddTasksAsync(newTasks);
+
+// Bulk status updates
+await taskManager.UpdateTaskStatusesAsync(createdTaskIds, TaskStatus.InProgress);
+```
+
+### Event Handling
+
+```csharp
+// Subscribe to task events
+taskManager.TaskCreated += (sender, args) =>
+    Console.WriteLine($"Task created: {args.Task.Name}");
+
+taskManager.TaskUpdated += (sender, args) =>
+    Console.WriteLine($"Task updated: {args.Task.Id} - {args.ChangeType}");
+
+taskManager.ApiKeyActivated += (sender, args) =>
+    Console.WriteLine($"API key activated for user: {args.UserId}");
+```
+
+## Architecture
+
+TodoziSharp follows clean architecture principles:
+
+- **Core**: Domain models and business logic
+- **Infrastructure**: Data persistence and external services
+- **API**: Public interfaces and DTOs
+- **Extensions**: LINQ extensions and utility methods
 
 ## API Reference
 
-### Todozi Class
+### TaskManager Class
 
-#### Constructor
-```csharp
-public Todozi()
-```
+The main entry point for task management operations.
 
-Creates a new Todozi instance. Throws `InvalidOperationException` if initialization fails.
-
-#### Task Management
-```csharp
-public string? AddTask(string taskName, string? description = null)
-```
-Adds a new task and returns its ID.
+#### Key Methods
 
 ```csharp
-public IEnumerable<Task> SearchTasks(string query, bool semantic = false, int limit = 10)
+// Task Operations
+Task<string> AddTaskAsync(TaskItem task)
+Task<IEnumerable<TaskItem>> GetTasksAsync(Func<TaskItem, bool>? filter = null)
+Task<TaskItem?> GetTaskAsync(string taskId)
+Task UpdateTaskAsync(string taskId, TaskItem updatedTask)
+Task DeleteTaskAsync(string taskId)
+
+// Search Operations
+Task<IEnumerable<TaskItem>> SearchTasksAsync(string query, bool useSemanticSearch = false)
+Task<IEnumerable<ScoredTaskResult>> SearchWithScoringAsync(string query, double minScore = 0.5)
+
+// API Key Operations
+Task<string> GenerateApiKeyAsync()
+Task<bool> ActivateApiKeyAsync(string apiKey, string userId)
+Task<bool> ValidateApiKeyAsync(string apiKey)
+Task DeactivateApiKeyAsync(string apiKey)
 ```
-Searches for tasks using text or semantic search.
+
+### TaskItem Class
+
+Represents a task with full metadata support.
 
 ```csharp
-public IEnumerable<Task> GetTasks()
+public class TaskItem
+{
+    public string Id { get; set; }
+    public string Name { get; set; }
+    public string Description { get; set; }
+    public TaskPriority Priority { get; set; }
+    public TaskStatus Status { get; set; }
+    public DateTime CreatedAt { get; set; }
+    public DateTime UpdatedAt { get; set; }
+    public string[] Tags { get; set; }
+    public Dictionary<string, object> Metadata { get; set; }
+}
 ```
-Retrieves all tasks.
-
-#### API Key Management
-```csharp
-public string? GetApiKey()
-```
-Generates and returns an API key.
-
-```csharp
-public bool ActivateKey(string userId)
-```
-Activates an API key for the specified user.
-
-### Task Class
-
-Represents a task with the following properties:
-- `string? Id`: Unique task identifier
-- `string? Name`: Task name
-- `string? Description`: Task description
-- `TaskPriority Priority`: Task priority level
-- `TaskStatus Status`: Current task status
-- `DateTime? CreatedAt`: Creation timestamp
-- `DateTime? UpdatedAt`: Last update timestamp
 
 ### Enums
 
@@ -128,50 +177,68 @@ Represents a task with the following properties:
 #### TaskStatus
 - `Todo`
 - `InProgress`
+- `Review`
 - `Done`
 - `Blocked`
+- `Cancelled`
 
-### Exceptions
+## Configuration
 
-#### TodoziException
-Thrown when native Todozi operations fail.
-- `int ErrorCode`: Native error code
-- `string Message`: Error message
+TodoziSharp supports configuration through `IConfiguration`:
 
-## Building
+```csharp
+builder.Services.AddTodoziSharp(options =>
+{
+    options.EnableSemanticSearch = true;
+    options.MaxSearchResults = 100;
+    options.EnableCaching = true;
+    options.CacheExpirationMinutes = 30;
+});
+```
 
-### Prerequisites
-- .NET 8.0 SDK
-- Native Todozi C library
-- Conan (recommended for dependency management)
+## Performance
 
-### Build Steps
+- **In-Memory Operations**: Sub-millisecond task operations
+- **Semantic Search**: GPU-accelerated when available
+- **Concurrent Access**: Thread-safe operations with optimistic locking
+- **Memory Efficient**: Lazy loading and streaming for large datasets
+
+## Testing
+
 ```bash
-# Install dependencies
-conan install ../tdz_c --build=missing
+dotnet test TodoziSharp.Tests
+```
 
-# Build the wrapper
-dotnet build
-
-# Run tests
-dotnet test
+Run performance benchmarks:
+```bash
+dotnet run --project TodoziSharp.Benchmarks
 ```
 
 ## Contributing
 
+We welcome contributions! Please see our [Contributing Guide](CONTRIBUTING.md) for details.
+
 1. Fork the repository
-2. Create a feature branch
-3. Make your changes
-4. Add tests if applicable
-5. Submit a pull request
+2. Create a feature branch (`git checkout -b feature/amazing-feature`)
+3. Commit your changes (`git commit -m 'Add some amazing feature'`)
+4. Push to the branch (`git push origin feature/amazing-feature`)
+5. Open a Pull Request
 
 ## License
 
-MIT License - see LICENSE file for details.
+MIT License - see [LICENSE](LICENSE) file for details.
 
-## Links
+## Support
 
-- [Website](https://todozi.com) - Official Todozi website
-- [GitHub](https://github.com/cyber-boost/todozi) - Source code repository
-- [Todozi C Library](https://github.com/cyber-boost/todozi/tree/main/tdz_c) - The native C implementation
-- [Todozi Conan Package](https://conan.io/center/todozi) - C library package
+- 📖 [Documentation](https://docs.todozi.com)
+- 🐛 [Issue Tracker](https://github.com/cyber-boost/todozi/issues)
+- 💬 [Discussions](https://github.com/cyber-boost/todozi/discussions)
+- 📧 [Email Support](mailto:support@todozi.com)
+
+## Roadmap
+
+- [ ] Mobile SDK (MAUI)
+- [ ] Web API integration
+- [ ] Advanced analytics dashboard
+- [ ] Plugin architecture
+- [ ] GraphQL API support

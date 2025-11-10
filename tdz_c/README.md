@@ -1,124 +1,188 @@
-# Todozi - A Comprehensive Task Management System in C
+# Todozi C Library
 
-Todozi is a powerful, extensible task management system written in C, featuring agent management, semantic search, API endpoints, and more.
+A comprehensive task management system written in pure C, providing a complete solution for task management with AI assistance, semantic search, and cross-platform compatibility.
 
 ## Features
 
-- **Agent Management**: AI agent coordination and task assignment
-- **Semantic Search**: Find tasks using natural language and embeddings
-- **REST API**: Full HTTP API for integration
-- **CLI Interface**: Command-line tools for all operations
-- **TUI Interface**: Terminal user interface
-- **Memory Management**: Learning and memory systems
-- **Error Tracking**: Comprehensive error handling and resolution
-- **Migration Tools**: Data migration between formats
-- **Extensible Architecture**: Plugin system with tool definitions
+- **Complete Task Management**: Create, update, delete, and organize tasks
+- **AI-Powered Features**: Task planning, extraction from natural language, and intelligent suggestions
+- **Semantic Search**: Full-text search with semantic understanding
+- **REST API**: Built-in HTTP server for remote access
+- **CLI & TUI**: Command-line interface and terminal user interface
+- **Cross-Platform**: Linux, macOS, and Windows support
+- **135 Examples**: Comprehensive examples covering all functionality
+- **Memory Management**: Efficient memory handling with automatic cleanup
+- **Error Handling**: Robust error handling with detailed error messages
 
-## Installation
+## Quick Start
 
-### Using Conan (Recommended)
+### Installation
 
+#### Via Conan (Recommended)
 ```bash
-# Install Conan
-pipx install conan
-
-# Add Todozi to your project
-conan install todozi/0.1.0@  # Add your user/channel
-
-# For development
-conan create . --build=missing
-
-# Build with examples
-conan create . --build=missing -o todozi:build_examples=True
+conan install todozi/0.1.0@ --build=missing
 ```
 
-### Manual Build
-
+#### Build from Source
 ```bash
-# Dependencies: jansson, libcurl, openssl, libuuid
-make -C build/
-
-# Build with examples
-cmake -S . -B build -DBUILD_EXAMPLES=ON
-cmake --build build
+git clone https://github.com/cyber-boost/todozi.git
+cd todozi/tdz_c
+mkdir build && cd build
+cmake ..
+make
 ```
+
+### Basic Usage
+
+```c
+#include "todozi.h"
+#include <stdio.h>
+
+int main() {
+    // Initialize Todozi
+    todozi_todozi_t* instance = todozi_new();
+    if (!instance) {
+        printf("Failed to initialize Todozi\n");
+        return 1;
+    }
+
+    // Create a task
+    const char* task_id = todozi_add(instance, "Implement user authentication", "High priority security feature", NULL);
+    if (task_id) {
+        printf("Created task: %s\n", task_id);
+    }
+
+    // Search tasks
+    todozi_array_t* tasks = NULL;
+    size_t count = 0;
+    if (todozi_search_tasks(instance, "authentication", true, 10, &tasks, &count, NULL) == TODOZI_OK) {
+        printf("Found %zu tasks\n", count);
+        todozi_array_free(tasks);
+    }
+
+    // Cleanup
+    todozi_free(instance);
+    return 0;
+}
+```
+
+## API Overview
+
+### Core Functions
+
+- `todozi_new()` / `todozi_free()` - Initialize and cleanup
+- `todozi_add()` - Create new tasks
+- `todozi_search_tasks()` - Search with semantic capabilities
+- `todozi_update_task_status()` - Update task status
+- `todozi_delete_task()` - Remove tasks
+
+### Advanced Features
+
+- `todozi_plan_tasks()` - AI-powered task planning
+- `todozi_extract_tasks()` - Extract tasks from natural language
+- `todozi_process_chat()` - Chat-based task management
+- `todozi_api()` - REST API server
+
+### Memory Management
+
+All functions follow consistent memory management patterns:
+- Output parameters are allocated by the library
+- Use corresponding `_free()` functions for cleanup
+- No memory leaks with proper usage
 
 ## Examples
 
-Todozi includes 135 comprehensive examples organized by complexity level:
+The library includes 135 comprehensive examples covering:
 
-- **Example 1**: Basic usage of each component
-- **Example 2**: Intermediate features and integrations
-- **Example 3**: Advanced patterns and workflows
-- **Example 4**: Real-world scenarios
-- **Example 5**: Complex multi-component usage
+- Basic task operations
+- Advanced search functionality
+- AI-powered features
+- REST API usage
+- Memory management
+- Error handling
+- Cross-platform development
 
-### Building Examples
-
-```bash
-# With Conan
-conan create . --build=missing -o todozi:build_examples=True
-
-# With CMake
-cmake -S . -B build -DBUILD_EXAMPLES=ON
-cmake --build build
-
-# Run examples using the helper script
-./run_examples.sh example_1 1    # Run specific example
-./run_examples.sh example_2     # List example_2 examples
-./run_examples.sh all           # Run all examples (takes time)
-```
-
-### As a Library
-
-```c
-#include <todozi.h>
-
-// Initialize
-todozi_todozi_t* instance = todozi_new();
-
-// Create a task
-todozi_add_task(instance, "Implement user authentication", "high", "backend", "todo", "ai", NULL, 0, NULL, 0, NULL, 0);
-
-// Search tasks
-void* results = todozi_search_tasks(instance, "authentication", true, 10);
-
-// Cleanup
-todozi_free(instance);
-```
-
-### Command Line
+### Running Examples
 
 ```bash
-# Add a task
-todozi task add "Implement user authentication" --priority high --project backend
+# Build examples
+cmake -DBUILD_EXAMPLES=ON ..
+make
 
-# List tasks
-todozi task list
+# Run specific example
+./examples/example_1_1_agent
 
-# Search tasks
-todozi search "authentication"
+# Run all examples
+./run_examples.sh all
 ```
 
 ## Dependencies
 
-- **jansson**: JSON parsing
-- **libcurl**: HTTP client
-- **openssl**: Cryptography and SSL
-- **libuuid**: UUID generation
-- **pthread**: Threading support
+- **jansson** (>= 2.14): JSON parsing and generation
+- **libcurl** (>= 8.4.0): HTTP client functionality
+- **OpenSSL** (>= 3.2.0): Cryptographic operations
+
+## Building
+
+### Prerequisites
+
+- CMake 3.15+
+- C compiler (GCC/Clang/MSVC)
+- Conan package manager (recommended)
+
+### Build Commands
+
+```bash
+# Using Conan (recommended)
+conan install . --build=missing
+conan build .
+
+# Using system packages
+mkdir build && cd build
+cmake .. -DCMAKE_BUILD_TYPE=Release
+make
+```
+
+## Testing
+
+```bash
+# Run unit tests
+ctest
+
+# Run specific test
+ctest -R test_task_creation
+```
 
 ## Architecture
 
-Todozi is built with a modular architecture:
-
-- **Core**: Base data structures and utilities
-- **Agent**: AI agent management and coordination
-- **API**: REST API server and client
-- **CLI**: Command-line interface
-- **Storage**: Data persistence layer
-- **Search**: Semantic search with embeddings
-- **Tools**: Extensible tool system
+```
+tdz_c/
+├── include/          # Public headers
+├── src/             # Source files
+│   ├── agent.c      # AI agent functionality
+│   ├── api.c        # REST API implementation
+│   ├── base.c       # Core data structures
+│   ├── chunking.c   # Text chunking utilities
+│   ├── cli.c        # Command-line interface
+│   ├── emb.c        # Embeddings processing
+│   ├── error.c      # Error handling
+│   ├── extract.c    # Task extraction
+│   ├── idea.c       # Idea management
+│   ├── lib.c        # Main library interface
+│   ├── memory.c     # Memory management
+│   ├── migration.c  # Data migration
+│   ├── models.c     # Data models
+│   ├── reminder.c   # Reminder system
+│   ├── search.c     # Search functionality
+│   ├── server.c     # HTTP server
+│   ├── storage.c    # Data persistence
+│   ├── summary.c    # Summary generation
+│   ├── tags.c       # Tag management
+│   ├── tdz.c        # Core logic
+│   ├── tests.c      # Unit tests
+│   └── types.c      # Type definitions
+└── examples/        # 135 example programs
+```
 
 ## Contributing
 
@@ -130,8 +194,12 @@ Todozi is built with a modular architecture:
 
 ## License
 
-MIT License - see LICENSE file for details.
+MIT License - see LICENSE file for details
 
-## Author
+## Links
 
-TonTon Bernie - A coding addict from Massachusetts working at an orphanage in Haiti.
+- [Website](https://todozi.com) - Official Todozi website
+- [GitHub](https://github.com/cyber-boost/todozi) - Source code repository
+- [ConanCenter](https://conan.io/center/todozi) - Package repository
+- [NuGet](https://www.nuget.org/packages/TodoziSharp) - .NET wrapper package
+- [Documentation](https://github.com/cyber-boost/todozi/tree/main/tdz_c/docs) - API documentation
